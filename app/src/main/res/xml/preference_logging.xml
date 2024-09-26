@@ -103,6 +103,35 @@
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
+        app:key="cloud_city_category"
+        app:title="Cloud City logging">
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="enable_cloud_city"
+            app:summary="@string/enable_cloud_city_summary"
+            app:title="@string/enable_cloud_city" />
+
+        <EditTextPreference
+            android:dialogTitle="@string/cloud_city_url_dialog_title"
+            app:dependency="enable_cloud_city"
+            app:iconSpaceReserved="false"
+            app:key="cloud_city_url"
+            app:title="@string/cloud_city_url"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            android:dialogTitle="@string/cloud_city_token_dialog_title"
+            app:dependency="enable_cloud_city"
+            app:iconSpaceReserved="false"
+            app:key="cloud_city_token"
+            app:title="@string/cloud_city_token"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
         app:key="logging_category"
         app:title="Logging content">
 

@@ -50,15 +50,15 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PW }}
           RELEASE_KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PW }}
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --info --stacktrace
 
-      - name: Build Release APK
+      - name: Build Debug APK
         env:
           ENCODED_STRING: ${{ secrets.KEYSTORE }}
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PW }}
           RELEASE_KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PW }}
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --info --stacktrace
 
       - name: Generate SPDX
         env:

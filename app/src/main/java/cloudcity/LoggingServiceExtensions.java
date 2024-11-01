@@ -1,0 +1,192 @@
+package cloudcity;
+
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
+import android.telephony.CellInfo;
+import android.util.Log;
+import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
+
+import java.util.List;
+import java.util.Objects;
+
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.CloudCityHelpers;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.CellInfoModel;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.MeasurementsModel;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModel;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModelRequest;
+
+public class LoggingServiceExtensions {
+    private static final String TAG = "LoggingServiceExtensions";
+
+    private static Handler CloudCityHandler;
+    private static SharedPreferences sp;
+
+    private static GlobalVars gv;
+
+    private static int interval;
+
+    private static DataProvider dp;
+
+    // Handle remote Cloud City update
+    private final static Runnable CloudCityUpdate = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                Log.d(TAG, "run: CC Update");
+
+                String address = sp.getString("cloud_city_url", "");
+                String token = sp.getString("cloud_city_token", "");
+
+                NetworkDataModel data = getCloudCityData();
+                if (data == null) {
+                    Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
+                    return;
+                }
+                NetworkDataModelRequest requestData = new NetworkDataModelRequest();
+                requestData.add(data);
+
+                boolean status = CloudCityHelpers.sendData(address, token, requestData);
+
+                if (status) {
+                    /* Data sent successfully indicate in status icon. */
+                    gv.getLog_status().setColorFilter(Color.argb(255, 0, 255, 0));
+                } else  {
+                    gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            CloudCityHandler.postDelayed(this, interval);
+        }
+    };
+
+    /**
+     * initialize a new remote Cloud City connection
+     */
+    public static void setupCloudCity(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
+        Log.d(TAG, "setupCloudCity");
+
+        gv = globalVars;
+        interval = updateInterval;
+        dp = dataProvider;
+        sp = sharedPrefs;
+
+        /* Create CC API instance. */
+        CloudCityHandler = new Handler(Objects.requireNonNull(looper));
+        CloudCityHandler.post(CloudCityUpdate);
+        ImageView log_status = gv.getLog_status();
+        if (log_status != null) {
+            gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
+        }
+    }
+
+    /**
+     * stop remote influx logging in clear up all internal instances of involved objects
+     */
+    public static void stopCloudCity() {
+        Log.d(TAG, "stopCloudCity");
+        // cleanup the handler is existing
+        if (CloudCityHandler != null) {
+            try {
+                CloudCityHandler.removeCallbacks(CloudCityUpdate);
+            } catch (java.lang.NullPointerException e) {
+                Log.d(TAG, "trying to stop cloud city service while it was not running");
+            }
+        }
+
+        gv.getLog_status().setColorFilter(Color.argb(255, 192, 192, 192));
+    }
+
+    private static NetworkDataModel getCloudCityData() {
+        List<CellInformation> cellsInfo = dp.getCellInformation();
+        LocationInformation location = dp.getLocation();
+        CellInformation currentCell = null;
+
+        for (CellInformation ci: cellsInfo) {
+            if (!ci.isRegistered()) {
+                continue;
+            }
+
+            currentCell = ci;
+        }
+
+        if (currentCell == null) {
+            return null;
+        }
+
+        String category = currentCell.getCellType();
+
+        NetworkDataModel dataModel = new NetworkDataModel();
+
+        dataModel.setCategory(currentCell.getCellType());
+        dataModel.setLatitude(location.getLatitude());
+        dataModel.setLongitude(location.getLongitude());
+        dataModel.setAccuracy(location.getAccuracy());
+        /* Convert to km/h */
+        dataModel.setSpeed(location.getSpeed() * 3.6);
+
+        dataModel.setCellData(getCellInfoModel(category, currentCell));
+        dataModel.setValues(getMeasurementsModel(category, currentCell));
+
+        return dataModel;
+    }
+
+    private static @NonNull CellInfoModel getCellInfoModel(String category, CellInformation currentCell) {
+        CellInfoModel cellInfoModel = new CellInfoModel();
+
+        if (Objects.equals(category, "CDMA") || Objects.equals(category, "GSM")) {
+            /* No information in 2G and 3G set dummy data. */
+            cellInfoModel.setDummy(1);
+        } else {
+            /* Real data available for all other network types. */
+            cellInfoModel.setEarfcn(currentCell.getARFCN());
+            cellInfoModel.setPci(currentCell.getPci());
+        }
+
+        long id = currentCell.getCi();
+
+        if (Objects.equals(category, "NR")) {
+            if (id != CellInfo.UNAVAILABLE_LONG) {
+                cellInfoModel.setCellId(currentCell.getCi());
+            }
+        } else if (Objects.equals(category, "LTE")) {
+            if (id != CellInfo.UNAVAILABLE) {
+                cellInfoModel.setCellId((int)(currentCell.getCi() >> 8));
+                cellInfoModel.seteNodeBId((int) currentCell.getCi() & 0x000000FF);
+            }
+
+        }
+
+        return cellInfoModel;
+    }
+
+    private static @NonNull MeasurementsModel getMeasurementsModel(String category, CellInformation currentCell) {
+        MeasurementsModel measurements = new MeasurementsModel();
+
+        if (Objects.equals(category, "NR")) {
+            measurements.setCsirsrp(currentCell.getCsirsrp());
+            measurements.setCsirsrq(currentCell.getCsirsrq());
+            measurements.setCsisinr(currentCell.getCsisinr());
+            measurements.setSsrsrp(currentCell.getSsrsrp());
+            measurements.setSsrsrq(currentCell.getSsrsrq());
+            measurements.setSssinr(currentCell.getSssinr());
+        } else if (Objects.equals(category, "LTE")) {
+            measurements.setRsrp(currentCell.getRsrp());
+            measurements.setRsrq(currentCell.getRsrq());
+            measurements.setRssnr(currentCell.getRssnr());
+        } else {
+            /* In 3G no measurement data available set dummy data. */
+            measurements.setDummy(1);
+        }
+        return measurements;
+    }
+}

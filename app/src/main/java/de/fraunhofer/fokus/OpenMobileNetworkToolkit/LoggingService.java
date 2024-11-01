@@ -50,6 +50,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
+import cloudcity.LoggingServiceExtensions;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
@@ -207,40 +208,6 @@ public class LoggingService extends Service {
         }
     };
 
-    // Handle remote Cloud City update
-    private final Runnable CloudCityUpdate = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                Log.d(TAG, "run: CC Update");
-
-                String address = sp.getString("cloud_city_url", "");
-                String token = sp.getString("cloud_city_token", "");
-
-                NetworkDataModel data = getCloudCityData();
-                if (data == null) {
-                    Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
-                    return;
-                }
-                NetworkDataModelRequest requestData = new NetworkDataModelRequest();
-                requestData.add(data);
-
-                boolean status = CloudCityHelpers.sendData(address, token, requestData);
-
-                if (status) {
-                    /* Data sent successfully indicate in status icon. */
-                    gv.getLog_status().setColorFilter(Color.argb(255, 0, 255, 0));
-                } else  {
-                    gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            CloudCityHandler.postDelayed(this, interval);
-        }
-    };
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -297,20 +264,19 @@ public class LoggingService extends Service {
                     } else {
                         stopRemoteInfluxDB();
                     }
-                } if (Objects.equals(key, "enable_cloud_city")) {
+                } else if (Objects.equals(key, "enable_cloud_city")) {
                     if (prefs.getBoolean(key, false)) {
                         if (prefs.getString("cloud_city_url", "").isEmpty() || prefs.getString("cloud_city_token", "").isEmpty()) {
                             Log.i(TAG, "Not all Cloud City settings are present in preferences");
                             Toast.makeText(getApplicationContext(), "Please fill all Cloud City Settings", Toast.LENGTH_LONG).show();
                             prefs.edit().putBoolean("enable_cloud_city", false).apply();
                         } else {
-                            setupCloudCity();
+                            LoggingServiceExtensions.setupCloudCity(Looper.myLooper(), gv, interval, dp, sp);
                         }
                     } else {
-                        stopCloudCity();
+                        LoggingServiceExtensions.stopCloudCity();
                     }
-                }
-                else if (Objects.equals(key, "enable_notification_update")) {
+                } else if (Objects.equals(key, "enable_notification_update")) {
                     if (prefs.getBoolean(key, false)) {
                         setupNotificationUpdate();
                     } else {
@@ -347,7 +313,7 @@ public class LoggingService extends Service {
         }
 
         if (sp.getBoolean("enable_cloud_city", false)) {
-            setupCloudCity();
+            LoggingServiceExtensions.setupCloudCity(Looper.myLooper(), gv, interval, dp, sp);
         }
 
         if (sp.getBoolean("enable_local_file_log", false)) {
@@ -367,7 +333,7 @@ public class LoggingService extends Service {
             stopRemoteInfluxDB();
         }
         if (sp.getBoolean("enable_cloud_city", false)){
-            stopCloudCity();
+            LoggingServiceExtensions.stopCloudCity();
         }
         if (sp.getBoolean("enable_local_file_log", false)) {
             stopLocalFile();
@@ -457,90 +423,6 @@ public class LoggingService extends Service {
         p.addTags(tags_map);
         logPoints.add(p);
         return logPoints;
-    }
-
-    private NetworkDataModel getCloudCityData() {
-        List<CellInformation> cellsInfo = dp.getCellInformation();
-        LocationInformation location = dp.getLocation();
-        CellInformation currentCell = null;
-
-        for (CellInformation ci: cellsInfo) {
-            if (!ci.isRegistered()) {
-                continue;
-            }
-
-            currentCell = ci;
-        }
-
-        if (currentCell == null) {
-            return null;
-        }
-
-        String category = currentCell.getCellType();
-
-        NetworkDataModel dataModel = new NetworkDataModel();
-
-        dataModel.setCategory(currentCell.getCellType());
-        dataModel.setLatitude(location.getLatitude());
-        dataModel.setLongitude(location.getLongitude());
-        dataModel.setAccuracy(location.getAccuracy());
-        /* Convert to km/h */
-        dataModel.setSpeed(location.getSpeed() * 3.6);
-
-        dataModel.setCellData(getCellInfoModel(category, currentCell));
-        dataModel.setValues(getMeasurementsModel(category, currentCell));
-
-        return dataModel;
-    }
-
-    private static @NonNull CellInfoModel getCellInfoModel(String category, CellInformation currentCell) {
-        CellInfoModel cellInfoModel = new CellInfoModel();
-
-        if (Objects.equals(category, "CDMA") || Objects.equals(category, "GSM")) {
-            /* No information in 2G and 3G set dummy data. */
-            cellInfoModel.setDummy(1);
-        } else {
-            /* Real data available for all other network types. */
-            cellInfoModel.setEarfcn(currentCell.getARFCN());
-            cellInfoModel.setPci(currentCell.getPci());
-        }
-
-        long id = currentCell.getCi();
-
-        if (Objects.equals(category, "NR")) {
-            if (id != CellInfo.UNAVAILABLE_LONG) {
-                cellInfoModel.setCellId(currentCell.getCi());
-            }
-        } else if (Objects.equals(category, "LTE")) {
-            if (id != CellInfo.UNAVAILABLE) {
-                cellInfoModel.setCellId((int)(currentCell.getCi() >> 8));
-                cellInfoModel.seteNodeBId((int) currentCell.getCi() & 0x000000FF);
-            }
-
-        }
-
-        return cellInfoModel;
-    }
-
-    private static @NonNull MeasurementsModel getMeasurementsModel(String category, CellInformation currentCell) {
-        MeasurementsModel measurements = new MeasurementsModel();
-
-        if (Objects.equals(category, "NR")) {
-            measurements.setCsirsrp(currentCell.getCsirsrp());
-            measurements.setCsirsrq(currentCell.getCsirsrq());
-            measurements.setCsisinr(currentCell.getCsisinr());
-            measurements.setSsrsrp(currentCell.getSsrsrp());
-            measurements.setSsrsrq(currentCell.getSsrsrq());
-            measurements.setSssinr(currentCell.getSssinr());
-        } else if (Objects.equals(category, "LTE")) {
-            measurements.setRsrp(currentCell.getRsrp());
-            measurements.setRsrq(currentCell.getRsrq());
-            measurements.setRssnr(currentCell.getRssnr());
-        } else {
-            /* In 3G no measurement data available set dummy data. */
-            measurements.setDummy(1);
-        }
-        return measurements;
     }
 
     private void setupLocalFile() {
@@ -665,37 +547,6 @@ public class LoggingService extends Service {
 
         // remove reference in connection manager
         InfluxdbConnections.removeRicInstance();
-        gv.getLog_status().setColorFilter(Color.argb(255, 192, 192, 192));
-    }
-
-    /**
-     * initialize a new remote Cloud City connection
-     */
-    private void setupCloudCity() {
-        Log.d(TAG, "setupCloudCity");
-        /* Create CC API instance. */
-        CloudCityHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-        CloudCityHandler.post(CloudCityUpdate);
-        ImageView log_status = gv.getLog_status();
-        if (log_status != null) {
-            gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
-        }
-    }
-
-    /**
-     * stop remote influx logging in clear up all internal instances of involved objects
-     */
-    private void stopCloudCity() {
-        Log.d(TAG, "stopCloudCity");
-        // cleanup the handler is existing
-        if (CloudCityHandler != null) {
-            try {
-                CloudCityHandler.removeCallbacks(CloudCityUpdate);
-            } catch (java.lang.NullPointerException e) {
-                Log.d(TAG, "trying to stop cloud city service while it was not running");
-            }
-        }
-
         gv.getLog_status().setColorFilter(Color.argb(255, 192, 192, 192));
     }
 

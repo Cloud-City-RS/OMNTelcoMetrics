@@ -7,7 +7,7 @@ on:
       repository:
         description: "Git repository URL"
         required: true
-        default: "https://github.com/android/sunflower"
+        default: "https://github.com/Cloud-City-RS/OMNTelcoMetrics"
       jdkVersion:
         description: "OpenJDK version to use: 8 / 11 / 17 etc."
         required: false
@@ -32,14 +32,33 @@ jobs:
 
       - name: Build APK
         working-directory: ./workspace
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
         run: |
           if [ ! -f "gradlew" ]; then gradle wrapper; fi
           chmod +x gradlew
-          ./gradlew ${{ github.event.inputs.taskName }} --stacktrace
+          ./gradlew ${{ github.event.inputs.taskName }} --stacktrace --scan || exit 1
 
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - name: Upload the APK artifact with 1 day retention
+        id: upload-apk
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           path: ./**/*.apk
           name: apk-archive
           retention-days: 1
+          if-no-files-found: error
+
+      - name: Verify APK upload
+        if: ${{ success() && steps.upload-apk.outcome == 'success' }}
+        run: echo "✅ APK built and uploaded successfully"
+        

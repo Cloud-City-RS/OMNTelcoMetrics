@@ -104,6 +104,9 @@ public class Iperf3Worker extends Worker {
 
         setForegroundAsync(createForegroundInfo(progress));
 
+        String nativeLibFolder = getApplicationContext().getApplicationInfo().nativeLibraryDir;
+        Log.i(TAG, "Trying to create Iperf3Wrapper with native library folder: "+nativeLibFolder);
+
         int result =
             iperf3Wrapper(cmd, getApplicationContext().getApplicationInfo().nativeLibraryDir);
         Log.d(TAG, "doWork: " + result);

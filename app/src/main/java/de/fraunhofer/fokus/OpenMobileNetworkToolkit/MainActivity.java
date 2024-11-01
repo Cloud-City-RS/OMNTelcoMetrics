@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
+import cloudcity.MainActivityExtensions;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.NetworkCallback;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.WorkProfile.WorkProfileActivity;
@@ -77,6 +78,9 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // CloudCity thing
+        MainActivityExtensions.performMainActivityThing(TAG, sp);
+        // Rest of how it was before
         gv = GlobalVars.getInstance();
         sp = PreferenceManager.getDefaultSharedPreferences(this);
         pm = getPackageManager();
@@ -120,20 +124,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
 
         }
         gv.set_dp(dp);
-
-        /* Handle default values for Cloud City URL and token */
-        String address = sp.getString("cloud_city_url", "");
-        String token = sp.getString("cloud_city_token", "");
-
-        if (address.isEmpty()) {
-            Log.d(TAG, "onCreate: Cloud city address not set, setting default");
-            sp.edit().putString("cloud_city_url", "staging.app.cloudcities.co").apply();
-        }
-
-        if (token.isEmpty()) {
-            Log.d(TAG, "onCreate: Cloud city token not set, setting default");
-            sp.edit().putString("cloud_city_token", "68|5LGMoNAd0mck4bmMaGdj2GqjqqYUB1NyqtbSrpFB82303173").apply();
-        }
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);

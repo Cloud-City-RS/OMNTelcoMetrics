@@ -99,6 +99,9 @@ android {
         abortOnError false
     }
 
+    /**
+     * NOTE: if changing this, make sure to update the expected filename in the android.yml workflow!
+     */
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
 //            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${variant.buildType.name}_${defaultConfig.versionName}_${getGitHash()}.apk"

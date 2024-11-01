@@ -42,6 +42,7 @@ public class Iperf3LibLoader {
                 done = true;
                 return;
             } catch (UnsatisfiedLinkError ignored) {
+                Log.wtf("SHARK", "Error happened!\t"+ignored);
             }
         }
 

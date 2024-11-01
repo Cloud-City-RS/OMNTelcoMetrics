@@ -13,10 +13,15 @@ import androidx.annotation.NonNull;
 import java.util.List;
 import java.util.Objects;
 
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.NRInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.CloudCityHelpers;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.CellInfoModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.MeasurementsModel;
@@ -69,10 +74,14 @@ public class LoggingServiceExtensions {
         }
     };
 
+    public static void setupCloudCity(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferencesGrouper spg) {
+        setupCloudCity2(looper, gv, interval, dp, spg.getSharedPreference(SPType.default_sp));
+    }
+
     /**
      * initialize a new remote Cloud City connection
      */
-    public static void setupCloudCity(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
+    public static void setupCloudCity2(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
         Log.d(TAG, "setupCloudCity");
 
         gv = globalVars;
@@ -123,11 +132,11 @@ public class LoggingServiceExtensions {
             return null;
         }
 
-        String category = currentCell.getCellType();
+        String category = currentCell.getCellType().toString();
 
         NetworkDataModel dataModel = new NetworkDataModel();
 
-        dataModel.setCategory(currentCell.getCellType());
+        dataModel.setCategory(currentCell.getCellType().toString());
         dataModel.setLatitude(location.getLatitude());
         dataModel.setLongitude(location.getLongitude());
         dataModel.setAccuracy(location.getAccuracy());
@@ -148,8 +157,14 @@ public class LoggingServiceExtensions {
             cellInfoModel.setDummy(1);
         } else {
             /* Real data available for all other network types. */
-            cellInfoModel.setEarfcn(currentCell.getARFCN());
-            cellInfoModel.setPci(currentCell.getPci());
+            if (currentCell instanceof GSMInformation) {
+                GSMInformation gsmCell = (GSMInformation) currentCell;
+                // Ok so bands is technically the ARFCN
+                String bandsString = gsmCell.getBands();
+                int arfcn = Integer.parseInt(bandsString);
+                cellInfoModel.setEarfcn(arfcn);
+                cellInfoModel.setPci(currentCell.getPci());
+            }
         }
 
         long id = currentCell.getCi();
@@ -173,16 +188,23 @@ public class LoggingServiceExtensions {
         MeasurementsModel measurements = new MeasurementsModel();
 
         if (Objects.equals(category, "NR")) {
-            measurements.setCsirsrp(currentCell.getCsirsrp());
-            measurements.setCsirsrq(currentCell.getCsirsrq());
-            measurements.setCsisinr(currentCell.getCsisinr());
-            measurements.setSsrsrp(currentCell.getSsrsrp());
-            measurements.setSsrsrq(currentCell.getSsrsrq());
-            measurements.setSssinr(currentCell.getSssinr());
+            // New safety
+            if (currentCell instanceof NRInformation) {
+                NRInformation nrCell = (NRInformation) currentCell;
+                measurements.setCsirsrp(nrCell.getCsirsrp());
+                measurements.setCsirsrq(nrCell.getCsirsrq());
+                measurements.setCsisinr(nrCell.getCsisinr());
+                measurements.setSsrsrp(nrCell.getSsrsrp());
+                measurements.setSsrsrq(nrCell.getSsrsrq());
+                measurements.setSssinr(nrCell.getSssinr());
+            }
         } else if (Objects.equals(category, "LTE")) {
-            measurements.setRsrp(currentCell.getRsrp());
-            measurements.setRsrq(currentCell.getRsrq());
-            measurements.setRssnr(currentCell.getRssnr());
+            if (currentCell instanceof LTEInformation) {
+                LTEInformation lteCell = (LTEInformation) currentCell;
+                measurements.setRsrp(lteCell.getRsrp());
+                measurements.setRsrq(lteCell.getRsrq());
+                measurements.setRssnr(lteCell.getRssnr());
+            }
         } else {
             /* In 3G no measurement data available set dummy data. */
             measurements.setDummy(1);

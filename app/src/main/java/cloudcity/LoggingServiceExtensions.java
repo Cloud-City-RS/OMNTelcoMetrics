@@ -75,7 +75,7 @@ public class LoggingServiceExtensions {
     };
 
     public static void setupCloudCity(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferencesGrouper spg) {
-        setupCloudCity2(looper, gv, interval, dp, spg.getSharedPreference(SPType.default_sp));
+        setupCloudCity2(looper, globalVars, updateInterval, dataProvider, spg.getSharedPreference(SPType.default_sp));
     }
 
     /**

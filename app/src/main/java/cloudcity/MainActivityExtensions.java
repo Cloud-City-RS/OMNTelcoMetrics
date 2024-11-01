@@ -19,12 +19,12 @@ public class MainActivityExtensions {
 
         if (address.isEmpty()) {
             Log.d(TAG, "onCreate: Cloud city address not set, setting default");
-            sp.edit().putString("cloud_city_url", "staging.app.cloudcities.co").apply();
+            sp.edit().putString("cloud_city_url", "staging.app.cloudcities.co").commit();
         }
 
         if (token.isEmpty()) {
             Log.d(TAG, "onCreate: Cloud city token not set, setting default");
-            sp.edit().putString("cloud_city_token", "68|5LGMoNAd0mck4bmMaGdj2GqjqqYUB1NyqtbSrpFB82303173").apply();
+            sp.edit().putString("cloud_city_token", "68|5LGMoNAd0mck4bmMaGdj2GqjqqYUB1NyqtbSrpFB82303173").commit();
         }
     }
 }

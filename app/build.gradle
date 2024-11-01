@@ -24,15 +24,6 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties['storePassword'] = "omnt2024"
 }
 
-def getGitHash = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine "git", "rev-parse", "--short", "HEAD"
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
-
 android {
     signingConfigs {
         debug {
@@ -57,7 +48,6 @@ android {
         targetSdk 34
         versionCode 3
         versionName "0.3"
-        resValue("string", "git_hash", getGitHash())
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         signingConfig signingConfigs.debug
@@ -95,9 +85,12 @@ android {
         abortOnError false
     }
 
+    /**
+     * NOTE: if changing this, make sure to update the expected filename in the android.yml workflow!
+     */
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
-            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${variant.buildType.name}_${defaultConfig.versionName}_${getGitHash()}.apk"
+            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${variant.buildType.name}_${defaultConfig.versionName}.apk"
         }
     }
 }

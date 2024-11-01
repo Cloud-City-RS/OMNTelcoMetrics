@@ -38,8 +38,15 @@ jobs:
           ./gradlew ${{ github.event.inputs.taskName }} --stacktrace
 
       - name: Upload the APK artifact with 1 day retention
+        id: upload-apk
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           path: ./**/*.apk
           name: apk-archive
           retention-days: 1
+          if-no-files-found: error
+
+      - name: Verify APK upload
+        if: ${{ success() && steps.upload-apk.outcome == 'success' }}
+        run: echo "✅ APK built and uploaded successfully"

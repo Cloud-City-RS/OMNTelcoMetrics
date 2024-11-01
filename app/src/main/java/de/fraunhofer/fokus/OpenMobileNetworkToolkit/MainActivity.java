@@ -132,7 +132,8 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
 
         if (token.isEmpty()) {
             Log.d(TAG, "onCreate: Cloud city token not set, setting default");
-            sp.edit().putString("cloud_city_token", "68|5LGMoNAd0mck4bmMaGdj2GqjqqYUB1NyqtbSrpFB82303173").apply();
+//            sp.edit().putString("cloud_city_token", "68|5LGMoNAd0mck4bmMaGdj2GqjqqYUB1NyqtbSrpFB82303173").apply();   //TODO remove this
+            sp.edit().putString("cloud_city_token", "252|GI2CTemW2EX3TmQaDmCzYg1xrs3VEDslnGrfCwp245a84b22").apply();
         }
 
         setContentView(R.layout.activity_main);

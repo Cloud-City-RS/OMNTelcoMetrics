@@ -63,7 +63,6 @@ public class LoggingService extends Service {
     SharedPreferencesGrouper spg;
     private Handler notificationHandler;
     private Handler remoteInfluxHandler;
-    private Handler CloudCityHandler;
     private Handler localInfluxHandler;
     private Handler localFileHandler;
     private List<Point> logFilePoints;
@@ -209,7 +208,7 @@ public class LoggingService extends Service {
                         Toast.makeText(getApplicationContext(), "Please fill all Cloud City Settings", Toast.LENGTH_LONG).show();
                         prefs.edit().putBoolean("enable_cloud_city", false).apply();
                     } else {
-                        LoggingServiceExtensions.setupCloudCity(CloudCityHandler.getLooper(), gv, interval, dp, spg);
+                        LoggingServiceExtensions.setupCloudCity(gv, interval, dp, spg);
                     }
                 } else {
                     LoggingServiceExtensions.stopCloudCity();
@@ -248,8 +247,8 @@ public class LoggingService extends Service {
             setupRemoteInfluxDB();
         }
 
-        if (spg.getSharedPreference(SPType.default_sp).getBoolean("enable_cloud_city", false)) {
-            LoggingServiceExtensions.setupCloudCity(Looper.myLooper(), gv, interval, dp, spg);
+        if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_cloud_city", false)) {
+            LoggingServiceExtensions.setupCloudCity(gv, interval, dp, spg);
         }
 
         if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_local_file_log", false)) {

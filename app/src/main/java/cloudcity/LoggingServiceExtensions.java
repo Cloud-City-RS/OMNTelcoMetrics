@@ -3,6 +3,7 @@ package cloudcity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.telephony.CellInfo;
 import android.util.Log;
@@ -39,6 +40,8 @@ public class LoggingServiceExtensions {
     private static int interval;
 
     private static DataProvider dp;
+
+    private static HandlerThread handlerThread;
 
     // Handle remote Cloud City update
     private final static Runnable CloudCityUpdate = new Runnable() {
@@ -80,14 +83,14 @@ public class LoggingServiceExtensions {
         }
     };
 
-    public static void setupCloudCity(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferencesGrouper spg) {
-        setupCloudCity2(looper, globalVars, updateInterval, dataProvider, spg.getSharedPreference(SPType.default_sp));
+    public static void setupCloudCity(GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferencesGrouper spg) {
+        setupCloudCity2(globalVars, updateInterval, dataProvider, spg.getSharedPreference(SPType.default_sp));
     }
 
     /**
      * initialize a new remote Cloud City connection
      */
-    public static void setupCloudCity2(Looper looper, GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
+    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
         Log.d(TAG, "setupCloudCity");
 
         gv = globalVars;
@@ -96,7 +99,9 @@ public class LoggingServiceExtensions {
         sp = sharedPrefs;
 
         /* Create CC API instance. */
-        CloudCityHandler = new Handler(Objects.requireNonNull(looper));
+        handlerThread = new HandlerThread("CloudCityHandlerThread");
+        handlerThread.start();
+        CloudCityHandler = new Handler(Objects.requireNonNull(handlerThread.getLooper()));
         CloudCityHandler.post(CloudCityUpdate);
         ImageView log_status = gv.getLog_status();
         if (log_status != null) {
@@ -115,6 +120,15 @@ public class LoggingServiceExtensions {
                 CloudCityHandler.removeCallbacks(CloudCityUpdate);
             } catch (java.lang.NullPointerException e) {
                 Log.d(TAG, "trying to stop cloud city service while it was not running");
+            }
+        }
+
+        if (handlerThread != null) {
+            handlerThread.quitSafely();
+            try {
+                handlerThread.join();
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Exception happened!! "+e, e);
             }
         }
 

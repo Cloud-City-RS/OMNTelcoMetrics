@@ -99,4 +99,7 @@ lint/tmp/
 *.hprof
 
 android/key.propierties
-*.so
+
+
+# Shark made this change so we can commit the jniLibs to the repo.
+#*.so

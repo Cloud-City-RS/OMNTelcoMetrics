@@ -19,7 +19,7 @@ jobs:
       - name: Get Latest iPerf
         run: |
           wget -O jniLibs.zip https://github.com/omnt/iperf/releases/latest/download/jniLibs
-          unzip jniLibs.zip -d app/src/main
+          unzip -oq jniLibs.zip -d app/src/main
           rm jniLibs.zip
 
       - name: Decode Keystore and Create key.properties

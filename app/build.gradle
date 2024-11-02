@@ -7,6 +7,7 @@
 
 plugins {
     id 'com.android.application'
+    id "io.sentry.android.gradle" version "4.13.0"
     id 'androidx.navigation.safeargs'
     id("org.spdx.sbom") version "0.8.0"
 }

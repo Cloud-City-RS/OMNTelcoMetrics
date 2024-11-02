@@ -126,7 +126,8 @@ sentry {
     // Enables more detailed log output, e.g. for sentry-cli.
     //
     // Default is false.
-    debug = true
+    debug = false
+//    debug = true
 
     // Generates a source bundle and uploads it to Sentry.
     // This enables source context, allowing you to see your source

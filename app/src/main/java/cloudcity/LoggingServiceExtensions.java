@@ -47,8 +47,14 @@ public class LoggingServiceExtensions {
             try {
                 Log.d(TAG, "run: CC Update");
 
-                String address = sp.getString("cloud_city_url", "");
-                String token = sp.getString("cloud_city_token", "");
+                String address = sp.getString(CloudCityConstants.CLOUD_CITY_SERVER_URL, "");
+                if (address.isEmpty() || address.isBlank()) {
+                    address = CloudCityParamsRepository.getInstance().getServerUrl();
+                }
+                String token = sp.getString(CloudCityConstants.CLOUD_CITY_TOKEN, "");
+                if (token.isEmpty() || token.isBlank()) {
+                    token = CloudCityParamsRepository.getInstance().getServerToken();
+                }
 
                 NetworkDataModel data = getCloudCityData();
                 if (data == null) {

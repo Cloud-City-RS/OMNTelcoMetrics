@@ -44,6 +44,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
+import cloudcity.CloudCityConstants;
 import cloudcity.LoggingServiceExtensions;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.WifiInformation;
@@ -203,7 +204,7 @@ public class LoggingService extends Service {
                 }
             } else if (Objects.equals(key, "enable_cloud_city")) {
                 if (prefs.getBoolean(key, false)) {
-                    if (prefs.getString("cloud_city_url", "").isEmpty() || prefs.getString("cloud_city_token", "").isEmpty()) {
+                    if (prefs.getString(CloudCityConstants.CLOUD_CITY_SERVER_URL, "").isEmpty() || prefs.getString(CloudCityConstants.CLOUD_CITY_TOKEN, "").isEmpty()) {
                         Log.i(TAG, "Not all Cloud City settings are present in preferences");
                         Toast.makeText(getApplicationContext(), "Please fill all Cloud City Settings", Toast.LENGTH_LONG).show();
                         prefs.edit().putBoolean("enable_cloud_city", false).apply();

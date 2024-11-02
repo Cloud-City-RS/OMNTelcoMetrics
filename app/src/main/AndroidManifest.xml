@@ -13,9 +13,11 @@
         android:name="android.hardware.telephony"
         android:required="false" />
 
-    <uses-permission android:name="android.permission.MODIFY_PHONE_STATE"
+    <uses-permission
+        android:name="android.permission.MODIFY_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.READ_PRECISE_PHONE_STATE"
+    <uses-permission
+        android:name="android.permission.READ_PRECISE_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -25,7 +27,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission
         android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
@@ -40,9 +42,9 @@
 
     <application
         android:name="cloudcity.CloudCityOMNTApplication"
+        android:description="@string/app_description"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:description="@string/app_description"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
@@ -52,19 +54,16 @@
         <!-- Required: set your sentry.io project identifier (DSN) -->
         <meta-data
             android:name="io.sentry.dsn"
-            android:value="https://53de54abd4fc23e8081f194a64c6df51@o4507344274522112.ingest.de.sentry.io/4507370457989200"
-            />
+            android:value="https://4aaf77c233f470cc87cb4926a66461c7@o4507344274522112.ingest.de.sentry.io/4508228493770832" />
 
         <!-- enable automatic breadcrumbs for user interactions (clicks, swipes, scrolls) -->
         <meta-data
             android:name="io.sentry.traces.user-interaction.enable"
-            android:value="true"
-            />
+            android:value="true" />
         <!-- enable screenshot for crashes -->
         <meta-data
             android:name="io.sentry.attach-screenshot"
-            android:value="true"
-            />
+            android:value="true" />
         <!-- end of sentry metadata -->
 
         <service
@@ -84,13 +83,15 @@
         <service
             android:name="de.fraunhofer.fokus.OpenMobileNetworkToolkit.LoggingService"
             android:foregroundServiceType="location" />
+        <service android:name="de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingService" />
+
+
         <service
-            android:name="de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingService" />
-
-
-        <service android:name="androidx.work.impl.foreground.SystemForegroundService" android:foregroundServiceType="specialUse">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="explanation_for_special_use"/>
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="explanation_for_special_use" />
         </service>
 
 

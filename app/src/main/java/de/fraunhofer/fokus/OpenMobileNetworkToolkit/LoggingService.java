@@ -209,7 +209,7 @@ public class LoggingService extends Service {
                         Toast.makeText(getApplicationContext(), "Please fill all Cloud City Settings", Toast.LENGTH_LONG).show();
                         prefs.edit().putBoolean("enable_cloud_city", false).apply();
                     } else {
-                        LoggingServiceExtensions.setupCloudCity(Looper.myLooper(), gv, interval, dp, spg);
+                        LoggingServiceExtensions.setupCloudCity(CloudCityHandler.getLooper(), gv, interval, dp, spg);
                     }
                 } else {
                     LoggingServiceExtensions.stopCloudCity();

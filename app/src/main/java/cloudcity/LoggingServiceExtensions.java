@@ -51,11 +51,11 @@ public class LoggingServiceExtensions {
                 Log.d(TAG, "run: CC Update");
 
                 String address = sp.getString(CloudCityConstants.CLOUD_CITY_SERVER_URL, "");
-                if (address.isEmpty() || address.isBlank()) {
+                if (address.isEmpty() || CloudCityUtil.isBlank(address)) {
                     address = CloudCityParamsRepository.getInstance().getServerUrl();
                 }
                 String token = sp.getString(CloudCityConstants.CLOUD_CITY_TOKEN, "");
-                if (token.isEmpty() || token.isBlank()) {
+                if (token.isEmpty() || CloudCityUtil.isBlank(token)) {
                     token = CloudCityParamsRepository.getInstance().getServerToken();
                 }
 

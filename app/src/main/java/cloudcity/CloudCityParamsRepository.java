@@ -76,7 +76,7 @@ public class CloudCityParamsRepository {
     }
 
     public boolean isParamPresent(@Nullable String param) {
-        return param != null && !param.isEmpty() && !param.isBlank();
+        return param != null && !param.isEmpty() && !CloudCityUtil.isBlank(param);
     }
 
     /**

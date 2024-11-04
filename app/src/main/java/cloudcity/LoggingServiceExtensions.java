@@ -63,6 +63,7 @@ public class LoggingServiceExtensions {
                 Log.d(TAG, "getCloudCityData() returned "+data);
                 if (data == null) {
                     Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
+                    CloudCityHandler.postDelayed(this, interval);
                     return;
                 }
                 NetworkDataModelRequest requestData = new NetworkDataModelRequest();

@@ -329,6 +329,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
      */
     @Override
     public void onRequestPermissionsResult(int i, @NonNull String[] strArr, @NonNull int[] iArr) {
+        Log.d(TAG, "--> onRequestPermissionsResult()");
         super.onRequestPermissionsResult(i, strArr, iArr);
 
         for (int j = 0; j < strArr.length; j = j + 1) {
@@ -341,8 +342,18 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                 } else {
                     Log.d(TAG, "Got ACCESS_BACKGROUND_LOCATION Permission");
                 }
+
+                // Since we have the FINE_LOCATION, we can start sending to the server
+
+                // To avoid the possibility of a race-condition between 'spg' initialization and this callback,
+                // lets maybe also initiallize the SPG for the first time here as well.
+                MainActivityExtensions
+                        .turnOnCloudCityLoggingAfterPermissionsGranted(
+                                SharedPreferencesGrouper.getInstance(getApplicationContext())
+                        );
             }
         }
+        Log.d(TAG, "<-- onRequestPermissionsResult()");
     }
 
     /**

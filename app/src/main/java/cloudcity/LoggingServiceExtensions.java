@@ -109,6 +109,9 @@ public class LoggingServiceExtensions {
         if (log_status != null) {
             gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
         }
+
+        // And finally, update all data providers
+        dp.refreshAll();
     }
 
     /**

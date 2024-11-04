@@ -88,7 +88,8 @@ public class CloudCityParamsRepository {
         if (isParamPresent(serverUrl)) {
             retVal = serverUrl;
         } else {
-            retVal = sharedPrefs.getString(CLOUD_CITY_SERVER_URL, "");
+            serverUrl = sharedPrefs.getString(CLOUD_CITY_SERVER_URL, "");
+            retVal = serverUrl;
         }
         return retVal;
     }
@@ -102,7 +103,8 @@ public class CloudCityParamsRepository {
         if (isParamPresent(serverToken)) {
             retVal = serverToken;
         } else {
-            retVal = sharedPrefs.getString(CLOUD_CITY_TOKEN, "");
+            serverToken = sharedPrefs.getString(CLOUD_CITY_TOKEN, "");
+            retVal = serverToken;
         }
         return retVal;
     }

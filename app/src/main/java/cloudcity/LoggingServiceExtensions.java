@@ -60,22 +60,24 @@ public class LoggingServiceExtensions {
                 }
 
                 NetworkDataModel data = getCloudCityData();
+                Log.d(TAG, "getCloudCityData() returned "+data);
                 if (data == null) {
                     Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
-                    return;
-                }
-                NetworkDataModelRequest requestData = new NetworkDataModelRequest();
-                requestData.add(data);
+                } else {
+                    NetworkDataModelRequest requestData = new NetworkDataModelRequest();
+                    requestData.add(data);
 
-                boolean status = CloudCityHelpers.sendData(address, token, requestData);
+                    boolean status = CloudCityHelpers.sendData(address, token, requestData);
 
-                if (status) {
-                    /* Data sent successfully indicate in status icon. */
-                    gv.getLog_status().setColorFilter(Color.argb(255, 0, 255, 0));
-                } else  {
-                    gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
+                    if (status) {
+                        /* Data sent successfully indicate in status icon. */
+                        gv.getLog_status().setColorFilter(Color.argb(255, 0, 255, 0));
+                    } else {
+                        gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
+                    }
                 }
             } catch (Exception e) {
+                Log.e(TAG, "Exception happened! exception "+e, e);
                 throw new RuntimeException(e);
             }
 
@@ -107,6 +109,9 @@ public class LoggingServiceExtensions {
         if (log_status != null) {
             gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
         }
+
+        // And finally, update all data providers
+        dp.refreshAll();
     }
 
     /**

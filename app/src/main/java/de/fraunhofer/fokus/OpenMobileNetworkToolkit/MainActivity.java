@@ -24,6 +24,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.StrictMode;
 import android.provider.Settings;
@@ -72,6 +73,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     Intent loggingServiceIntent;
     NavController navController;
     private Handler requestCellInfoUpdateHandler;
+    private HandlerThread requestCellInfoUpdateHandlerThread;
     private GlobalVars gv;
     /**
      * Runnable to handle Cell Info Updates
@@ -104,11 +106,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         context = getApplicationContext();
         gv = GlobalVars.getInstance();
         spg = SharedPreferencesGrouper.getInstance(getApplicationContext());
-
-        // CloudCity thing
-        MainActivityExtensions.performMainActivityThing(TAG, spg);
-        // Rest of how it was before
-
         pm = getPackageManager();
         feature_telephony = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
 
@@ -177,6 +174,10 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
             }
         } //todo this will go very wrong on android devices without telephony api, maybe show warning and exit?
 
+        // CloudCity thing
+        MainActivityExtensions.performMainActivityThing(TAG, spg, dp);
+        // Rest of how it was before
+
         gv.set_dp(dp);
 
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -197,8 +198,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
             }
         }
 
-        requestCellInfoUpdateHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-        requestCellInfoUpdateHandler.post(requestCellInfoUpdate);
+        initHandlerAndHandlerThread();
 
         loggingServiceIntent = new Intent(this, LoggingService.class);
         if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_logging", false)) {
@@ -480,5 +480,13 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                 break;
         }
         return true;
+    }
+
+    // CC addition
+    private void initHandlerAndHandlerThread() {
+        requestCellInfoUpdateHandlerThread = new HandlerThread("RequestCellInfoUpdateHandlerThread");
+        requestCellInfoUpdateHandlerThread.start();
+        requestCellInfoUpdateHandler = new Handler(Objects.requireNonNull(requestCellInfoUpdateHandlerThread.getLooper()));
+        requestCellInfoUpdateHandler.post(requestCellInfoUpdate);
     }
 }

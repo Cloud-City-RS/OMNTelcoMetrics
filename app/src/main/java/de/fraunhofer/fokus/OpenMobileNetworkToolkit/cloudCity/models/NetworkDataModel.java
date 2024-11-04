@@ -70,4 +70,17 @@ public class NetworkDataModel {
     public void setValues(MeasurementsModel values) {
         this.values = values;
     }
+
+    @Override
+    public String toString() {
+        return "NetworkDataModel{" +
+                "category='" + category + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", accuracy=" + accuracy +
+                ", speed=" + speed +
+                ", cellData=" + cellData +
+                ", values=" + values +
+                '}';
+    }
 }

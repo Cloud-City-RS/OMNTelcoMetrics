@@ -26,9 +26,10 @@ public class MainActivityExtensions {
     public static void performMainActivityThing(String TAG, SharedPreferencesGrouper spg, DataProvider dp) {
         // First, set a listener that will trigger when the actual CC logging changes
         spg.setListener((sharedPreferences, key) -> {
-            if (key != null && !key.isEmpty() && CloudCityUtil.isBlank(key)) {
+            if (key != null && !key.isEmpty() && !CloudCityUtil.isBlank(key)) {
                 switch (key) {
                     case CLOUD_CITY_CC_LOGGING: {
+                        // This might cause a double refresh with the thing in LoggingServiceExtensions but... oh well.
                         dp.refreshAll();
                     }
                     break;
@@ -45,11 +46,6 @@ public class MainActivityExtensions {
                     }
                     break;
                 }
-            }
-
-            if (key.equalsIgnoreCase(CLOUD_CITY_CC_LOGGING)) {
-                // This might cause a double refresh with the thing in LoggingServiceExtensions but... oh well.
-                dp.refreshAll();
             }
         }, SPType.logging_sp);
         // Now perform the other stuff, and among other things, change the CC logging
@@ -74,9 +70,13 @@ public class MainActivityExtensions {
             Log.d(TAG, "onCreate: Cloud city token not set, setting default");
             sp.edit().putString(CLOUD_CITY_TOKEN, CloudCityParamsRepository.getInstance().getServerToken()).commit();
         }
+    }
 
+    public static void turnOnCloudCityLoggingAfterPermissionsGranted(SharedPreferencesGrouper spg) {
         // Finally, turn on CloudCity logging by default
-        sp.edit()
+        spg
+                .getSharedPreference(SPType.logging_sp)
+                .edit()
                 .putBoolean(CLOUD_CITY_GENERAL_LOGGING, true)
                 .putBoolean(CLOUD_CITY_CC_LOGGING, true)
                 .commit();

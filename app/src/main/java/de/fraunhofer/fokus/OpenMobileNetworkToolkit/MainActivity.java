@@ -24,6 +24,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.StrictMode;
 import android.provider.Settings;
@@ -72,28 +73,26 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     Intent loggingServiceIntent;
     NavController navController;
     private Handler requestCellInfoUpdateHandler;
+    private HandlerThread requestCellInfoUpdateHandlerThread;
     private GlobalVars gv;
     /**
      * Runnable to handle Cell Info Updates
      */
-    private Runnable initCellInfoUpdateThread() {
-        return new Runnable() {
-            @SuppressLint("MissingPermission") // we check them already in the Main activity
-            @Override
-            public void run() {
-                if (gv.isPermission_fine_location()) {
-                    tm.requestCellInfoUpdate(Executors.newSingleThreadExecutor(), new TelephonyManager.CellInfoCallback() {
-                        @Override
-                        public void onCellInfo(@NonNull List<CellInfo> list) {
-                            dp.onCellInfoChanged(list);
-                        }
-                    });
-                }
-                requestCellInfoUpdateHandler.postDelayed(initCellInfoUpdateThread(), Integer.parseInt(spg.getSharedPreference(SPType.logging_sp).getString("logging_interval", "1000")));
+    private final Runnable requestCellInfoUpdate = new Runnable() {
+        @SuppressLint("MissingPermission") // we check them already in the Main activity
+        @Override
+        public void run() {
+            if (gv.isPermission_fine_location()) {
+                tm.requestCellInfoUpdate(Executors.newSingleThreadExecutor(), new TelephonyManager.CellInfoCallback() {
+                    @Override
+                    public void onCellInfo(@NonNull List<CellInfo> list) {
+                        dp.onCellInfoChanged(list);
+                    }
+                });
             }
-        };
-    }
-
+            requestCellInfoUpdateHandler.postDelayed(this, Integer.parseInt(spg.getSharedPreference(SPType.logging_sp).getString("logging_interval", "1000")));
+        }
+    };
     private Context context;
 
     @SuppressLint("ObsoleteSdkInt")
@@ -107,13 +106,12 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         context = getApplicationContext();
         gv = GlobalVars.getInstance();
         spg = SharedPreferencesGrouper.getInstance(getApplicationContext());
+        pm = getPackageManager();
+        feature_telephony = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
 
         // CloudCity thing
         MainActivityExtensions.performMainActivityThing(TAG, spg);
         // Rest of how it was before
-
-        pm = getPackageManager();
-        feature_telephony = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
 
         // populate global vars we use in other parts of the app.
         gv.setPm(pm);
@@ -200,8 +198,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
             }
         }
 
-        requestCellInfoUpdateHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-        requestCellInfoUpdateHandler.post(initCellInfoUpdateThread());
+        initHandlerAndHandlerThread();
 
         loggingServiceIntent = new Intent(this, LoggingService.class);
         if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_logging", false)) {
@@ -483,5 +480,13 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                 break;
         }
         return true;
+    }
+
+    // CC addition
+    private void initHandlerAndHandlerThread() {
+        requestCellInfoUpdateHandlerThread = new HandlerThread("RequestCellInfoUpdateHandlerThread");
+        requestCellInfoUpdateHandlerThread.start();
+        requestCellInfoUpdateHandler = new Handler(Objects.requireNonNull(requestCellInfoUpdateHandlerThread.getLooper()));
+        requestCellInfoUpdateHandler.post(requestCellInfoUpdate);
     }
 }

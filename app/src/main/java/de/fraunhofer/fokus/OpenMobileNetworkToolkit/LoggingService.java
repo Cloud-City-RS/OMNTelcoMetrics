@@ -19,6 +19,7 @@ import android.icu.text.SimpleDateFormat;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
@@ -65,6 +66,7 @@ public class LoggingService extends Service {
     private Handler remoteInfluxHandler;
     private Handler localInfluxHandler;
     private Handler localFileHandler;
+    private HandlerThread localFileHandlerThread;
     private List<Point> logFilePoints;
     private FileOutputStream stream;
     private int interval;
@@ -421,8 +423,7 @@ public class LoggingService extends Service {
             Log.d(TAG,e.toString());
         }
 
-        localFileHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-        localFileHandler.post(localFileUpdate);
+        initLocalFileHandlerAndItsThread();
     }
 
     private void stopLocalFile() {
@@ -435,6 +436,15 @@ public class LoggingService extends Service {
                 Log.d(TAG, "trying to stop local file service while it was not running");
             } catch (IOException e) {
                 Log.d(TAG,e.toString());
+            }
+        }
+
+        if (localFileHandlerThread != null) {
+            localFileHandlerThread.quitSafely();
+            try {
+                localFileHandlerThread.join();
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Exception happened!! "+e, e);
             }
         }
     }
@@ -518,5 +528,12 @@ public class LoggingService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private void initLocalFileHandlerAndItsThread() {
+        localFileHandlerThread = new HandlerThread("LocalFileHandlerThread");
+        localFileHandlerThread.start();
+        localFileHandler = new Handler(Objects.requireNonNull(localFileHandlerThread.getLooper()));
+        localFileHandler.post(localFileUpdate);
     }
 }

@@ -60,6 +60,7 @@ public class LoggingServiceExtensions {
                 }
 
                 NetworkDataModel data = getCloudCityData();
+                Log.d(TAG, "getCloudCityData() returned "+data);
                 if (data == null) {
                     Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
                     return;
@@ -76,6 +77,7 @@ public class LoggingServiceExtensions {
                     gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
                 }
             } catch (Exception e) {
+                Log.e(TAG, "Exception happened! exception "+e, e);
                 throw new RuntimeException(e);
             }
 

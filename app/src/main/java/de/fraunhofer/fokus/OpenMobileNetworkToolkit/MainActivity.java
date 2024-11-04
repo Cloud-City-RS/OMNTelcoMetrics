@@ -109,10 +109,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         pm = getPackageManager();
         feature_telephony = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
 
-        // CloudCity thing
-        MainActivityExtensions.performMainActivityThing(TAG, spg);
-        // Rest of how it was before
-
         // populate global vars we use in other parts of the app.
         gv.setPm(pm);
         gv.setPermission_phone_state(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED);
@@ -177,6 +173,10 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                 gv.setCcm((CarrierConfigManager) getSystemService(Context.CARRIER_CONFIG_SERVICE));
             }
         } //todo this will go very wrong on android devices without telephony api, maybe show warning and exit?
+
+        // CloudCity thing
+        MainActivityExtensions.performMainActivityThing(TAG, spg, dp);
+        // Rest of how it was before
 
         gv.set_dp(dp);
 

@@ -76,21 +76,24 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     /**
      * Runnable to handle Cell Info Updates
      */
-    private final Runnable requestCellInfoUpdate = new Runnable() {
-        @SuppressLint("MissingPermission") // we check them already in the Main activity
-        @Override
-        public void run() {
-            if (gv.isPermission_fine_location()) {
-                tm.requestCellInfoUpdate(Executors.newSingleThreadExecutor(), new TelephonyManager.CellInfoCallback() {
-                    @Override
-                    public void onCellInfo(@NonNull List<CellInfo> list) {
-                        dp.onCellInfoChanged(list);
-                    }
-                });
+    private Runnable initCellInfoUpdateThread() {
+        return new Runnable() {
+            @SuppressLint("MissingPermission") // we check them already in the Main activity
+            @Override
+            public void run() {
+                if (gv.isPermission_fine_location()) {
+                    tm.requestCellInfoUpdate(Executors.newSingleThreadExecutor(), new TelephonyManager.CellInfoCallback() {
+                        @Override
+                        public void onCellInfo(@NonNull List<CellInfo> list) {
+                            dp.onCellInfoChanged(list);
+                        }
+                    });
+                }
+                requestCellInfoUpdateHandler.postDelayed(initCellInfoUpdateThread(), Integer.parseInt(spg.getSharedPreference(SPType.logging_sp).getString("logging_interval", "1000")));
             }
-            requestCellInfoUpdateHandler.postDelayed(this, Integer.parseInt(spg.getSharedPreference(SPType.logging_sp).getString("logging_interval", "1000")));
-        }
-    };
+        };
+    }
+
     private Context context;
 
     @SuppressLint("ObsoleteSdkInt")
@@ -198,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         }
 
         requestCellInfoUpdateHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-        requestCellInfoUpdateHandler.post(requestCellInfoUpdate);
+        requestCellInfoUpdateHandler.post(initCellInfoUpdateThread());
 
         loggingServiceIntent = new Intent(this, LoggingService.class);
         if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_logging", false)) {

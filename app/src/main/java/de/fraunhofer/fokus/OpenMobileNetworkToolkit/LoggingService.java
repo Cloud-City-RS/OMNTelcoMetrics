@@ -454,7 +454,7 @@ public class LoggingService extends Service {
 
     private void setupNotificationUpdate() {
         Log.d(TAG, "setupNotificationUpdate");
-        notificationHandlerThread = new HandlerThread("CloudCityHandlerThread");
+        notificationHandlerThread = new HandlerThread("NotificationHandlerThread");
         notificationHandlerThread.start();
         notificationHandler = new Handler(Objects.requireNonNull(notificationHandlerThread.getLooper()));
         notificationHandler.post(notification_updater);

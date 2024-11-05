@@ -18,21 +18,42 @@ public class MainActivityExtensions {
 
     /**
      * We will be using the 'logging' shared pref since that's the only one that is displayed in the logging settings fragment...
-     * @param TAG
-     * @param spg
+     *
+     * @param TAG the log tag used for logging
+     * @param spg the {@link SharedPreferencesGrouper} on which we'll set the listener and from which we'll grab the logging shared pref
+     * @param dp the {@link DataProvider} which will be used to refresh all 'data' necessary for the CC server updates
      */
     public static void performMainActivityThing(String TAG, SharedPreferencesGrouper spg, DataProvider dp) {
         // First, set a listener that will trigger when the actual CC logging changes
         spg.setListener((sharedPreferences, key) -> {
-            if (key.equalsIgnoreCase(CLOUD_CITY_CC_LOGGING)) {
-                dp.refreshAll();
+            if (key != null && !key.isEmpty() && !CloudCityUtil.isBlank(key)) {
+                switch (key) {
+                    case CLOUD_CITY_CC_LOGGING: {
+                        // This might cause a double refresh with the thing in LoggingServiceExtensions but... oh well.
+                        dp.refreshAll();
+                    }
+                    break;
+
+                    case CLOUD_CITY_SERVER_URL: {
+                        String newSharedPrefValue = sharedPreferences.getString(key, "");
+                        CloudCityParamsRepository.getInstance().setServerUrl(newSharedPrefValue);
+                    }
+                    break;
+
+                    case CLOUD_CITY_TOKEN: {
+                        String newSharedPrefValue = sharedPreferences.getString(key, "");
+                        CloudCityParamsRepository.getInstance().setServerToken(newSharedPrefValue);
+                    }
+                    break;
+                }
             }
         }, SPType.logging_sp);
         // Now perform the other stuff, and among other things, change the CC logging
         performMainActivityThing2(TAG, spg.getSharedPreference(SPType.logging_sp));
 
-        // Finally, get rid of the listener we put up there
-        spg.removeListener(SPType.logging_sp);
+        // We can't get rid of the listener anymore, because the URL/token part of it ensures
+        // there will never be a discrepancy between what's stored in the SharedPrefs and what's
+        // in the actual repository.
     }
 
     public static void performMainActivityThing2(String TAG, SharedPreferences sp) {
@@ -49,9 +70,13 @@ public class MainActivityExtensions {
             Log.d(TAG, "onCreate: Cloud city token not set, setting default");
             sp.edit().putString(CLOUD_CITY_TOKEN, CloudCityParamsRepository.getInstance().getServerToken()).commit();
         }
+    }
 
+    public static void turnOnCloudCityLoggingAfterPermissionsGranted(SharedPreferencesGrouper spg) {
         // Finally, turn on CloudCity logging by default
-        sp.edit()
+        spg
+                .getSharedPreference(SPType.logging_sp)
+                .edit()
                 .putBoolean(CLOUD_CITY_GENERAL_LOGGING, true)
                 .putBoolean(CLOUD_CITY_CC_LOGGING, true)
                 .commit();

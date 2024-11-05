@@ -8,6 +8,11 @@ import android.widget.TextView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
@@ -33,6 +38,8 @@ public class Iperf3Monitor {
     private Metric defaultReverseThroughput;
     private Metric defaultJITTER;
     private Metric PACKET_LOSS;
+
+    private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
     private Iperf3Monitor() {
         // private constructor to prevent instantiation
@@ -64,6 +71,7 @@ public class Iperf3Monitor {
 
     /**
      * Check whether the Iperf3Monitor is initialized
+     *
      * @return whether it's initialized or not, returns <i>true</i> if initialized or <i>false</i> otherwise
      */
     public static boolean isInitialized() {
@@ -106,10 +114,11 @@ public class Iperf3Monitor {
         // Start listening for iPerf3 results...
         Iperf3ResultsDataBase database = Iperf3ResultsDataBase.getDatabase(applicationContext);
         database.iperf3RunResultDao().getLatestResult().observeForever(latestIperf3RunResult -> {
+            shouldStop.set(false);
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
             // in the DB.
-            Log.wtf(TAG, "Latest iPerf3 emission: " + latestIperf3RunResult);
+            Log.wtf(TAG, "Latest iPerf3 emission: " + latestIperf3RunResult + "\tshouldStop: " + shouldStop.get());
             // The first emmision is always a null so...
             if (latestIperf3RunResult != null) {
                 Log.wtf(TAG, "Latest iPerf3 result is: " + latestIperf3RunResult.result);
@@ -117,7 +126,24 @@ public class Iperf3Monitor {
                 if (latestIperf3RunResult.result == 0) {
                     Log.wtf(TAG, "Result was fine, commencing further...");
                     Log.wtf(TAG, "Latest result's rawIperf3file is: " + latestIperf3RunResult.input.iperf3rawIperf3file);
-                    Iperf3Parser iperf3Parser = Iperf3Parser.instantiate(latestIperf3RunResult.input.iperf3rawIperf3file);
+
+                    // Copy the file, for just in case
+                    // This is useful for when we run the test and open it up in the default Iperf3 log viewer
+                    // since the Iperf3Parser might be destructively parsing the file - from what I noticed only
+                    // one of them reaches the END
+                    String originalFilePath = latestIperf3RunResult.input.iperf3rawIperf3file;
+                    String targetFilePath = originalFilePath + ".tmp";
+
+                    try {
+                        copyFile(originalFilePath, targetFilePath);
+                    } catch (IOException e) {
+//                        throw new RuntimeException(e);
+                        Log.e(TAG, "Exception " + e + " happened during iperf3 raw file copy!", e);
+                    }
+
+                    Log.wtf(TAG, "File copying should be done, instantiating new parser with rawIperf3File: " + targetFilePath);
+
+                    Iperf3Parser iperf3Parser = Iperf3Parser.instantiate(targetFilePath);
                     defaultThroughput = new Metric(METRIC_TYPE.THROUGHPUT, applicationContext);
                     defaultReverseThroughput = new Metric(METRIC_TYPE.THROUGHPUT, applicationContext);
                     defaultJITTER = new Metric(METRIC_TYPE.JITTER, applicationContext);
@@ -151,7 +177,7 @@ public class Iperf3Monitor {
                             Log.wtf(TAG, "--> onPropertyChange()\tchanged event: " + evt);
 
                             switch (evt.getPropertyName()) {
-                                case "interval":
+                                case "interval": {
                                     Interval interval = (Interval) evt.getNewValue();
                                     parseSum(interval.getSum(), defaultThroughput);
                                     if (interval.getSumBidirReverse() != null) {
@@ -160,24 +186,29 @@ public class Iperf3Monitor {
 
                                     Log.wtf(TAG, "INTERVAL\ttest updated?");
                                     Log.wtf(TAG, "INTERVAL\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
-                                    break;
-                                case "start":
+                                }
+                                break;
+
+                                case "start": {
                                     Log.wtf(TAG, "START\ttest started?");
                                     Log.wtf(TAG, "START\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
-                                    break;
-                                case "end":
+                                }
+                                break;
+
+                                case "end": {
                                     Log.wtf(TAG, "END\ttest ended?");
                                     Log.wtf(TAG, "END\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
 
-                                    double DLmin = defaultThroughput.calcMin();
-                                    double DLmedian = defaultThroughput.calcMedian();
-                                    double DLmax = defaultThroughput.calcMax();
-                                    double DLmean = defaultThroughput.calcMean();
+                                    // Throughput values need to be normalized by dividing by 1e6 so => realValue = value/1e+6
+                                    double DLmin = defaultThroughput.calcMin() / 1e+6;
+                                    double DLmedian = defaultThroughput.calcMedian() / 1e+6;
+                                    double DLmax = defaultThroughput.calcMax() / 1e+6;
+                                    double DLmean = defaultThroughput.calcMean() / 1e+6;
 
-                                    double ULmin = defaultThroughput.calcMin();
-                                    double ULmedian = defaultThroughput.calcMedian();
-                                    double ULmax = defaultThroughput.calcMax();
-                                    double ULmean = defaultThroughput.calcMean();
+                                    double ULmin = defaultReverseThroughput.calcMin() / 1e+6;
+                                    double ULmedian = defaultReverseThroughput.calcMedian() / 1e+6;
+                                    double ULmax = defaultReverseThroughput.calcMax() / 1e+6;
+                                    double ULmean = defaultReverseThroughput.calcMean() / 1e+6;
 
                                     Log.wtf(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
                                     Log.wtf(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
@@ -189,8 +220,15 @@ public class Iperf3Monitor {
 
                                     // Stop the thread to avoid spinning it needlessly forever...
                                     stopParsingThread();
-                                    break;
-                                case "error":
+                                    shouldStop.compareAndSet(false, true);
+
+                                    //TODO finally, delete the new file because we don't need it anymore.
+                                    deleteFile(targetFilePath);
+                                    Log.wtf(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get());
+                                }
+                                break;
+
+                                case "error": {
                                     Error error = (Error) evt.getNewValue();
                                     TextView errorView = new TextView(applicationContext);
                                     errorView.setText(error.getError());
@@ -198,23 +236,34 @@ public class Iperf3Monitor {
                                     errorView.setPadding(10, 10, 10, 10);
                                     errorView.setTextSize(20);
 //                                metricLL.addView(errorView);
-                                    break;
+                                }
+                                break;
                             }
                         }
                     });
                     Log.wtf(TAG, "Adding completion listener");
-                    iperf3Parser.setCompletionListener(() -> {
-                        Log.wtf(TAG, "parsing completed");
+                    iperf3Parser.setCompletionListener(new Iperf3Parser.Iperf3ParserCompletionListener() {
+                        @Override
+                        public void onParseCompleted() {
+                            Log.wtf(TAG, "---> onParseCompleted");
 
-                        double DLmin = defaultThroughput.calcMin();
-                        double DLmedian = defaultThroughput.calcMedian();
-                        double DLmax = defaultThroughput.calcMax();
-                        double DLmean = defaultThroughput.calcMean();
+                            double DLmin = defaultThroughput.calcMin();
+                            double DLmedian = defaultThroughput.calcMedian();
+                            double DLmax = defaultThroughput.calcMax();
+                            double DLmean = defaultThroughput.calcMean();
 
-                        Log.wtf(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
+                            Log.wtf(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
+                            stopParsingThread();
+                        }
                     });
 
+
                     Log.wtf(TAG, "Starting parsing...");
+//                    startParsingThread(
+//                            latestIperf3RunResult.input.iperf3rawIperf3file,
+//                            applicationContext,
+//                            completionListener
+//                    );
                     startParsingThread(iperf3Parser);
                     Log.wtf(TAG, "Finished parsing!");
                     // TEST THIS OUT
@@ -223,13 +272,20 @@ public class Iperf3Monitor {
         });
     }
 
+    //    private void startParsingThread(String filename, Context applicationContext, Iperf3MonitorCompletionListener completionListener) {
     private void startParsingThread(Iperf3Parser iperf3Parser) {
         Log.d(TAG, "--> startParsingThread()");
         handler.post(new Runnable() {
             @Override
             public void run() {
                 Log.d(TAG, "startParsingThread()::parsingCycle!");
+
+                // And finally, parse a bit of the file.
                 iperf3Parser.parse();
+                if (shouldStop.get()) {
+                    // well, do nothing but return
+                    return;
+                }
 
                 handler.postDelayed(this, 1000L);
             }
@@ -243,5 +299,45 @@ public class Iperf3Monitor {
 
     public interface Iperf3MonitorCompletionListener {
         void onParseCompleted();
+    }
+
+    public static void copyFile(String sourceFileName, String destFileName) throws IOException {
+        FileInputStream fis = null;
+        FileOutputStream fos = null;
+        try {
+            fis = new FileInputStream(sourceFileName);
+            fos = new FileOutputStream(destFileName);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = fis.read(buffer)) > 0) {
+                fos.write(buffer, 0, length);
+            }
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
+            if (fos != null) {
+                fos.close();
+            }
+        }
+    }
+
+    public static boolean deleteFile(String filePath) {
+        File file = new File(filePath);
+        boolean retVal;
+        if (file.exists()) {
+            if (file.delete()) {
+                Log.d(TAG, "File deleted successfully! filepath: " + filePath);
+                retVal = true;
+            } else {
+                Log.d(TAG, "Failed to delete the file at filepath: " + filePath);
+                retVal = false;
+            }
+        } else {
+            Log.w(TAG, "File at path " + filePath + " does not exist!");
+            retVal = false;
+        }
+
+        return retVal;
     }
 }

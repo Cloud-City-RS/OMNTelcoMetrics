@@ -32,6 +32,9 @@ public interface Iperf3RunResultDao {
     @Query("SELECT * FROM iperf3_result_database WHERE uid = :comp_uid")
     Iperf3RunResult getRunResult(String comp_uid);
 
+    @Query("SELECT * FROM iperf3_result_database ORDER BY timestamp DESC LIMIT 1")
+    LiveData<Iperf3RunResult> getLatestResult();
+
     @Insert
     void insertAll(Iperf3RunResult... iperf3RunResults);
 

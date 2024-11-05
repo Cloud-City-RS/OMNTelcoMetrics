@@ -126,8 +126,6 @@ public class QuickFragment extends Fragment {
      * @param cellInformation The cell information
      */
     private void addCellInformationToView(CellInformation cellInformation){
-        // If we're passed a null element, don't do anything else just return
-        if (cellInformation == null) return;
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         switch (cellInformation.getCellType()) {
             case LTE:

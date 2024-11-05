@@ -299,8 +299,8 @@ public class Iperf3Fragment extends Fragment {
             int randomPort = rnd.nextInt((validPortMax - validPortMin) + 1) + validPortMin;
             iperf3EtPort.setText(String.valueOf(randomPort));
 
-            // Set interval to 30
-            iperf3EtInterval.setText(String.valueOf(30));
+            // Set duration to 30
+            iperf3EtDuration.setText(String.valueOf(30));
 
             // tick of checkboxes
             iperf3BiDir.setChecked(true);

@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
+import cloudcity.GPSMonitor;
 import cloudcity.MainActivityExtensions;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.NetworkCallback;
@@ -75,6 +76,8 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     private Handler requestCellInfoUpdateHandler;
     private HandlerThread requestCellInfoUpdateHandlerThread;
     private GlobalVars gv;
+
+    private GPSMonitor gpsMonitor;
     /**
      * Runnable to handle Cell Info Updates
      */
@@ -351,6 +354,10 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                         .turnOnCloudCityLoggingAfterPermissionsGranted(
                                 SharedPreferencesGrouper.getInstance(getApplicationContext())
                         );
+
+                // GPSMonitor
+                gpsMonitor = new GPSMonitor(getApplicationContext());
+                gpsMonitor.startMonitoring();
             }
         }
         Log.d(TAG, "<-- onRequestPermissionsResult()");

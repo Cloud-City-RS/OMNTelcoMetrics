@@ -8,8 +8,6 @@ import static cloudcity.CloudCityConstants.CLOUD_CITY_TOKEN;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;

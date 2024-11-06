@@ -165,7 +165,6 @@ public class LoggingServiceExtensions {
         dataModel.setSpeed(location.getSpeed() * 3.6);
 
         dataModel.setCellData(getCellInfoModel(category, currentCell));
-
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
         MeasurementsModel modelForSending = getMeasurementsModel(category, currentCell);
@@ -177,11 +176,11 @@ public class LoggingServiceExtensions {
     }
 
     /**
-     * Finds a regustered cell information in a list of cell informations
+     * Finds a registered cell information in a list of cell informations
      * @param cellList
-     * @return
+     * @return the first registered cell in the list, or null if no registered cells were found
      */
-    public static CellInformation findRegisteredCell(List<CellInformation> cellList) {
+    public static CellInformation findRegisteredCell(@NonNull List<CellInformation> cellList) {
         CellInformation retVal = null;
 
         for (CellInformation ci: cellList) {

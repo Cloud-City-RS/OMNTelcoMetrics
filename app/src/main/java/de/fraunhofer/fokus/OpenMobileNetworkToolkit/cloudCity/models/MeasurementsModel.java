@@ -128,4 +128,20 @@ public class MeasurementsModel {
     public void setDummy(Integer dummy) {
         this.dummy = dummy;
     }
+
+    @Override
+    public String toString() {
+        return "MeasurementsModel{" +
+                "rsrp=" + rsrp +
+                ", rsrq=" + rsrq +
+                ", rssnr=" + rssnr +
+                ", csirsrp=" + csirsrp +
+                ", csirsrq=" + csirsrq +
+                ", csisinr=" + csisinr +
+                ", ssrsrp=" + ssrsrp +
+                ", ssrsrq=" + ssrsrq +
+                ", sssinr=" + sssinr +
+                ", dummy=" + dummy +
+                '}';
+    }
 }

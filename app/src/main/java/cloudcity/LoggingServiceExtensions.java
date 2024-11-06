@@ -142,20 +142,11 @@ public class LoggingServiceExtensions {
 
     private static NetworkDataModel getCloudCityData() {
         List<CellInformation> cellsInfo = dp.getCellInformation();
+        List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
         LocationInformation location = dp.getLocation();
-        CellInformation currentCell = null;
 
-        for (CellInformation ci: cellsInfo) {
-            if (!ci.isRegistered()) {
-                continue;
-            }
-
-            currentCell = ci;
-        }
-
-        if (currentCell == null) {
-            return null;
-        }
+        CellInformation currentCell = findRegisteredCell(cellsInfo);
+        CellInformation currentSignal = findRegisteredCell(signalInfo);
 
         String category = currentCell.getCellType().toString();
 
@@ -169,9 +160,34 @@ public class LoggingServiceExtensions {
         dataModel.setSpeed(location.getSpeed() * 3.6);
 
         dataModel.setCellData(getCellInfoModel(category, currentCell));
-        dataModel.setValues(getMeasurementsModel(category, currentCell));
+        MeasurementsModel currentCellMeasurements = getMeasurementsModel(category, currentCell);
+        MeasurementsModel signalStrengthMeasurements = getMeasurementsModel(category, currentSignal);
+
+        Log.d(TAG, "currentCellMeasurements: "+currentCellMeasurements);
+        Log.d(TAG, "signalStrengthMeasurements: "+signalStrengthMeasurements);
+
+        dataModel.setValues(currentCellMeasurements);
 
         return dataModel;
+    }
+
+    /**
+     * Finds a regustered cell information in a list of cell informations
+     * @param cellList
+     * @return
+     */
+    public static CellInformation findRegisteredCell(List<CellInformation> cellList) {
+        CellInformation retVal = null;
+
+        for (CellInformation ci: cellList) {
+            if (!ci.isRegistered()) {
+                continue;
+            }
+
+            retVal = ci;
+        }
+
+        return retVal;
     }
 
     private static @NonNull CellInfoModel getCellInfoModel(String category, CellInformation currentCell) {

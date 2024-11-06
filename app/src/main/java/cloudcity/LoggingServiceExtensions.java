@@ -257,7 +257,7 @@ public class LoggingServiceExtensions {
         return measurements;
     }
 
-    private static void updateMeasurementModelByCell(MeasurementsModel measurements, CellInformation cellForUpdating) {
+    private static void updateMeasurementModelByCell(@NonNull MeasurementsModel measurements, @NonNull CellInformation cellForUpdating) {
         if (cellForUpdating instanceof NRInformation) {
             NRInformation nrCell = (NRInformation) cellForUpdating;
             measurements.setCsirsrp(nrCell.getCsirsrp());

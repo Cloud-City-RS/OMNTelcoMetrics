@@ -1,5 +1,7 @@
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
+import android.util.Log;
+
 import org.json.JSONObject;
 
 import java.beans.PropertyChangeListener;
@@ -15,6 +17,15 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.start.Start;
 
 
 public class Iperf3Parser {
+    private static final String TAG = Iperf3Parser.class.getSimpleName();
+
+    public static final Object END_MARKER = new Object();
+
+    public interface Iperf3ParserCompletionListener {
+        void onParseCompleted();
+    }
+
+    private Iperf3ParserCompletionListener completionListener;
 
     private final String pathToFile;
     private final File file;
@@ -22,6 +33,11 @@ public class Iperf3Parser {
     private PropertyChangeSupport support;
     private Start start;
     private final Intervals intervals = new Intervals();
+
+    public static Iperf3Parser instantiate(String pathToFile) {
+        return new Iperf3Parser(pathToFile);
+    }
+
     Iperf3Parser(String pathToFile) {
         this.pathToFile = pathToFile;
         this.file = new File(this.pathToFile);
@@ -29,6 +45,7 @@ public class Iperf3Parser {
             br = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException ex) {
             System.out.println("File not found");
+            Log.e(TAG, "File not found!!! Path to file: "+pathToFile);
             return;
         }
         this.support = new PropertyChangeSupport(this);
@@ -42,6 +59,7 @@ public class Iperf3Parser {
                 String event = obj.getString("event");
                 switch (event) {
                     case "start":
+                        Log.v(TAG, "Encountered START");
                         start = new Start();
                         JSONObject startData = obj.getJSONObject("data");
                         start.parseStart(startData);
@@ -54,7 +72,12 @@ public class Iperf3Parser {
                         intervals.addInterval(interval);
                         break;
                     case "end":
+                        Log.v(TAG, "Encountered END\t\tcompletionListener: "+completionListener);
                         System.out.println("End");
+                        support.firePropertyChange("end", null, END_MARKER);
+                        if (completionListener != null) {
+                            completionListener.onParseCompleted();
+                        }
                         break;
                     case "error":
                         Error error = new Error();
@@ -84,5 +107,9 @@ public class Iperf3Parser {
 
     public void removePropertyChangeListener(PropertyChangeListener pcl) {
         support.removePropertyChangeListener(pcl);
+    }
+
+    public void setCompletionListener(Iperf3ParserCompletionListener cl) {
+        this.completionListener = cl;
     }
 }

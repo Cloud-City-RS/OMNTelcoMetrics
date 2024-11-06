@@ -6,14 +6,18 @@ import android.os.HandlerThread;
 import android.util.Log;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import cloudcity.dataholders.MetricsPOJO;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Error;
@@ -28,16 +32,18 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 public class Iperf3Monitor {
     private static final String TAG = Iperf3Monitor.class.getSimpleName();
 
+    private final static long PARSING_DELAY_IN_MS = 100L; //0.1sec, was 1000L
+
     private Handler handler;
 
     private HandlerThread handlerThread;
 
     private static Iperf3Monitor instance;
 
-    private Metric defaultThroughput;
-    private Metric defaultReverseThroughput;
-    private Metric defaultJITTER;
-    private Metric PACKET_LOSS;
+    private volatile Metric defaultThroughput;
+    private volatile Metric defaultReverseThroughput;
+    private volatile Metric defaultJITTER;
+    private volatile Metric PACKET_LOSS;
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
@@ -148,6 +154,12 @@ public class Iperf3Monitor {
                     defaultReverseThroughput = new Metric(METRIC_TYPE.THROUGHPUT, applicationContext);
                     defaultJITTER = new Metric(METRIC_TYPE.JITTER, applicationContext);
                     PACKET_LOSS = new Metric(METRIC_TYPE.PACKET_LOSS, applicationContext);
+                    // Obviously, these things need to be added or nothing will work... ffs...
+                    defaultThroughput.createMainLL("Throughput");
+                    defaultReverseThroughput.createMainLL("Throughput");
+                    defaultJITTER.createMainLL("Jitter ms");
+                    PACKET_LOSS.createMainLL("Packet Loss %");
+                    // With this retarded problem out of the way... we can move on.
 
                     Log.wtf(TAG, "Adding property change listener");
                     iperf3Parser.addPropertyChangeListener(new PropertyChangeListener() {
@@ -170,7 +182,6 @@ public class Iperf3Monitor {
                                     }
                                     break;
                             }
-
                         }
 
                         public void propertyChange(PropertyChangeEvent evt) {
@@ -184,13 +195,11 @@ public class Iperf3Monitor {
                                         parseSum(interval.getSumBidirReverse(), defaultReverseThroughput);
                                     }
 
-                                    Log.wtf(TAG, "INTERVAL\ttest updated?");
-                                    Log.wtf(TAG, "INTERVAL\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
+                                    Log.wtf(TAG, "INTERVAL\tdefaultThroughput size: " + defaultThroughput.getMeanList().size() + ", defaultReverseThroughput size: " + defaultReverseThroughput.getMeanList().size());
                                 }
                                 break;
 
                                 case "start": {
-                                    Log.wtf(TAG, "START\ttest started?");
                                     Log.wtf(TAG, "START\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
                                 }
                                 break;
@@ -198,33 +207,39 @@ public class Iperf3Monitor {
                                 case "end": {
                                     Log.wtf(TAG, "END\ttest ended?");
                                     Log.wtf(TAG, "END\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
+                                    Log.wtf(TAG, "END\tend value is: " + evt.getNewValue() + "\t\tequals END_MARKER ? " + evt.getNewValue().equals(Iperf3Parser.END_MARKER));
 
                                     // Throughput values need to be normalized by dividing by 1e6 so => realValue = value/1e+6
-                                    double DLmin = defaultThroughput.calcMin() / 1e+6;
-                                    double DLmedian = defaultThroughput.calcMedian() / 1e+6;
-                                    double DLmax = defaultThroughput.calcMax() / 1e+6;
-                                    double DLmean = defaultThroughput.calcMean() / 1e+6;
+                                    Log.wtf(TAG, "starting to calculate download values...");
+                                    double DLmin = defaultReverseThroughput.calcMin() / 1e+6;
+                                    double DLmedian = defaultReverseThroughput.calcMedian() / 1e+6;
+                                    double DLmax = defaultReverseThroughput.calcMax() / 1e+6;
+                                    double DLmean = defaultReverseThroughput.calcMean() / 1e+6;
+                                    double DLlast = getLast(defaultReverseThroughput.getMeanList()) / 1e+6;
 
-                                    double ULmin = defaultReverseThroughput.calcMin() / 1e+6;
-                                    double ULmedian = defaultReverseThroughput.calcMedian() / 1e+6;
-                                    double ULmax = defaultReverseThroughput.calcMax() / 1e+6;
-                                    double ULmean = defaultReverseThroughput.calcMean() / 1e+6;
+                                    double ULmin = defaultThroughput.calcMin() / 1e+6;
+                                    double ULmedian = defaultThroughput.calcMedian() / 1e+6;
+                                    double ULmax = defaultThroughput.calcMax() / 1e+6;
+                                    double ULmean = defaultThroughput.calcMean() / 1e+6;
+                                    double ULlast = getLast(defaultThroughput.getMeanList()) / 1e+6;
 
                                     Log.wtf(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
                                     Log.wtf(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
-
-                                    // Notify the completion listener
-                                    if (completionListener != null) {
-                                        completionListener.onParseCompleted();
-                                    }
 
                                     // Stop the thread to avoid spinning it needlessly forever...
                                     stopParsingThread();
                                     shouldStop.compareAndSet(false, true);
 
-                                    //TODO finally, delete the new file because we don't need it anymore.
                                     deleteFile(targetFilePath);
                                     Log.wtf(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get());
+
+                                    // Instantiate the POJO stuff holder
+                                    MetricsPOJO values = new MetricsPOJO(DLmin, DLmedian, DLmean, DLmax, DLlast, ULmin, ULmedian, ULmean, ULmax, ULlast);
+
+                                    // Notify the completion listener
+                                    if (completionListener != null) {
+                                        completionListener.onIperf3TestCompleted(values);
+                                    }
                                 }
                                 break;
 
@@ -247,12 +262,18 @@ public class Iperf3Monitor {
                         public void onParseCompleted() {
                             Log.wtf(TAG, "---> onParseCompleted");
 
-                            double DLmin = defaultThroughput.calcMin();
-                            double DLmedian = defaultThroughput.calcMedian();
-                            double DLmax = defaultThroughput.calcMax();
-                            double DLmean = defaultThroughput.calcMean();
+                            double DLmin = defaultReverseThroughput.calcMin() / 1e+6;
+                            double DLmedian = defaultReverseThroughput.calcMedian() / 1e+6;
+                            double DLmax = defaultReverseThroughput.calcMax() / 1e+6;
+                            double DLmean = defaultReverseThroughput.calcMean() / 1e+6;
+
+                            double ULmin = defaultThroughput.calcMin() / 1e+6;
+                            double ULmedian = defaultThroughput.calcMedian() / 1e+6;
+                            double ULmax = defaultThroughput.calcMax() / 1e+6;
+                            double ULmean = defaultThroughput.calcMean() / 1e+6;
 
                             Log.wtf(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
+                            Log.wtf(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
                             stopParsingThread();
                         }
                     });
@@ -267,6 +288,9 @@ public class Iperf3Monitor {
                     startParsingThread(iperf3Parser);
                     Log.wtf(TAG, "Finished parsing!");
                     // TEST THIS OUT
+                } else {
+                    // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
+                    Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result + "\t\tignoring...");
                 }
             }
         });
@@ -278,16 +302,16 @@ public class Iperf3Monitor {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "startParsingThread()::parsingCycle!");
+                Log.d(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
 
                 // And finally, parse a bit of the file.
                 iperf3Parser.parse();
                 if (shouldStop.get()) {
                     // well, do nothing but return
                     return;
+                } else {
+                    handler.postDelayed(this, PARSING_DELAY_IN_MS);
                 }
-
-                handler.postDelayed(this, 1000L);
             }
         });
         Log.d(TAG, "<-- startParsingThread()");
@@ -298,7 +322,7 @@ public class Iperf3Monitor {
     }
 
     public interface Iperf3MonitorCompletionListener {
-        void onParseCompleted();
+        void onIperf3TestCompleted(MetricsPOJO metrics);
     }
 
     public static void copyFile(String sourceFileName, String destFileName) throws IOException {
@@ -339,5 +363,13 @@ public class Iperf3Monitor {
         }
 
         return retVal;
+    }
+
+    private double getLast(@NonNull List<Double> list) {
+        if (list.size() == 0) {
+            return 0;
+        } else {
+            return list.get(list.size() - 1);
+        }
     }
 }

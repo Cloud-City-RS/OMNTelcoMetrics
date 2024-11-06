@@ -77,9 +77,6 @@ public class Iperf3Parser {
                         Log.v(TAG, "Encountered END\t\tcompletionListener: "+completionListener);
                         System.out.println("End");
                         support.firePropertyChange("end", null, END_MARKER);
-                        if (completionListener != null) {
-                            completionListener.onParseCompleted();
-                        }
                         break;
                     case "error":
                         Error error = new Error();
@@ -92,6 +89,9 @@ public class Iperf3Parser {
                         Log.w(TAG, "Unknown event "+event+" encountered during parsing!");
                         break;
                 }
+            }
+            if (completionListener != null) {
+                completionListener.onParseCompleted();
             }
         } catch (Exception e) {
             System.out.println("Error reading file");

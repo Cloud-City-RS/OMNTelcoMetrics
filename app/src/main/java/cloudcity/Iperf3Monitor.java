@@ -47,6 +47,23 @@ public class Iperf3Monitor {
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
+    private volatile Iperf3Parser iperf3Parser;
+    private final Runnable parsingRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
+
+            // And finally, parse a bit of the file.
+            iperf3Parser.parse();
+            if (shouldStop.get()) {
+                // well, do nothing but return
+                return;
+            } else {
+                handler.postDelayed(this, PARSING_DELAY_IN_MS);
+            }
+        }
+    };
+
     private Iperf3Monitor() {
         // private constructor to prevent instantiation
     }
@@ -235,9 +252,6 @@ public class Iperf3Monitor {
                                     stopParsingThread();
                                     shouldStop.compareAndSet(false, true);
 
-                                    deleteFile(targetFilePath);
-                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get());
-
                                     // Instantiate the POJO stuff holder
                                     MetricsPOJO values = new MetricsPOJO(
                                             new MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
@@ -248,6 +262,8 @@ public class Iperf3Monitor {
                                     if (completionListener != null) {
                                         completionListener.onIperf3TestCompleted(values);
                                     }
+
+                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get());
                                 }
                                 break;
 
@@ -283,6 +299,9 @@ public class Iperf3Monitor {
                             Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
                             Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
                             stopParsingThread();
+
+                            // And finally delete the temp copy of the file
+                            deleteFile(targetFilePath);
                         }
                     });
 
@@ -297,28 +316,15 @@ public class Iperf3Monitor {
         });
     }
 
-    private void startParsingThread(Iperf3Parser iperf3Parser) {
+    private void startParsingThread(Iperf3Parser newIperf3Parser) {
         Log.d(TAG, "--> startParsingThread()");
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                Log.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
-
-                // And finally, parse a bit of the file.
-                iperf3Parser.parse();
-                if (shouldStop.get()) {
-                    // well, do nothing but return
-                    return;
-                } else {
-                    handler.postDelayed(this, PARSING_DELAY_IN_MS);
-                }
-            }
-        });
+        iperf3Parser = newIperf3Parser;
+        handler.post(parsingRunnable);
         Log.d(TAG, "<-- startParsingThread()");
     }
 
     private void stopParsingThread() {
-        handler.removeCallbacksAndMessages(null);
+        handler.removeCallbacks(parsingRunnable);
     }
 
     /**

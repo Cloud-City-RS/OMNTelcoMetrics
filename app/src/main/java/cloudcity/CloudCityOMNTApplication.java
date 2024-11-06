@@ -20,7 +20,7 @@ public class CloudCityOMNTApplication extends Application {
         iperf3Monitor.startListeningForIperf3Updates(getApplicationContext(), new Iperf3Monitor.Iperf3MonitorCompletionListener() {
             @Override
             public void onIperf3TestCompleted(MetricsPOJO metrics) {
-                android.util.Log.wtf(TAG, "One iperf3 cycle is completed!");
+                android.util.Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
             }
         });
     }

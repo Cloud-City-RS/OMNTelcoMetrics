@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import cloudcity.CloudCityConstants;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
@@ -290,17 +291,17 @@ public class Iperf3Fragment extends Fragment {
 
         btnPrefill.setOnClickListener(v -> {
             // Set URL
-            iperf3EtIp.setText("demo.app.cloudcities.co");
+            iperf3EtIp.setText(CloudCityConstants.CLOUD_CITY_IPERF3_SERVER);
 
-            // Set port
-            int validPortMin = 9200;
-            int validPortMax = 9240;
+            // Set random port in valid range
+            int validPortMin = CloudCityConstants.CLOUD_CITY_IPERF3_VALID_PORT_MIN;
+            int validPortMax = CloudCityConstants.CLOUD_CITY_IPERF3_VALID_PORT_MAX;
             Random rnd = new Random();
             int randomPort = rnd.nextInt((validPortMax - validPortMin) + 1) + validPortMin;
             iperf3EtPort.setText(String.valueOf(randomPort));
 
             // Set duration to 30
-            iperf3EtDuration.setText(String.valueOf(30));
+            iperf3EtDuration.setText(String.valueOf(CloudCityConstants.CLOUD_CITY_IPERF3_DEFAULT_DURATION));
 
             // tick of checkboxes
             iperf3BiDir.setChecked(true);

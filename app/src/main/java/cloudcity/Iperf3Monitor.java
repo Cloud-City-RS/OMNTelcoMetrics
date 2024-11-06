@@ -38,7 +38,7 @@ public class Iperf3Monitor {
 
     private HandlerThread handlerThread;
 
-    private static Iperf3Monitor instance;
+    private static volatile Iperf3Monitor instance;
 
     private volatile Metric defaultThroughput;
     private volatile Metric defaultReverseThroughput;
@@ -57,7 +57,7 @@ public class Iperf3Monitor {
      * <br>
      * <b>Can be called only once!</b> Must not be called again unless {@link #shutdown()} is called before.
      */
-    public static void initialize() {
+    public static synchronized void initialize() {
         if (instance != null) {
             throw new IllegalStateException("Already initialized!");
         } else {
@@ -80,8 +80,8 @@ public class Iperf3Monitor {
      *
      * @return whether it's initialized or not, returns <i>true</i> if initialized or <i>false</i> otherwise
      */
-    public static boolean isInitialized() {
-        return instance == null;
+    public static synchronized boolean isInitialized() {
+        return instance != null;
     }
 
     /**
@@ -89,14 +89,21 @@ public class Iperf3Monitor {
      *
      * @return the Iperf3Monitor instance
      */
-    public static Iperf3Monitor getInstance() {
+    public static synchronized Iperf3Monitor getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("Iperf3Monitor is not initialized. Must call initialize() first!");
+        }
         return instance;
     }
 
     /**
      * Shuts down the Iperf3Monitor, clears it's internal Handler and stops it's internal HandlerThread
      */
-    public static void shutdown() {
+    public static synchronized void shutdown() {
+        if (!isInitialized()) {
+            throw new IllegalStateException("Iperf3Monitor was not initialized. Cannot call shutdown() before calling initialize()");
+        }
+
         if (instance.handler != null) {
             try {
                 // Clean up all callbacks from the handler
@@ -143,8 +150,8 @@ public class Iperf3Monitor {
                     try {
                         copyFile(originalFilePath, targetFilePath);
                     } catch (IOException e) {
-//                        throw new RuntimeException(e);
                         Log.e(TAG, "Exception " + e + " happened during iperf3 raw file copy!", e);
+                        throw new RuntimeException(e);
                     }
 
                     Log.v(TAG, "File copying should be done, instantiating new parser with rawIperf3File: " + targetFilePath);
@@ -209,17 +216,17 @@ public class Iperf3Monitor {
                                     Log.v(TAG, "END\tend value is: " + evt.getNewValue() + "\t\tequals END_MARKER ? " + evt.getNewValue().equals(Iperf3Parser.END_MARKER));
 
                                     // Throughput values need to be normalized by dividing by 1e6 so => realValue = value/1e+6
-                                    double DLmin = defaultReverseThroughput.calcMin() / 1e+6;
-                                    double DLmedian = defaultReverseThroughput.calcMedian() / 1e+6;
-                                    double DLmax = defaultReverseThroughput.calcMax() / 1e+6;
-                                    double DLmean = defaultReverseThroughput.calcMean() / 1e+6;
-                                    double DLlast = getLast(defaultReverseThroughput.getMeanList()) / 1e+6;
+                                    double DLmin = normalize(defaultReverseThroughput.calcMin());
+                                    double DLmedian = normalize(defaultReverseThroughput.calcMedian());
+                                    double DLmax = normalize(defaultReverseThroughput.calcMax());
+                                    double DLmean = normalize(defaultReverseThroughput.calcMean());
+                                    double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
 
-                                    double ULmin = defaultThroughput.calcMin() / 1e+6;
-                                    double ULmedian = defaultThroughput.calcMedian() / 1e+6;
-                                    double ULmax = defaultThroughput.calcMax() / 1e+6;
-                                    double ULmean = defaultThroughput.calcMean() / 1e+6;
-                                    double ULlast = getLast(defaultThroughput.getMeanList()) / 1e+6;
+                                    double ULmin = normalize(defaultThroughput.calcMin());
+                                    double ULmedian = normalize(defaultThroughput.calcMedian());
+                                    double ULmax = normalize(defaultThroughput.calcMax());
+                                    double ULmean = normalize(defaultThroughput.calcMean());
+                                    double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
                                     Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
                                     Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
@@ -232,7 +239,10 @@ public class Iperf3Monitor {
                                     Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get());
 
                                     // Instantiate the POJO stuff holder
-                                    MetricsPOJO values = new MetricsPOJO(DLmin, DLmedian, DLmean, DLmax, DLlast, ULmin, ULmedian, ULmean, ULmax, ULlast);
+                                    MetricsPOJO values = new MetricsPOJO(
+                                            new MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
+                                            new MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast)
+                                    );
 
                                     // Notify the completion listener
                                     if (completionListener != null) {
@@ -260,15 +270,15 @@ public class Iperf3Monitor {
                         public void onParseCompleted() {
                             Log.v(TAG, "---> onParseCompleted");
 
-                            double DLmin = defaultReverseThroughput.calcMin() / 1e+6;
-                            double DLmedian = defaultReverseThroughput.calcMedian() / 1e+6;
-                            double DLmax = defaultReverseThroughput.calcMax() / 1e+6;
-                            double DLmean = defaultReverseThroughput.calcMean() / 1e+6;
+                            double DLmin = normalize(defaultReverseThroughput.calcMin());
+                            double DLmedian = normalize(defaultReverseThroughput.calcMedian());
+                            double DLmax = normalize(defaultReverseThroughput.calcMax());
+                            double DLmean = normalize(defaultReverseThroughput.calcMean());
 
-                            double ULmin = defaultThroughput.calcMin() / 1e+6;
-                            double ULmedian = defaultThroughput.calcMedian() / 1e+6;
-                            double ULmax = defaultThroughput.calcMax() / 1e+6;
-                            double ULmean = defaultThroughput.calcMean() / 1e+6;
+                            double ULmin = normalize(defaultThroughput.calcMin());
+                            double ULmedian = normalize(defaultThroughput.calcMedian());
+                            double ULmax = normalize(defaultThroughput.calcMax());
+                            double ULmean = normalize(defaultThroughput.calcMean());
 
                             Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
                             Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
@@ -277,7 +287,7 @@ public class Iperf3Monitor {
                     });
 
 
-                    Log.wtf(TAG, "Starting parsing...");
+                    Log.d(TAG, "Starting parsing...");
                     startParsingThread(iperf3Parser);
                 } else {
                     // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
@@ -292,7 +302,7 @@ public class Iperf3Monitor {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
+                Log.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
 
                 // And finally, parse a bit of the file.
                 iperf3Parser.parse();
@@ -311,10 +321,26 @@ public class Iperf3Monitor {
         handler.removeCallbacksAndMessages(null);
     }
 
+    /**
+     * Callback for when Iperf3Monitor does a whole Iperf3 test cycle, reporting with the gathered metrics
+     */
     public interface Iperf3MonitorCompletionListener {
+        /**
+         * Called when the Iperf3 test was successfully completed
+         * @param metrics the gathered metrics during the test
+         */
         void onIperf3TestCompleted(MetricsPOJO metrics);
     }
 
+    /**
+     * Copies a file designated by <i>sourceFileName</i> file path to the <i>destFileName</i> path
+     * <br>
+     * Throws IOException if something goes wrong.
+     *
+     * @param sourceFileName path to the source file
+     * @param destFileName path to the destination file, where the file should be copied to (including the new name)
+     * @throws IOException
+     */
     public static void copyFile(String sourceFileName, String destFileName) throws IOException {
         FileInputStream fis = null;
         FileOutputStream fos = null;
@@ -336,6 +362,11 @@ public class Iperf3Monitor {
         }
     }
 
+    /**
+     * Deletes file designated by <i>filePath</i>
+     * @param filePath the file to delete
+     * @return whether deletion was successful or not
+     */
     public static boolean deleteFile(String filePath) {
         File file = new File(filePath);
         boolean retVal;
@@ -355,11 +386,25 @@ public class Iperf3Monitor {
         return retVal;
     }
 
+    /**
+     * Gets last element of a list
+     * @param list the list of doubles from which to get the last element
+     * @return the last element, or 0 if the list is empty
+     */
     private double getLast(@NonNull List<Double> list) {
         if (list.size() == 0) {
             return 0;
         } else {
             return list.get(list.size() - 1);
         }
+    }
+
+    /**
+     * Normalizes the value by dividing by 1e+6
+     * @param value the value to normalize
+     * @return the normalized value, divided by 1e+6 (1000000)
+     */
+    private double normalize(double value) {
+        return value / 1e+6;
     }
 }

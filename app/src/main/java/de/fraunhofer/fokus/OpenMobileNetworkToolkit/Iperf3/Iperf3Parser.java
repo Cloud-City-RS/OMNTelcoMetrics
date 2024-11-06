@@ -2,6 +2,8 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import org.json.JSONObject;
 
 import java.beans.PropertyChangeListener;
@@ -34,7 +36,7 @@ public class Iperf3Parser {
     private Start start;
     private final Intervals intervals = new Intervals();
 
-    public static Iperf3Parser instantiate(String pathToFile) {
+    public static Iperf3Parser instantiate(@NonNull String pathToFile) {
         return new Iperf3Parser(pathToFile);
     }
 
@@ -87,11 +89,13 @@ public class Iperf3Parser {
                         break;
                     default:
                         System.out.println("Unknown event");
+                        Log.w(TAG, "Unknown event "+event+" encountered during parsing!");
                         break;
                 }
             }
         } catch (Exception e) {
             System.out.println("Error reading file");
+            Log.e(TAG, "Exception " + e + " happened while trying to parse file!", e);
         }
     }
 

@@ -15,7 +15,7 @@ public class CloudCityOMNTApplication extends Application {
         CloudCityParamsRepository.initialize(getApplicationContext());
 
         Iperf3Monitor.initialize();
-        iperf3Monitor = iperf3Monitor.getInstance();
+        iperf3Monitor = Iperf3Monitor.getInstance();
 
         iperf3Monitor.startListeningForIperf3Updates(getApplicationContext(), new Iperf3Monitor.Iperf3MonitorCompletionListener() {
             @Override

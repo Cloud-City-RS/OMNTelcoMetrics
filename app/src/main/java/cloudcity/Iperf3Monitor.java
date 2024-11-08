@@ -352,8 +352,10 @@ public class Iperf3Monitor {
                 } else {
                     // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
                     Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result + "\t\tignoring...");
-                    // We want to reset the test running marker on a result of -1 as well
-                    if (latestIperf3RunResult.result == -1) {
+                    // We want to reset the test running marker on any non -100 result as well,
+                    // since -100 means it's still running, and apparently anything non-zero means completion
+                    // 1 for failure, -1 for cancellation and who knows what else
+                    if (latestIperf3RunResult.result != -100) {
                         iperf3TestRunning.compareAndSet(true, false);
                     }
                 }
@@ -680,7 +682,7 @@ public class Iperf3Monitor {
                         iperf3_result = -1;
                     }
                     iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                    Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);   //TODO emit here
+                    Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
                 });
                 iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
                     boolean iperf3_upload;

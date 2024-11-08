@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     private HandlerThread requestCellInfoUpdateHandlerThread;
     private GlobalVars gv;
 
-    private GPSMonitor gpsMonitor;
     /**
      * Runnable to handle Cell Info Updates
      */
@@ -355,9 +354,10 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                                 SharedPreferencesGrouper.getInstance(getApplicationContext())
                         );
 
-                // GPSMonitor
-                gpsMonitor = new GPSMonitor(getApplicationContext());
-                gpsMonitor.startMonitoring();
+                // Start GPS monitoring
+                //TODO tie in GPS monitoring with the yet-to-happen Iperf3Starter and ideally move that to IperfMonitor
+                MainActivityExtensions
+                        .startGPSMonitoring(getApplicationContext());
             }
         }
         Log.d(TAG, "<-- onRequestPermissionsResult()");

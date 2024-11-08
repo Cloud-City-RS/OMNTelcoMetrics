@@ -5,16 +5,16 @@ import static cloudcity.CloudCityConstants.CLOUD_CITY_GENERAL_LOGGING;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_SERVER_URL;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_TOKEN;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 
 public class MainActivityExtensions {
+    private static GPSMonitor gpsMonitor;
 
     /**
      * We will be using the 'logging' shared pref since that's the only one that is displayed in the logging settings fragment...
@@ -80,5 +80,11 @@ public class MainActivityExtensions {
                 .putBoolean(CLOUD_CITY_GENERAL_LOGGING, true)
                 .putBoolean(CLOUD_CITY_CC_LOGGING, true)
                 .commit();
+    }
+
+    public static void startGPSMonitoring(Context applicationContext) {
+        // GPSMonitor
+        gpsMonitor = new GPSMonitor(applicationContext);
+        gpsMonitor.startMonitoring();
     }
 }

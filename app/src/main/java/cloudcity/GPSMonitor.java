@@ -94,24 +94,6 @@ public class GPSMonitor {
             Iperf3Monitor.getInstance().startDefault15secTest(context);
         });
         valueMonitor.startMonitoring();
-        /*
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            private long startTime = System.currentTimeMillis();
-
-            @Override
-            public void run() {
-                if (variable >= X) {
-                    isUnderX = false;
-                    timer.cancel();
-                } else if (System.currentTimeMillis() - startTime >= DURATION) {
-                    System.out.println("Variable has been under " + X + " for 5 seconds straight.");
-                    timer.cancel();
-                }
-            }
-        }, 0, CHECK_INTERVAL);
-         */
-
 
         Log.d(TAG, "<-- startMonitoring()");
     }

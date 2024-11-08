@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.Map;
 
 import cloudcity.Iperf3Monitor;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
@@ -24,9 +25,9 @@ public class Iperf3RunnerData {
     @NonNull
     private final String[] commandList;
     @NonNull
-    private final HashMap<String, String> dataMap;
+    private final Map<String, String> dataMap;
     @NonNull
-    private final HashMap<String, Boolean> booleanMap;
+    private final Map<String, Boolean> booleanMap;
     @NonNull
     private final Timestamp timestamp;
     @NonNull
@@ -35,8 +36,8 @@ public class Iperf3RunnerData {
     public Iperf3RunnerData(
             @NonNull String command,
             @NonNull String[] cmdList,
-            @NonNull HashMap<String, String> map,
-            @NonNull HashMap<String, Boolean> boolMap,
+            @NonNull Map<String, String> map,
+            @NonNull Map<String, Boolean> boolMap,
             @NonNull Timestamp timestamp,
             @NonNull Iperf3Fragment.Iperf3Input originalInput
     ) {
@@ -48,11 +49,11 @@ public class Iperf3RunnerData {
         this.stupidInput = originalInput;
     }
 
-    public @NonNull HashMap<String, String> getStringDataMap() {
+    public @NonNull Map<String, String> getStringDataMap() {
         return dataMap;
     }
 
-    public @NonNull HashMap<String, Boolean> getBooleanDataMap() {
+    public @NonNull Map<String, Boolean> getBooleanDataMap() {
         return booleanMap;
     }
 

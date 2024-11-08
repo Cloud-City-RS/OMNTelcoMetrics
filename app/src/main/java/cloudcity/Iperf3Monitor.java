@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.MetricsPOJO;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3RunResult;
@@ -61,6 +62,7 @@ public class Iperf3Monitor {
     private HandlerThread handlerThread;
 
     private static volatile Iperf3Monitor instance;
+    private Context appContext;
 
     private volatile Metric defaultThroughput;
     private volatile Metric defaultReverseThroughput;
@@ -72,6 +74,10 @@ public class Iperf3Monitor {
     private volatile Iperf3Parser iperf3Parser;
 
     private final AtomicBoolean iperf3TestRunning = new AtomicBoolean(false);
+
+    private volatile MainThreadExecutor mainThreadExecutor;
+
+    private volatile Iperf3ResultsDataBase iperf3ResultsDatabase;
     private final Runnable parsingRunnable = new Runnable() {
         @Override
         public void run() {
@@ -97,8 +103,10 @@ public class Iperf3Monitor {
      * starts it's background {@link HandlerThread}
      * <br>
      * <b>Can be called only once!</b> Must not be called again unless {@link #shutdown()} is called before.
+     *
+     * @param appContext the application context
      */
-    public static synchronized void initialize() {
+    public static synchronized void initialize(Context appContext) {
         if (instance != null) {
             throw new IllegalStateException("Already initialized!");
         } else {
@@ -114,6 +122,9 @@ public class Iperf3Monitor {
         instance.handlerThread = new HandlerThread("Iperf3MonitorThread");
         instance.handlerThread.start();
         instance.handler = new Handler(instance.handlerThread.getLooper());
+        instance.appContext = appContext;
+
+        instance.iperf3ResultsDatabase = Iperf3ResultsDataBase.getDatabase(appContext);
     }
 
     /**
@@ -126,7 +137,7 @@ public class Iperf3Monitor {
     }
 
     /**
-     * Returns the Iperf3Monitor instance, after calling {@link #initialize()}
+     * Returns the Iperf3Monitor instance, after calling {@link #initialize(Context)}
      *
      * @return the Iperf3Monitor instance
      */
@@ -164,10 +175,9 @@ public class Iperf3Monitor {
         }
     }
 
-    public void startListeningForIperf3Updates(Context applicationContext, Iperf3MonitorCompletionListener completionListener) {
+    public void startListeningForIperf3Updates(Iperf3MonitorCompletionListener completionListener) {
         // Start listening for iPerf3 results...
-        Iperf3ResultsDataBase database = Iperf3ResultsDataBase.getDatabase(applicationContext);
-        database.iperf3RunResultDao().getLatestResult().observeForever(latestIperf3RunResult -> {
+        iperf3ResultsDatabase.iperf3RunResultDao().getLatestResult().observeForever(latestIperf3RunResult -> {
             shouldStop.set(false);
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
@@ -179,7 +189,11 @@ public class Iperf3Monitor {
                 // 0 is the magic number for success
                 if (latestIperf3RunResult.result == 0) {
                     Log.v(TAG, "Result was fine, commencing further...");
-                    Log.v(TAG, "Latest result's rawIperf3file is: " + latestIperf3RunResult.input.iperf3rawIperf3file);
+                    if (latestIperf3RunResult.input != null) {
+                        Log.v(TAG, "Latest result's rawIperf3file is: " + latestIperf3RunResult.input.iperf3rawIperf3file);
+                    } else {
+                        Log.v(TAG, "Latest result's input was: NULL");
+                    }
 
                     // Copy the file, for just in case
                     // This is useful for when we run the test and open it up in the default Iperf3 log viewer
@@ -198,10 +212,10 @@ public class Iperf3Monitor {
                     Log.v(TAG, "File copying should be done, instantiating new parser with rawIperf3File: " + targetFilePath);
 
                     Iperf3Parser iperf3Parser = Iperf3Parser.instantiate(targetFilePath);
-                    defaultThroughput = new Metric(METRIC_TYPE.THROUGHPUT, applicationContext);
-                    defaultReverseThroughput = new Metric(METRIC_TYPE.THROUGHPUT, applicationContext);
-                    defaultJITTER = new Metric(METRIC_TYPE.JITTER, applicationContext);
-                    PACKET_LOSS = new Metric(METRIC_TYPE.PACKET_LOSS, applicationContext);
+                    defaultThroughput = new Metric(METRIC_TYPE.THROUGHPUT, appContext);
+                    defaultReverseThroughput = new Metric(METRIC_TYPE.THROUGHPUT, appContext);
+                    defaultJITTER = new Metric(METRIC_TYPE.JITTER, appContext);
+                    PACKET_LOSS = new Metric(METRIC_TYPE.PACKET_LOSS, appContext);
                     // Obviously, these things need to be added or nothing will work... ffs...
                     defaultThroughput.createMainLL("Throughput");
                     defaultReverseThroughput.createMainLL("Throughput");
@@ -296,9 +310,9 @@ public class Iperf3Monitor {
 
                                 case "error": {
                                     Error error = (Error) evt.getNewValue();
-                                    TextView errorView = new TextView(applicationContext);
+                                    TextView errorView = new TextView(appContext);
                                     errorView.setText(error.getError());
-                                    errorView.setTextColor(applicationContext.getColor(R.color.crimson));
+                                    errorView.setTextColor(appContext.getColor(R.color.crimson));
                                     errorView.setPadding(10, 10, 10, 10);
                                     errorView.setTextSize(20);
 //                                metricLL.addView(errorView);
@@ -449,7 +463,13 @@ public class Iperf3Monitor {
         return value / 1e+6;
     }
 
-    public void startDefault15secTest(Context applicationContext) {
+    public void startDefault15secTest() {
+        // Sanity check
+        if(iperf3TestRunning.get()) {
+            Log.e(TAG, "Iperf3 test is still running! aborting...");
+            return;
+        }
+
         LinkedList<String> cmdList = new LinkedList<>();
         // Add server
         cmdList.add("-c");
@@ -530,7 +550,7 @@ public class Iperf3Monitor {
         stringMap.put("uuid", uuid);
         String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/omnt/iperf3LP/";
         stringMap.put("path", path);
-        String iperf3LineProtocolFile = path + uuid;
+        String iperf3LineProtocolFile = path + uuid + ".txt";
         stringMap.put("iperf3LineProtocolFile", iperf3LineProtocolFile);
 
         HashMap<String, Boolean> boolMap = new HashMap<>();
@@ -539,6 +559,23 @@ public class Iperf3Monitor {
         boolMap.put("biDir", true);
         boolMap.put("iperf3Json", true);
 
+        // All of this would have been great... but this Iperf3Fragment.InputData is fucking hardcoded
+        // into the database schema, and by *not* using it we're just literally shooting ourselves
+        // in the foot. So we have to use that as well.... sheesh.
+        Iperf3Fragment.Iperf3Input input = new Iperf3Fragment.Iperf3Input();
+        input.iperf3IdxProtocol = protocol.equalsIgnoreCase("TCP") ? 0 : 1;
+        input.timestamp = timestamp;
+        input.uuid = uuid;
+        input.measurementName = "Iperf3";
+        input.iperf3LogFileName = logFileName;
+        input.iperf3rawIperf3file = rawIperf3file;
+        input.iperf3BiDir = true;
+        input.iperf3Reverse = false;
+        input.iperf3OneOff = false;
+        input.iperf3Json = true;
+        input.iperf3BiDir = true;
+        input.iperf3Command = joined;
+        input.iperf3LineProtocolFile = iperf3LineProtocolFile;
 
         // This array here is used just to provide a type, we could provide a new array that is of
         // the same size as the LinkedList, so that the toArray() method would return elements in
@@ -548,56 +585,28 @@ public class Iperf3Monitor {
                 cmdList.toArray(new String[0]),
                 stringMap,
                 boolMap,
-                timestamp
+                timestamp,
+                input
         );
 
-        startIperf3Test(applicationContext, testData);
+        startIperf3Test(appContext, testData);
     }
 
     private void startIperf3Test(Context applicationContext, Iperf3RunnerData data) {
         // Init the database
-        Iperf3ResultsDataBase.getDatabase(applicationContext);
-        Iperf3RunResultDao iperf3RunResultDao = Iperf3ResultsDataBase
-                .getDatabase(applicationContext)
-                .iperf3RunResultDao();
+        Iperf3RunResultDao iperf3RunResultDao = iperf3ResultsDatabase.iperf3RunResultDao();
         // Do everything else needed for the test
         String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/omnt/iperf3LP/";
 
         try {
             Files.createDirectories(Paths.get(path));
         } catch (IOException e) {
-//            Toast.makeText(context,"Could not create Dir files!", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "Could not create Dir files!");
         }
-        //TODO
 
-//        String iperf3WorkerID = data.getDataMap().get("uuid")//input.uuid;
-//
-//        input.iperf3LineProtocolFile = path + iperf3WorkerID + ".txt";
+        // Fill up the WorkManager's worker data
         Data.Builder iperf3Data = new Data.Builder();
-//        iperf3Data.putStringArray("commands", command);
         iperf3Data.putStringArray("commands", data.getCommandList());
-//        iperf3Data.putString("iperf3WorkerID", iperf3WorkerID);
-        /*
-        iperf3Data.putString("iperf3WorkerID", data.getDataMap().get("iperf3WorkerID"));
-        iperf3Data.putString("rawIperf3file", rawIperf3file);
-        iperf3Data.putString("iperf3LineProtocolFile", input.iperf3LineProtocolFile);
-        iperf3Data.putString("measurementName", input.measurementName);
-        iperf3Data.putString("ip", input.iperf3IP);
-        iperf3Data.putString("port", input.iperf3Port);
-        iperf3Data.putString("bandwidth", input.iperf3Bandwidth);
-        iperf3Data.putString("duration", input.iperf3Duration);
-        iperf3Data.putString("interval", input.iperf3Interval);
-        iperf3Data.putString("bytes", input.iperf3Bytes);
-        iperf3Data.putString("protocol", protocolSpinner.getSelectedItem().toString());
-        iperf3Data.putBoolean("rev", input.iperf3Reverse);
-        iperf3Data.putBoolean("biDir", input.iperf3BiDir);
-        iperf3Data.putBoolean("oneOff", input.iperf3OneOff);
-        iperf3Data.putString("client", iperf3ModeSpinner.getSelectedItem().toString());
-        iperf3Data.putString("timestamp", input.timestamp.toString());
-        iperf3Data.putString("protocol", protocolSpinner.getSelectedItem().toString());
-        iperf3Data.putString("cport", input.iperf3Cport);
-         */
         // Iterate the map, and fill the data as-is
         for (String mapKey : data.getStringDataMap().keySet()) {
             String mapValue = data.getStringDataMap().get(mapKey);
@@ -611,7 +620,7 @@ public class Iperf3Monitor {
             iperf3Data.putBoolean(mapKey, Boolean.TRUE.equals(mapValue));
         }
 
-        WorkManager iperf3WM = iperf3WM = WorkManager.getInstance(applicationContext);
+        WorkManager iperf3WM = getWorkManager();
         ListenableFuture<List<WorkInfo>> status = iperf3WM.getWorkInfosByTag("iperf3Run");
 
         String iperf3WorkerID = data.getStringDataMap().get("uuid");
@@ -636,7 +645,7 @@ public class Iperf3Monitor {
                         .build();
 
         iperf3RunResultDao.insert(
-                new Iperf3RunResult(iperf3WorkerID, -100, false, null, data.getTimestamp()));
+                new Iperf3RunResult(iperf3WorkerID, -100, false, data.getCityInput(), data.getTimestamp()));
 
         boolean iperf3Json = Boolean.TRUE.equals(data.getBooleanDataMap().get("iperf3Json"));
 
@@ -649,29 +658,43 @@ public class Iperf3Monitor {
 
         SharedPreferencesGrouper spg = SharedPreferencesGrouper.getInstance(applicationContext);
         if (iperf3TestRunning.compareAndSet(false, true)) {
-            if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
-                iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
-            } else if (iperf3Json) {
-                iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
-            } else {
-                iperf3WM.beginWith(iperf3WR).enqueue();
+
+            // Check if we have a main thread executor
+            if (mainThreadExecutor == null) {
+                mainThreadExecutor = new MainThreadExecutor();
             }
 
-            iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
-                int iperf3_result;
-                iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
-                if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
-                    iperf3_result = -1;
+            mainThreadExecutor.execute(() -> {
+                if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
+                    iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
+                } else if (iperf3Json) {
+                    iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
+                } else {
+                    iperf3WM.beginWith(iperf3WR).enqueue();
                 }
-                iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
-            });
-            iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
-                boolean iperf3_upload;
-                iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
-                iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+
+                iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
+                    Log.wtf(TAG, ">> SHARK >>\t\tworkInfo: "+workInfo);
+                    int iperf3_result;
+                    iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+                    if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                        iperf3_result = -1;
+                    }
+                    Log.wtf(TAG, ">> SHARK >>\t\tiperf3_result: "+iperf3_result);
+                    iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+                    Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);   //TODO emit here
+                });
+                iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
+                    boolean iperf3_upload;
+                    iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+                    Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                    iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+                });
             });
         }
+    }
+
+    private WorkManager getWorkManager() {
+        return WorkManager.getInstance(appContext);
     }
 }

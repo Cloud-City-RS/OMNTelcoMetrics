@@ -70,6 +70,8 @@ public class Iperf3Monitor {
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
     private volatile Iperf3Parser iperf3Parser;
+
+    private final AtomicBoolean iperf3TestRunning = new AtomicBoolean(false);
     private final Runnable parsingRunnable = new Runnable() {
         @Override
         public void run() {
@@ -285,7 +287,10 @@ public class Iperf3Monitor {
                                         completionListener.onIperf3TestCompleted(values);
                                     }
 
-                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get());
+                                    // And set the new marker as 'no longer running'
+                                    iperf3TestRunning.compareAndSet(true, false);
+
+                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get()+", iperf3TestRunning: "+iperf3TestRunning.get());
                                 }
                                 break;
 
@@ -333,6 +338,10 @@ public class Iperf3Monitor {
                 } else {
                     // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
                     Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result + "\t\tignoring...");
+                    // We want to reset the test running marker on a result of -1 as well
+                    if (latestIperf3RunResult.result == -1) {
+                        iperf3TestRunning.compareAndSet(true, false);
+                    }
                 }
             }
         });
@@ -597,7 +606,9 @@ public class Iperf3Monitor {
         // Finally, put the booleans in there too
         for (String mapKey : data.getBooleanDataMap().keySet()) {
             Boolean mapValue = data.getBooleanDataMap().get(mapKey);
-            iperf3Data.putBoolean(mapKey, mapValue);
+            // We do this weird equals check to avoid potential unboxing problems
+            // because TRUE.equals(null) is still false
+            iperf3Data.putBoolean(mapKey, Boolean.TRUE.equals(mapValue));
         }
 
         WorkManager iperf3WM = iperf3WM = WorkManager.getInstance(applicationContext);
@@ -627,46 +638,40 @@ public class Iperf3Monitor {
         iperf3RunResultDao.insert(
                 new Iperf3RunResult(iperf3WorkerID, -100, false, null, data.getTimestamp()));
 
-        boolean iperf3Json = data.getBooleanDataMap().get("iperf3Json");
+        boolean iperf3Json = Boolean.TRUE.equals(data.getBooleanDataMap().get("iperf3Json"));
 
-        SharedPreferencesGrouper spg = SharedPreferencesGrouper.getInstance(applicationContext);
-        if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
-            iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
-        } else if (iperf3Json) {
-            iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
-        } else {
-            iperf3WM.beginWith(iperf3WR).enqueue();
+        // Sanity check...
+        if (iperf3TestRunning.get()) {
+            // IF test is running, log error, and return
+            Log.e(TAG, "Iperf3 test was already running! Returning...");
+            return;
         }
 
-        iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
-            int iperf3_result;
-            iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
-            if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
-                iperf3_result = -1;
-            }
-            iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-            Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
-            /*
-            if (iperf3_result == -100) {
-                progressIndicator.setVisibility(LinearProgressIndicator.VISIBLE);
-                if (!isModeSpinnerClient()) {
-                    progressbarHandler.postDelayed(progressbarUpdate, SHOW_PROGRESSBAR);
-                }
-            } else if (iperf3_result != 0) {
-                progressIndicator.setIndicatorColor(failedColors);
-                progressbarHandler.postDelayed(progressbarUpdate, SHOW_PROGRESSBAR);
-
+        SharedPreferencesGrouper spg = SharedPreferencesGrouper.getInstance(applicationContext);
+        if (iperf3TestRunning.compareAndSet(false, true)) {
+            if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
+                iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
+            } else if (iperf3Json) {
+                iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
             } else {
-                progressIndicator.setIndicatorColor(succesColors);
-                progressbarHandler.postDelayed(progressbarUpdate, SHOW_PROGRESSBAR);
+                iperf3WM.beginWith(iperf3WR).enqueue();
             }
-             */
-        });
-        iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
-            boolean iperf3_upload;
-            iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-            Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
-            iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
-        });
+
+            iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
+                int iperf3_result;
+                iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+                if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                    iperf3_result = -1;
+                }
+                iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+                Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+            });
+            iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
+                boolean iperf3_upload;
+                iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+                Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+            });
+        }
     }
 }

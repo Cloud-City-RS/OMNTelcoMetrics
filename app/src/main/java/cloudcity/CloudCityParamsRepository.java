@@ -16,8 +16,8 @@ public class CloudCityParamsRepository {
 
     private SharedPreferences sharedPrefs;
 
-    private String serverUrl;
-    private String serverToken;
+    private volatile String serverUrl;
+    private volatile String serverToken;
 
 
     private CloudCityParamsRepository(Context context) {
@@ -83,7 +83,7 @@ public class CloudCityParamsRepository {
      * Return cached {@link #serverUrl} if non-empty, or fetches it from the shared prefs
      * @return the cached serverURL or the one from shared prefs; if both of these are empty/nonexistant then an empty string is returned
      */
-    public String getServerUrl() {
+    public synchronized String getServerUrl() {
         String retVal;
         if (isParamPresent(serverUrl)) {
             retVal = serverUrl;
@@ -98,7 +98,7 @@ public class CloudCityParamsRepository {
      * Return cached {@link #serverToken} if non-empty, or fetches it from the shared prefs
      * @return the cached serverToken or the one from shared prefs; if both of these are empty/nonexistant then an empty string is returned
      */
-    public String getServerToken() {
+    public synchronized String getServerToken() {
         String retVal;
         if (isParamPresent(serverToken)) {
             retVal = serverToken;
@@ -114,7 +114,7 @@ public class CloudCityParamsRepository {
      * @param newUrl the new server URL to put in
      * @see #putStringKey(String, String)
      */
-    public void setServerUrl(String newUrl) {
+    public synchronized void setServerUrl(String newUrl) {
         putStringKey(CLOUD_CITY_SERVER_URL, newUrl);
         serverUrl = newUrl;
     }
@@ -124,7 +124,7 @@ public class CloudCityParamsRepository {
      * @param newToken the new server token to put in
      * @see #putStringKey(String, String)
      */
-    public void setServerToken(String newToken) {
+    public synchronized void setServerToken(String newToken) {
         putStringKey(CLOUD_CITY_TOKEN, newToken);
         serverToken = newToken;
     }

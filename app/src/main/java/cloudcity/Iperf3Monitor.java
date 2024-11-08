@@ -499,7 +499,6 @@ public class Iperf3Monitor {
 
         String uuid = UUID.randomUUID().toString();
 
-//        input.measurementName = "Iperf3";
         String logFileName = String.format("iperf3_%s_%s.json", iperf3TS, uuid);
 
         String logFileDir =
@@ -507,10 +506,7 @@ public class Iperf3Monitor {
                         .getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
                         .getAbsolutePath() + "/omnt/iperf3RawLogs/";
 
-//        input.iperf3LogFileName = this.logFileName;
-//        this.rawIperf3file = this.logFileDir + this.logFileName;
         String rawIperf3file = logFileDir + logFileName;
-//        input.iperf3rawIperf3file = this.rawIperf3file;
 
         cmdList.add("--logfile");
         cmdList.add(rawIperf3file);
@@ -663,7 +659,11 @@ public class Iperf3Monitor {
 
             // Check if we have a main thread executor
             if (mainThreadExecutor == null) {
-                mainThreadExecutor = new MainThreadExecutor();
+                synchronized (this) {
+                    if (mainThreadExecutor == null) {
+                        mainThreadExecutor = new MainThreadExecutor();
+                    }
+                }
             }
 
             mainThreadExecutor.execute(() -> {

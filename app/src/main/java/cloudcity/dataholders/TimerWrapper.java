@@ -38,7 +38,7 @@ public class TimerWrapper {
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} or {@code time} is null
      */
-    public void schedule(TimerTask task, Date time) {
+    public synchronized void schedule(TimerTask task, Date time) {
         timer.schedule(task, time);
     }
 
@@ -75,7 +75,7 @@ public class TimerWrapper {
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} or {@code firstTime} is null
      */
-    public void schedule(TimerTask task, Date firstTime, long period) {
+    public synchronized void schedule(TimerTask task, Date firstTime, long period) {
         timer.schedule(task, firstTime, period);
     }
 
@@ -90,7 +90,7 @@ public class TimerWrapper {
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} is null
      */
-    public void schedule(TimerTask task, long delay) {
+    public synchronized void schedule(TimerTask task, long delay) {
         timer.schedule(task, delay);
     }
 
@@ -126,7 +126,7 @@ public class TimerWrapper {
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} is null
      */
-    public void schedule(TimerTask task, long delay, long period) {
+    public synchronized void schedule(TimerTask task, long delay, long period) {
         timer.schedule(task, delay, period);
     }
 
@@ -134,7 +134,7 @@ public class TimerWrapper {
      * Method that calls {@link Timer#cancel()} on the internal timer, and recreates it immediatelly
      * after so that we can keep on scheduling new tasks to this object
      */
-    public void stop() {
+    public synchronized void stop() {
         timer.cancel();
         // Since cancelling tasks makes the timer unusable anymore, lets just recreate it
         timer = new Timer(isDaemon);

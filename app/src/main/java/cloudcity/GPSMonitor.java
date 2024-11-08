@@ -13,6 +13,7 @@ import androidx.core.app.ActivityCompat;
 
 import java.util.List;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
@@ -43,7 +44,7 @@ public class GPSMonitor {
     private ValueMonitor valueMonitor;
 
     private volatile float lastSpeed;
-    private volatile float timeUnderThreshold;
+    private volatile AtomicLong timeUnderThreshold;
 
     public GPSMonitor(Context context) {
         this.context = context;
@@ -100,6 +101,9 @@ public class GPSMonitor {
 
     public void stopMonitoring() {
         locationManager.removeUpdates(locationListener);
+        if(valueMonitor != null) {
+            valueMonitor.stopMonitoring();
+        }
     }
 
     private class ValueMonitor {
@@ -144,20 +148,22 @@ public class GPSMonitor {
         private void monitorValue() {
             if (lastSpeed < THRESHOLD_VALUE) {
                 // If value is under threshold, increment the time under threshold
-                timeUnderThreshold += VALUE_MONITOR_INTERVAL;
+                timeUnderThreshold.addAndGet(VALUE_MONITOR_INTERVAL);
 
                 // Check if the time under threshold exceeds 5 seconds
-                if (timeUnderThreshold >= THRESHOLD_DURATION) {
+                if (timeUnderThreshold.get() >= THRESHOLD_DURATION) {
                     Log.d(TAG, "value has been under threshold for "+timeUnderThreshold+"ms, firing callback");
                     // Trigger the callback if the condition is met
-                    callback.onUnderThresholdValueForAtLeastThresholdDuration();
+                    if (callback != null) {
+                        callback.onUnderThresholdValueForAtLeastThresholdDuration();
+                    }
 
                     // Reset the time tracking after triggering callback
-                    timeUnderThreshold = 0;
+                    timeUnderThreshold.set(0);
                 }
             } else {
                 // If the value is above the threshold, reset the time tracking
-                timeUnderThreshold = 0;
+                timeUnderThreshold.set(0);
             }
         }
     }

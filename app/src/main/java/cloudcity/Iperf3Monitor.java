@@ -1,12 +1,19 @@
 package cloudcity;
 
 import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -14,12 +21,25 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.MetricsPOJO;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3RunResult;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3RunResultDao;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ToLineProtocolWorker;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3UploadWorker;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Worker;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Error;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Interval;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.SUM_TYPE;
@@ -27,6 +47,8 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.Sum
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.UDP.UDP_DL_SUM;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.Metric;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 public class Iperf3Monitor {
@@ -333,6 +355,7 @@ public class Iperf3Monitor {
     public interface Iperf3MonitorCompletionListener {
         /**
          * Called when the Iperf3 test was successfully completed
+         *
          * @param metrics the gathered metrics during the test
          */
         void onIperf3TestCompleted(MetricsPOJO metrics);
@@ -344,7 +367,7 @@ public class Iperf3Monitor {
      * Throws IOException if something goes wrong.
      *
      * @param sourceFileName path to the source file
-     * @param destFileName path to the destination file, where the file should be copied to (including the new name)
+     * @param destFileName   path to the destination file, where the file should be copied to (including the new name)
      * @throws IOException
      */
     public static void copyFile(String sourceFileName, String destFileName) throws IOException {
@@ -370,6 +393,7 @@ public class Iperf3Monitor {
 
     /**
      * Deletes file designated by <i>filePath</i>
+     *
      * @param filePath the file to delete
      * @return whether deletion was successful or not
      */
@@ -394,6 +418,7 @@ public class Iperf3Monitor {
 
     /**
      * Gets last element of a list
+     *
      * @param list the list of doubles from which to get the last element
      * @return the last element, or 0 if the list is empty
      */
@@ -407,10 +432,241 @@ public class Iperf3Monitor {
 
     /**
      * Normalizes the value by dividing by 1e+6
+     *
      * @param value the value to normalize
      * @return the normalized value, divided by 1e+6 (1000000)
      */
     private double normalize(double value) {
         return value / 1e+6;
+    }
+
+    public void startDefault15secTest(Context applicationContext) {
+        LinkedList<String> cmdList = new LinkedList<>();
+        // Add server
+        cmdList.add("-c");
+        String iperf3ServerIP = CloudCityConstants.CLOUD_CITY_IPERF3_SERVER;
+        cmdList.add(iperf3ServerIP);
+        cmdList.add("-p");
+        // Calculate random port
+        int validPortMin = CloudCityConstants.CLOUD_CITY_IPERF3_VALID_PORT_MIN;
+        int validPortMax = CloudCityConstants.CLOUD_CITY_IPERF3_VALID_PORT_MAX;
+        Random rnd = new Random();
+        int randomPort = rnd.nextInt((validPortMax - validPortMin) + 1) + validPortMin;
+        String randomPortStr = String.valueOf(randomPort);
+        // Add port
+        cmdList.add(randomPortStr);
+        // Add duration
+        cmdList.add("-t");
+        String duration = "15";
+        cmdList.add(duration);
+        // Protocol
+        String protocol = "TCP";
+        // Generate file
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        String timestampStr = timestamp.toString();
+        String iperf3TS = timestampStr.replace(" ", "_").replace(":", "_");
+
+        String uuid = UUID.randomUUID().toString();
+
+//        input.measurementName = "Iperf3";
+        String logFileName = String.format("iperf3_%s_%s.json", iperf3TS, uuid);
+
+        String logFileDir =
+                Environment
+                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+                        .getAbsolutePath() + "/omnt/iperf3RawLogs/";
+
+//        input.iperf3LogFileName = this.logFileName;
+//        this.rawIperf3file = this.logFileDir + this.logFileName;
+        String rawIperf3file = logFileDir + logFileName;
+//        input.iperf3rawIperf3file = this.rawIperf3file;
+
+        cmdList.add("--logfile");
+        cmdList.add(rawIperf3file);
+
+        // Turn on bidirectional test (test download and upload speed)
+        cmdList.add("--bidir");
+
+        // Add the rest of the command
+        cmdList.add("--json-stream");
+
+        cmdList.add("--connect-timeout");
+        cmdList.add("500");
+
+        String joined = String.join(" ", cmdList);
+
+        Log.d(TAG, "Joined command " + joined);
+
+        // Generate a key-value hashmap to hold the rest of the necessary duplicated crap
+        HashMap<String, String> stringMap = new HashMap<>();
+//        map.put("rev", false)     //Will be passed in the other map
+        stringMap.put("cport", null);
+        stringMap.put("bandwidth", null);
+        stringMap.put("rawIperf3file", rawIperf3file);
+        stringMap.put("iperf3WorkerID", uuid);
+        stringMap.put("ip", iperf3ServerIP);
+//        map.put("iperf3LineProtocolFile", )
+        stringMap.put("measurementName", "Iperf3");
+//        map.put("oneOff", false); //Will be passed in the other map
+        stringMap.put("duration", duration);
+        stringMap.put("protocol", protocol);
+//        map.put("biDir", true);   //Will be passed in the other map
+        stringMap.put("port", randomPortStr);
+        stringMap.put("bytes", null);
+        stringMap.put("client", "Client");
+        stringMap.put("interval", null);
+//        map.put("commands", cmdList); //This String[] is passed separately
+        stringMap.put("timestamp", timestampStr);
+        // Utility elements
+        stringMap.put("uuid", uuid);
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/omnt/iperf3LP/";
+        stringMap.put("path", path);
+        String iperf3LineProtocolFile = path + uuid;
+        stringMap.put("iperf3LineProtocolFile", iperf3LineProtocolFile);
+
+        HashMap<String, Boolean> boolMap = new HashMap<>();
+        boolMap.put("rev", false);
+        boolMap.put("oneOff", false);
+        boolMap.put("biDir", true);
+        boolMap.put("iperf3Json", true);
+
+
+        // This array here is used just to provide a type, we could provide a new array that is of
+        // the same size as the LinkedList, so that the toArray() method would return elements in
+        // that particular array, but there's negligable gain from doing that over this approach
+        Iperf3RunnerData testData = new Iperf3RunnerData(
+                joined,
+                cmdList.toArray(new String[0]),
+                stringMap,
+                boolMap,
+                timestamp
+        );
+
+        startIperf3Test(applicationContext, testData);
+    }
+
+    private void startIperf3Test(Context applicationContext, Iperf3RunnerData data) {
+        // Init the database
+        Iperf3ResultsDataBase.getDatabase(applicationContext);
+        Iperf3RunResultDao iperf3RunResultDao = Iperf3ResultsDataBase
+                .getDatabase(applicationContext)
+                .iperf3RunResultDao();
+        // Do everything else needed for the test
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/omnt/iperf3LP/";
+
+        try {
+            Files.createDirectories(Paths.get(path));
+        } catch (IOException e) {
+//            Toast.makeText(context,"Could not create Dir files!", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Could not create Dir files!");
+        }
+        //TODO
+
+//        String iperf3WorkerID = data.getDataMap().get("uuid")//input.uuid;
+//
+//        input.iperf3LineProtocolFile = path + iperf3WorkerID + ".txt";
+        Data.Builder iperf3Data = new Data.Builder();
+//        iperf3Data.putStringArray("commands", command);
+        iperf3Data.putStringArray("commands", data.getCommandList());
+//        iperf3Data.putString("iperf3WorkerID", iperf3WorkerID);
+        /*
+        iperf3Data.putString("iperf3WorkerID", data.getDataMap().get("iperf3WorkerID"));
+        iperf3Data.putString("rawIperf3file", rawIperf3file);
+        iperf3Data.putString("iperf3LineProtocolFile", input.iperf3LineProtocolFile);
+        iperf3Data.putString("measurementName", input.measurementName);
+        iperf3Data.putString("ip", input.iperf3IP);
+        iperf3Data.putString("port", input.iperf3Port);
+        iperf3Data.putString("bandwidth", input.iperf3Bandwidth);
+        iperf3Data.putString("duration", input.iperf3Duration);
+        iperf3Data.putString("interval", input.iperf3Interval);
+        iperf3Data.putString("bytes", input.iperf3Bytes);
+        iperf3Data.putString("protocol", protocolSpinner.getSelectedItem().toString());
+        iperf3Data.putBoolean("rev", input.iperf3Reverse);
+        iperf3Data.putBoolean("biDir", input.iperf3BiDir);
+        iperf3Data.putBoolean("oneOff", input.iperf3OneOff);
+        iperf3Data.putString("client", iperf3ModeSpinner.getSelectedItem().toString());
+        iperf3Data.putString("timestamp", input.timestamp.toString());
+        iperf3Data.putString("protocol", protocolSpinner.getSelectedItem().toString());
+        iperf3Data.putString("cport", input.iperf3Cport);
+         */
+        // Iterate the map, and fill the data as-is
+        for (String mapKey : data.getStringDataMap().keySet()) {
+            String mapValue = data.getStringDataMap().get(mapKey);
+            iperf3Data.putString(mapKey, mapValue);
+        }
+        // Finally, put the booleans in there too
+        for (String mapKey : data.getBooleanDataMap().keySet()) {
+            Boolean mapValue = data.getBooleanDataMap().get(mapKey);
+            iperf3Data.putBoolean(mapKey, mapValue);
+        }
+
+        WorkManager iperf3WM = iperf3WM = WorkManager.getInstance(applicationContext);
+        ListenableFuture<List<WorkInfo>> status = iperf3WM.getWorkInfosByTag("iperf3Run");
+
+        String iperf3WorkerID = data.getStringDataMap().get("uuid");
+
+        OneTimeWorkRequest iperf3WR =
+                new OneTimeWorkRequest
+                        .Builder(Iperf3Worker.class)
+                        .setInputData(iperf3Data.build())
+                        .addTag("iperf3Run")
+                        .addTag(iperf3WorkerID)
+                        .build();
+        OneTimeWorkRequest iperf3LP =
+                new OneTimeWorkRequest
+                        .Builder(Iperf3ToLineProtocolWorker.class)
+                        .setInputData(iperf3Data.build())
+                        .build();
+        OneTimeWorkRequest iperf3UP =
+                new OneTimeWorkRequest
+                        .Builder(Iperf3UploadWorker.class)
+                        .setInputData(iperf3Data.build())
+                        .addTag("iperf3")
+                        .build();
+
+        iperf3RunResultDao.insert(
+                new Iperf3RunResult(iperf3WorkerID, -100, false, null, data.getTimestamp()));
+
+        boolean iperf3Json = data.getBooleanDataMap().get("iperf3Json");
+
+        SharedPreferencesGrouper spg = SharedPreferencesGrouper.getInstance(applicationContext);
+        if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
+            iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
+        } else if (iperf3Json) {
+            iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
+        } else {
+            iperf3WM.beginWith(iperf3WR).enqueue();
+        }
+
+        iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
+            int iperf3_result;
+            iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+            if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                iperf3_result = -1;
+            }
+            iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+            Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+            /*
+            if (iperf3_result == -100) {
+                progressIndicator.setVisibility(LinearProgressIndicator.VISIBLE);
+                if (!isModeSpinnerClient()) {
+                    progressbarHandler.postDelayed(progressbarUpdate, SHOW_PROGRESSBAR);
+                }
+            } else if (iperf3_result != 0) {
+                progressIndicator.setIndicatorColor(failedColors);
+                progressbarHandler.postDelayed(progressbarUpdate, SHOW_PROGRESSBAR);
+
+            } else {
+                progressIndicator.setIndicatorColor(succesColors);
+                progressbarHandler.postDelayed(progressbarUpdate, SHOW_PROGRESSBAR);
+            }
+             */
+        });
+        iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
+            boolean iperf3_upload;
+            iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+            Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+            iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+        });
     }
 }

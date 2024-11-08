@@ -103,8 +103,7 @@ public class LoggingServiceExtensions {
         handlerThread = new HandlerThread("CloudCityHandlerThread");
         handlerThread.start();
         CloudCityHandler = new Handler(Objects.requireNonNull(handlerThread.getLooper()));
-        if (!isUpdating.get()) {
-            isUpdating.compareAndSet(false, true);
+        if (isUpdating.compareAndSet(false, true)) {
             CloudCityHandler.post(CloudCityUpdate);
         }
         ImageView log_status = gv.getLog_status();
@@ -125,7 +124,10 @@ public class LoggingServiceExtensions {
         if (CloudCityHandler != null) {
             try {
                 CloudCityHandler.removeCallbacks(CloudCityUpdate);
-                isUpdating.compareAndSet(true, false);
+                boolean unset = isUpdating.compareAndSet(true, false);
+                if(!unset) {
+                    Log.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
+                }
             } catch (java.lang.NullPointerException e) {
                 Log.d(TAG, "trying to stop cloud city service while it was not running");
             }

@@ -674,13 +674,11 @@ public class Iperf3Monitor {
                 }
 
                 iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
-                    Log.wtf(TAG, ">> SHARK >>\t\tworkInfo: "+workInfo);
                     int iperf3_result;
                     iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
                     if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
                         iperf3_result = -1;
                     }
-                    Log.wtf(TAG, ">> SHARK >>\t\tiperf3_result: "+iperf3_result);
                     iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
                     Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);   //TODO emit here
                 });

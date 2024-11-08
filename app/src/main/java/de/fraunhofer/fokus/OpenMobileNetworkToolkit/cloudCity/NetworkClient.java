@@ -28,28 +28,39 @@ public class NetworkClient {
         // If we don't have a retrofit client, or the URL we're targetting is different
         // than what the previous client was initialized with - build a new client;
         // otherwise return the last initialized one
-        if (lock.tryLock()) {
-            synchronized (lockObject) {
-                if (retrofit == null || !baseUrl.equalsIgnoreCase(currentClientBaseUrl)) {
-                    if (url == null || url.isEmpty()) {
-                        return null;
+        boolean isLocked = false;
+        try {
+            isLocked = lock.tryLock();
+            if (isLocked) {
+                synchronized (lockObject) {
+                    if (retrofit == null || !baseUrl.equalsIgnoreCase(currentClientBaseUrl)) {
+                        if (url == null || url.isEmpty()) {
+                            return null;
+                        }
+
+                        if (!url.equalsIgnoreCase(currentClientBaseUrl)) {
+                            Log.w(TAG, "URL has changed from previous Retrofit client's base URL, instantiating new client...");
+                        }
+
+                        retrofit = new Retrofit.Builder()
+                                .baseUrl(baseUrl)
+                                .client(CustomClient.getUnsafeOkHttpClient())
+                                .addConverterFactory(GsonConverterFactory.create())
+                                .build();
+                        currentClientBaseUrl = baseUrl;
                     }
 
-                    if (!url.equalsIgnoreCase(currentClientBaseUrl)) {
-                        Log.w(TAG, "URL has changed from previous Retrofit client's base URL, instantiating new client...");
-                    }
-
-                    retrofit = new Retrofit.Builder()
-                            .baseUrl(baseUrl)
-                            .client(CustomClient.getUnsafeOkHttpClient())
-                            .addConverterFactory(GsonConverterFactory.create())
-                            .build();
-                    currentClientBaseUrl = baseUrl;
+                    return retrofit;
                 }
             }
+        } finally {
+            // The finally is executed always, so even though we return in the locked part, it will still unlock
+            if (isLocked) {
+                lock.unlock();
+            }
         }
-        lock.unlock();
 
+        // Return null otherwise if we couldn't lock and initialize, or rather return whatever we had before...
         return retrofit;
     }
 }

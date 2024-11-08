@@ -91,7 +91,7 @@ public class GPSMonitor {
 
         valueMonitor = new ValueMonitor();
         valueMonitor.setCallback(() -> {
-            Iperf3Monitor.getInstance().startDefault15secTest(context);
+            Iperf3Monitor.getInstance().startDefault15secTest();
         });
         valueMonitor.startMonitoring();
 

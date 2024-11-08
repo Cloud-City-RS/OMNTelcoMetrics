@@ -83,7 +83,7 @@ public class SharedPreferencesGrouper {
      * @param key the key holding the listener
      * @param listener the listener to remove
      */
-    public void removeListener(@NonNull SPType key, @NonNull SharedPreferences.OnSharedPreferenceChangeListener listener) {
+    public synchronized void removeListener(@NonNull SPType key, @NonNull SharedPreferences.OnSharedPreferenceChangeListener listener) {
         SharedPreferences sp = this.getSharedPreference(key);
         if(sp == null) {
             Log.e(TAG, "SharedPreferences not found for "+key);
@@ -109,7 +109,7 @@ public class SharedPreferencesGrouper {
      * Removes all listeners for a particular {@link SPType} {@code key}
      * @param key the key for which to remove all listeners
      */
-    public void removeAllListeners(SPType key){
+    public synchronized void removeAllListeners(SPType key){
         SharedPreferences sp = this.getSharedPreference(key);
         if(sp == null) {
             Log.e(TAG, "SharedPreferences not found for "+key);
@@ -134,7 +134,7 @@ public class SharedPreferencesGrouper {
      * <b>must have been</b> already added via {@link #setListener(SharedPreferences.OnSharedPreferenceChangeListener, SPType)}
      * @param listener the listener to add
      */
-    public void removeListener(@NonNull SharedPreferences.OnSharedPreferenceChangeListener listener){
+    public synchronized void removeListener(@NonNull SharedPreferences.OnSharedPreferenceChangeListener listener){
         for (SPType potentialMatch : spMap.keySet()) {
             SharedPreferences sp = this.getSharedPreference(potentialMatch);
             if (sp == null) {
@@ -168,13 +168,13 @@ public class SharedPreferencesGrouper {
         }
         return spList;
     }
-    public void setListener(@NonNull SharedPreferences.OnSharedPreferenceChangeListener listener, @NonNull SPType key) {
+    public synchronized void setListener(@NonNull SharedPreferences.OnSharedPreferenceChangeListener listener, @NonNull SPType key) {
         SharedPreferences sp = this.getSharedPreference(key);
         if(sp == null) {
             Log.e(TAG, "SharedPreferences not found for "+key);
             return;
         }
-        Set listenerList = this.spMap.get(key);
+        Set<SharedPreferences.OnSharedPreferenceChangeListener> listenerList = this.spMap.get(key);
         if (listenerList == null) {
             listenerList = new HashSet<SharedPreferences.OnSharedPreferenceChangeListener>();
         }

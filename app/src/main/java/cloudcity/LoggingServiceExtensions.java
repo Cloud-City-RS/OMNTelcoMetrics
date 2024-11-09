@@ -173,17 +173,17 @@ public class LoggingServiceExtensions {
 
         String category = currentCell.getCellType().toString();
 
-        MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel();
+        MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
+                location,
+                getMeasurementsModel(category, currentCell)
+        );
 
         dataModel.setCategory(currentCell.getCellType().toString());
-        dataModel.setLatitude(location.getLatitude());
-        dataModel.setLongitude(location.getLongitude());
         dataModel.setAccuracy(location.getAccuracy());
         /* Convert to km/h */
         dataModel.setSpeed(location.getSpeed() * 3.6);
 
         dataModel.setCellData(getCellInfoModel(category, currentCell));
-        dataModel.setValues(getMeasurementsModel(category, currentCell));
 
         return dataModel;
     }

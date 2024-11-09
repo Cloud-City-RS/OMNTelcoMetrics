@@ -12,34 +12,23 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
     @SerializedName("category")
     final private String category = "Iperf3";
 
-    @SerializedName("lat")
-    private double latitude;
-    @SerializedName("lon")
-    private double longitude;
-
     @SerializedName("accuracy")
     private double accuracy;
     @SerializedName("speed")
     private double speed;
 
-    @SerializedName("values")
-    final private Iperf3ValuesModel values;
-
-
     public Iperf3NetworkDataModel(
-            MetricsPOJO.UploadMetrics upload,
-            MetricsPOJO.DownloadMetrics download,
-            LocationInformation location
+            @NonNull MetricsPOJO.UploadMetrics upload,
+            @NonNull MetricsPOJO.DownloadMetrics download,
+            @NonNull LocationInformation location
     ) {
-        this.values = new Iperf3ValuesModel(upload, download);
-        this.latitude = location.getLatitude();
-        this.longitude = location.getLongitude();
+        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download));
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
     }
 }
 
-class Iperf3ValuesModel {
+class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("upload_min")
     private final double ULmin;
     @SerializedName("upload_median")

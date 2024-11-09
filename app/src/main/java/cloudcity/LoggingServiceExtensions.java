@@ -2,6 +2,7 @@ package cloudcity;
 
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.telephony.CellInfo;
@@ -25,7 +26,6 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformation
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.NRInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
@@ -157,7 +157,6 @@ public class LoggingServiceExtensions {
         }
         List<CellInformation> cellsInfo = dp.getCellInformation();
         List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
-        LocationInformation location = dp.getLocation();
 
         CellInformation currentCell = findRegisteredCell(cellsInfo);
         CellInformation currentSignal = null;
@@ -174,7 +173,8 @@ public class LoggingServiceExtensions {
         MeasurementsModel modelForSending = getMeasurementsModel(category, currentCell);
         updateMeasurementModelByCell(modelForSending, currentSignal);
 
-        //TODO SHARK replace this location with GPSMonitor's location
+        Location location = GPSMonitor.getLastLocation();
+
         MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
                 location,
                 modelForSending

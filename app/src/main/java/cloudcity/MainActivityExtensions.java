@@ -84,7 +84,8 @@ public class MainActivityExtensions {
 
     public static void startGPSMonitoring(Context applicationContext) {
         // GPSMonitor
-        gpsMonitor = new GPSMonitor(applicationContext);
+        GPSMonitor.initialize(applicationContext);
+        gpsMonitor = GPSMonitor.getInstance();
         gpsMonitor.startMonitoring();
     }
 

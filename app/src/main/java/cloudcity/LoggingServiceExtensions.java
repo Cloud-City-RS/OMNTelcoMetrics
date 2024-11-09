@@ -174,7 +174,6 @@ public class LoggingServiceExtensions {
         MeasurementsModel modelForSending = getMeasurementsModel(category, currentCell);
         updateMeasurementModelByCell(modelForSending, currentSignal);
 
-        //TODO SHARK replace this location with GPSMonitor's location
         MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
                 location,
                 modelForSending

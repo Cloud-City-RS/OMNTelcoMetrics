@@ -2,8 +2,6 @@ package cloudcity.dataholders;
 
 import androidx.annotation.NonNull;
 
-import com.google.gson.annotations.SerializedName;
-
 /**
  * Plain Old Java Object (POJO) for holding iPerf3 network performance metrics.
  * Contains statistical data for both download (DL) and upload (UL) measurements.

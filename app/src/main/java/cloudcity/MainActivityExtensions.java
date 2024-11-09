@@ -84,7 +84,8 @@ public class MainActivityExtensions {
 
     public static void startGPSMonitoring(Context applicationContext) {
         // GPSMonitor
-        gpsMonitor = new GPSMonitor(applicationContext);
+        GPSMonitor.initialize(applicationContext);
+        gpsMonitor = GPSMonitor.getInstance();
         gpsMonitor.startMonitoring();
     }
 
@@ -101,7 +102,6 @@ public class MainActivityExtensions {
             public void onIperf3TestCompleted(MetricsPOJO metrics) {
                 Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
                 DataProvider dp = GlobalVars.getInstance().get_dp();
-                //TODO SHARK replace this location with GPSMonitor's location
                 boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(metrics, dp.getLocation());
                 Log.wtf(TAG, "sending iperf3 metrics result: "+iperf3SendingResult);
             }

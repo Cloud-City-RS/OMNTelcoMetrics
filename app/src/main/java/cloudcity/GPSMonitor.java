@@ -49,37 +49,78 @@ public class GPSMonitor {
     private Context context;
     private ValueMonitor valueMonitor;
 
-    private volatile float lastSpeed;
+    private static volatile float lastSpeed;
+    private static volatile Location lastLocation;
     private volatile AtomicLong timeUnderThreshold = new AtomicLong(0);
 
-    public GPSMonitor(Context context) {
-        this.context = context;
-        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        locationListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                // Handle location update
-                Log.d(TAG, "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
-                if (location.hasSpeed()) {
-                    Log.d(TAG, "Location has speed! speed: "+location.getSpeed());
-                    if (location.hasSpeedAccuracy()) {
-                        Log.d(TAG, "Location has speed accuracy! speed: "+location.getSpeedAccuracyMetersPerSecond());
-                    }
-                    lastSpeed = location.getSpeed();
+    private static GPSMonitor instance;
+
+    public static synchronized void initialize(Context context) {
+        if (instance == null) {
+            synchronized (GPSMonitor.class) {
+                if (instance == null) {
+                    instance = new GPSMonitor();
+                    instance.context = context;
+                    instance.locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                    instance.locationListener = new LocationListener() {
+                        @Override
+                        public void onLocationChanged(Location location) {
+                            // Handle location update
+                            Log.d(TAG, "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
+                            lastLocation = location;
+                            if (location.hasSpeed()) {
+                                Log.d(TAG, "Location has speed! speed: " + location.getSpeed());
+                                if (location.hasSpeedAccuracy()) {
+                                    Log.d(TAG, "Location has speed accuracy! speed: " + location.getSpeedAccuracyMetersPerSecond());
+                                }
+                                lastSpeed = location.getSpeed();
+                            }
+                        }
+
+                        @Override
+                        public void onStatusChanged(String provider, int status, Bundle extras) {
+                        }
+
+                        @Override
+                        public void onProviderEnabled(String provider) {
+                        }
+
+                        @Override
+                        public void onProviderDisabled(String provider) {
+                        }
+                    };
+
+                    // Initialize lastLocation to something bogus
+                    lastLocation = new Location("null");
+                    lastLocation.reset();
+
+                    Log.d(TAG, "GPSMonitor initialized!");
                 }
             }
+        } else {
+            throw new IllegalStateException("GPSMonitor was already initialized! Must not call before calling shutdown()");
+        }
+    }
 
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {}
+    public static GPSMonitor getInstance() {
+        if (instance != null) {
+            return instance;
+        } else {
+            throw new IllegalStateException("GPSMonitor not initialized! Must call initialize() first!");
+        }
+    }
 
-            @Override
-            public void onProviderEnabled(String provider) {}
+    public static void shutdown() {
+        instance.stopMonitoring();
+        instance = null;
+    }
 
-            @Override
-            public void onProviderDisabled(String provider) {}
-        };
-
-        Log.d(TAG, "GPSMonitor initialized!");
+    /**
+     * Returns last location observed during monitoring
+     * @return last location or rather {@link #lastLocation}
+     */
+    public static Location getLastLocation() {
+        return lastLocation;
     }
 
     /**

@@ -347,16 +347,16 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
 
                 // Since we have the FINE_LOCATION, we can start sending to the server
 
+                // Start GPS monitoring
+                MainActivityExtensions
+                        .startGPSMonitoring(getApplicationContext());
+
                 // To avoid the possibility of a race-condition between 'spg' initialization and this callback,
                 // lets maybe also initiallize the SPG for the first time here as well.
                 MainActivityExtensions
                         .turnOnCloudCityLoggingAfterPermissionsGranted(
                                 SharedPreferencesGrouper.getInstance(getApplicationContext())
                         );
-
-                // Start GPS monitoring
-                MainActivityExtensions
-                        .startGPSMonitoring(getApplicationContext());
             }
         }
         Log.d(TAG, "<-- onRequestPermissionsResult()");

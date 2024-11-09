@@ -19,13 +19,18 @@ import javax.annotation.Nullable;
 
 import cloudcity.dataholders.TimerWrapper;
 
+/**
+ * Class for monitoring GPS location and speed via {@link LocationManager}, monitoring if the speed
+ * is under threshold {@link #THRESHOLD_VALUE} for minimum threshold millis {@link #THRESHOLD_DURATION},
+ * firing callbacks via {@link ValueMonitorCallback} when that condition has been met.
+ */
 public class GPSMonitor {
     private static final String TAG = GPSMonitor.class.getSimpleName();
-    private static final long GPS_POLLING_SPEED_IN_MS = 1000L;//10L; //was 1000L
-    private static final long GPS_POLLING_MIN_DIST_IN_M = 0L; //1L; //was 0
+    private static final long GPS_POLLING_SPEED_IN_MS = 1000L;
+    private static final long GPS_POLLING_MIN_DIST_IN_M = 0L;
 
     /**
-     * The thresshold value we need to be under to start the Iperf3 test
+     * The threshold value we need to be under to start the Iperf3 test
      */
     private static final int THRESHOLD_VALUE = 5;
     /**
@@ -33,9 +38,10 @@ public class GPSMonitor {
      */
     private static final int THRESHOLD_DURATION = 5000;
     /**
-     * How often to poll the value, in milliseconds
+     * How often to poll the value, in milliseconds<p>
+     * Try to keep it faster then {@link #GPS_POLLING_SPEED_IN_MS}
      */
-    private static final int VALUE_MONITOR_INTERVAL = 500;//1000;
+    private static final int VALUE_MONITOR_INTERVAL = 500;
 
 
     private LocationManager locationManager;
@@ -76,6 +82,10 @@ public class GPSMonitor {
         Log.d(TAG, "GPSMonitor initialized!");
     }
 
+    /**
+     * Start monitoring for GPS location changes, and turn on the internal {@link ValueMonitor}
+     * and assign it a {@link ValueMonitorCallback} to call {@link Iperf3Monitor#startDefault15secTest()}
+     */
     public void startMonitoring() {
         Log.d(TAG, "--> startMonitoring()");
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
@@ -99,6 +109,11 @@ public class GPSMonitor {
         Log.d(TAG, "<-- startMonitoring()");
     }
 
+    /**
+     * Stop monitoring GPS and speed updates,
+     * remove {@link #locationListener} from the {@link LocationManager} and call
+     * {@link ValueMonitor#stopMonitoring()}
+     */
     public void stopMonitoring() {
         locationManager.removeUpdates(locationListener);
         if(valueMonitor != null) {
@@ -168,7 +183,14 @@ public class GPSMonitor {
         }
     }
 
+    /**
+     * Callback interface for the value monitoring
+     */
     interface ValueMonitorCallback {
+        /**
+         * Callback to be invoked when the speed has been under {@link #THRESHOLD_VALUE}
+         * for at least {@link #THRESHOLD_DURATION} millis
+         */
         void onUnderThresholdValueForAtLeastThresholdDuration();
     }
 }

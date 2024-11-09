@@ -52,6 +52,17 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
+/**
+ * The new single-source for Iperf3 tests, which can be used to programatically read and parse Iperf3
+ * results and start Iperf3 tests.
+ * <p>
+ * It has two moving parts - one for listening for test results and one for starting tests -
+ * the internal {@link #parsingRunnable} and a bunch of synchronization necessary for all of that to
+ * work together.
+ *
+ * @see #startListeningForIperf3Updates(Iperf3MonitorCompletionListener)
+ * @see #startDefault15secTest()
+ */
 public class Iperf3Monitor {
     private static final String TAG = Iperf3Monitor.class.getSimpleName();
 
@@ -78,6 +89,12 @@ public class Iperf3Monitor {
     private volatile MainThreadExecutor mainThreadExecutor;
 
     private volatile Iperf3ResultsDataBase iperf3ResultsDatabase;
+
+    /**
+     * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
+     * {@link Iperf3Parser#parse()} method every {@link #PARSING_DELAY_IN_MS} until it reaches the end
+     * or ordered to stop by toggling {@link #shouldStop} flag
+     */
     private final Runnable parsingRunnable = new Runnable() {
         @Override
         public void run() {
@@ -304,7 +321,7 @@ public class Iperf3Monitor {
                                     // And set the new marker as 'no longer running'
                                     iperf3TestRunning.compareAndSet(true, false);
 
-                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get()+", iperf3TestRunning: "+iperf3TestRunning.get());
+                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
                                 }
                                 break;
 
@@ -467,7 +484,7 @@ public class Iperf3Monitor {
 
     public void startDefault15secTest() {
         // Sanity check
-        if(iperf3TestRunning.get()) {
+        if (iperf3TestRunning.get()) {
             Log.e(TAG, "Iperf3 test is still running! aborting...");
             return;
         }
@@ -526,24 +543,28 @@ public class Iperf3Monitor {
 
         // Generate a key-value hashmap to hold the rest of the necessary duplicated crap
         HashMap<String, String> stringMap = new HashMap<>();
-//        map.put("rev", false)     //Will be passed in the other map
+
         stringMap.put("cport", null);
         stringMap.put("bandwidth", null);
         stringMap.put("rawIperf3file", rawIperf3file);
         stringMap.put("iperf3WorkerID", uuid);
         stringMap.put("ip", iperf3ServerIP);
-//        map.put("iperf3LineProtocolFile", )
         stringMap.put("measurementName", "Iperf3");
-//        map.put("oneOff", false); //Will be passed in the other map
         stringMap.put("duration", duration);
         stringMap.put("protocol", protocol);
-//        map.put("biDir", true);   //Will be passed in the other map
         stringMap.put("port", randomPortStr);
         stringMap.put("bytes", null);
         stringMap.put("client", "Client");
         stringMap.put("interval", null);
+        // The following values cannot be put into a <String,String> map and will need to be handled
+        // differently; however they are still here for completeness sake and to show that we still
+        // have everything mentioned in {@link Iperf3Fragment#executeIperfCommand(View)} method
 //        map.put("commands", cmdList); //This String[] is passed separately
+//        map.put("rev", false)     //Will be passed in the other map
+//        map.put("oneOff", false); //Will be passed in the other map
+//        map.put("biDir", true);   //Will be passed in the other map
         stringMap.put("timestamp", timestampStr);
+
         // Utility elements
         stringMap.put("uuid", uuid);
         String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/omnt/iperf3LP/";
@@ -551,6 +572,7 @@ public class Iperf3Monitor {
         String iperf3LineProtocolFile = path + uuid + ".txt";
         stringMap.put("iperf3LineProtocolFile", iperf3LineProtocolFile);
 
+        // Boolean elements in the new boolean map
         HashMap<String, Boolean> boolMap = new HashMap<>();
         boolMap.put("rev", false);
         boolMap.put("oneOff", false);

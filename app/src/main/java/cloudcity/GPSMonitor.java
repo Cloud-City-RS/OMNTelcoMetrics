@@ -53,7 +53,7 @@ public class GPSMonitor {
     private static volatile Location lastLocation;
     private volatile AtomicLong timeUnderThreshold = new AtomicLong(0);
 
-    private static GPSMonitor instance;
+    private static volatile GPSMonitor instance;
 
     public static synchronized void initialize(Context context) {
         if (instance == null) {

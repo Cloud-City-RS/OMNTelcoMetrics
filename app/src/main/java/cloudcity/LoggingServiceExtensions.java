@@ -77,7 +77,6 @@ public class LoggingServiceExtensions {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Exception happened! exception "+e, e);
-                throw new RuntimeException(e);
             }
 
             CloudCityHandler.postDelayed(this, interval);
@@ -91,7 +90,7 @@ public class LoggingServiceExtensions {
     /**
      * initialize a new remote Cloud City connection
      */
-    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
+    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, @NonNull DataProvider dataProvider, SharedPreferences sharedPrefs) {
         Log.d(TAG, "setupCloudCity");
 
         gv = globalVars;
@@ -112,7 +111,13 @@ public class LoggingServiceExtensions {
         }
 
         // And finally, update all data providers
-        dp.refreshAll();
+        if (dp != null) {
+            // This has to be done since i'm getting crashes due to this 'dp' being null after the app
+            // works for a while.
+            dp.refreshAll();
+        } else {
+            Log.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
+        }
     }
 
     /**
@@ -146,6 +151,10 @@ public class LoggingServiceExtensions {
     }
 
     private static NetworkDataModel getCloudCityData() {
+        if (dp == null) {
+            Log.e(TAG, "DataProvider was null! Bailing out, returning null...");
+            return null;
+        }
         List<CellInformation> cellsInfo = dp.getCellInformation();
         LocationInformation location = dp.getLocation();
         CellInformation currentCell = null;

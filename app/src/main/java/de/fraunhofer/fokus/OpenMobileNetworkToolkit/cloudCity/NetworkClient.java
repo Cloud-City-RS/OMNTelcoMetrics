@@ -38,7 +38,7 @@ public class NetworkClient {
                             return null;
                         }
 
-                        if (!url.equalsIgnoreCase(currentClientBaseUrl)) {
+                        if (!baseUrl.equalsIgnoreCase(currentClientBaseUrl)) {
                             Log.w(TAG, "URL has changed from previous Retrofit client's base URL, instantiating new client...");
                         }
 

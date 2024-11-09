@@ -173,6 +173,7 @@ public class LoggingServiceExtensions {
 
         String category = currentCell.getCellType().toString();
 
+        //TODO SHARK replace this location with GPSMonitor's location
         MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
                 location,
                 getMeasurementsModel(category, currentCell)

@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
@@ -43,21 +44,17 @@ public class LoggingServiceExtensions {
 
     private static HandlerThread handlerThread;
 
+    private static AtomicBoolean isUpdating = new AtomicBoolean(false);
+
     // Handle remote Cloud City update
     private final static Runnable CloudCityUpdate = new Runnable() {
         @Override
         public void run() {
             try {
                 Log.d(TAG, "run: CC Update");
-
-                String address = sp.getString(CloudCityConstants.CLOUD_CITY_SERVER_URL, "");
-                if (address.isEmpty() || CloudCityUtil.isBlank(address)) {
-                    address = CloudCityParamsRepository.getInstance().getServerUrl();
-                }
-                String token = sp.getString(CloudCityConstants.CLOUD_CITY_TOKEN, "");
-                if (token.isEmpty() || CloudCityUtil.isBlank(token)) {
-                    token = CloudCityParamsRepository.getInstance().getServerToken();
-                }
+                interval = Integer.parseInt(sp.getString("logging_interval", "1000"));
+                String address = CloudCityParamsRepository.getInstance().getServerUrl();
+                String token = CloudCityParamsRepository.getInstance().getServerToken();
 
                 NetworkDataModel data = getCloudCityData();
                 Log.d(TAG, "getCloudCityData() returned "+data);
@@ -66,6 +63,8 @@ public class LoggingServiceExtensions {
                 } else {
                     NetworkDataModelRequest requestData = new NetworkDataModelRequest();
                     requestData.add(data);
+
+                    Log.d(TAG, "sending data at addr=" + address + ", token=" + token + ", interval=" + interval);
 
                     boolean status = CloudCityHelpers.sendData(address, token, requestData);
 
@@ -78,7 +77,6 @@ public class LoggingServiceExtensions {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Exception happened! exception "+e, e);
-                throw new RuntimeException(e);
             }
 
             CloudCityHandler.postDelayed(this, interval);
@@ -86,13 +84,13 @@ public class LoggingServiceExtensions {
     };
 
     public static void setupCloudCity(GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferencesGrouper spg) {
-        setupCloudCity2(globalVars, updateInterval, dataProvider, spg.getSharedPreference(SPType.default_sp));
+        setupCloudCity2(globalVars, updateInterval, dataProvider, spg.getSharedPreference(SPType.logging_sp));
     }
 
     /**
      * initialize a new remote Cloud City connection
      */
-    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
+    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, @NonNull DataProvider dataProvider, SharedPreferences sharedPrefs) {
         Log.d(TAG, "setupCloudCity");
 
         gv = globalVars;
@@ -104,14 +102,22 @@ public class LoggingServiceExtensions {
         handlerThread = new HandlerThread("CloudCityHandlerThread");
         handlerThread.start();
         CloudCityHandler = new Handler(Objects.requireNonNull(handlerThread.getLooper()));
-        CloudCityHandler.post(CloudCityUpdate);
+        if (isUpdating.compareAndSet(false, true)) {
+            CloudCityHandler.post(CloudCityUpdate);
+        }
         ImageView log_status = gv.getLog_status();
         if (log_status != null) {
             gv.getLog_status().setColorFilter(Color.argb(255, 255, 0, 0));
         }
 
         // And finally, update all data providers
-        dp.refreshAll();
+        if (dp != null) {
+            // This has to be done since i'm getting crashes due to this 'dp' being null after the app
+            // works for a while.
+            dp.refreshAll();
+        } else {
+            Log.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
+        }
     }
 
     /**
@@ -123,6 +129,10 @@ public class LoggingServiceExtensions {
         if (CloudCityHandler != null) {
             try {
                 CloudCityHandler.removeCallbacks(CloudCityUpdate);
+                boolean unset = isUpdating.compareAndSet(true, false);
+                if(!unset) {
+                    Log.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
+                }
             } catch (java.lang.NullPointerException e) {
                 Log.d(TAG, "trying to stop cloud city service while it was not running");
             }
@@ -141,6 +151,10 @@ public class LoggingServiceExtensions {
     }
 
     private static NetworkDataModel getCloudCityData() {
+        if (dp == null) {
+            Log.e(TAG, "DataProvider was null! Bailing out, returning null...");
+            return null;
+        }
         List<CellInformation> cellsInfo = dp.getCellInformation();
         LocationInformation location = dp.getLocation();
         CellInformation currentCell = null;

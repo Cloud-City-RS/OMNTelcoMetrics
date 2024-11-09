@@ -5,16 +5,16 @@ import static cloudcity.CloudCityConstants.CLOUD_CITY_GENERAL_LOGGING;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_SERVER_URL;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_TOKEN;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 
 public class MainActivityExtensions {
+    private static GPSMonitor gpsMonitor;
 
     /**
      * We will be using the 'logging' shared pref since that's the only one that is displayed in the logging settings fragment...
@@ -81,4 +81,32 @@ public class MainActivityExtensions {
                 .putBoolean(CLOUD_CITY_CC_LOGGING, true)
                 .commit();
     }
+
+    public static void startGPSMonitoring(Context applicationContext) {
+        // GPSMonitor
+        gpsMonitor = new GPSMonitor(applicationContext);
+        gpsMonitor.startMonitoring();
+    }
+
+    /**
+     * TODO SHARK Figure out how to make this one work
+     */
+    /*
+    public static void startListeningToIperf3ResultsAndUploadOnSuccess() {
+        Log.d(TAG, "--> startListeningToIperf3ResultsAndUploadOnSuccess()");
+        iperf3Monitor = Iperf3Monitor.getInstance();
+
+        iperf3Monitor.startListeningForIperf3Updates(new Iperf3Monitor.Iperf3MonitorCompletionListener() {
+            @Override
+            public void onIperf3TestCompleted(MetricsPOJO metrics) {
+                Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
+                DataProvider dp = GlobalVars.getInstance().get_dp();
+                //TODO SHARK replace this location with GPSMonitor's location
+                boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(metrics, dp.getLocation());
+                Log.wtf(TAG, "sending iperf3 metrics result: "+iperf3SendingResult);
+            }
+        });
+        Log.d(TAG, "<-- startListeningToIperf3ResultsAndUploadOnSuccess()");
+    }
+     */
 }

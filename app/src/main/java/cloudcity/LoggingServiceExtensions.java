@@ -4,7 +4,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.telephony.CellInfo;
 import android.util.Log;
 import android.widget.ImageView;
@@ -15,6 +14,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import cloudcity.networking.CloudCityHelpers;
+import cloudcity.networking.models.CellInfoModel;
+import cloudcity.networking.models.MeasurementsModel;
+import cloudcity.networking.models.MobileSignalNetworkDataModel;
+import cloudcity.networking.models.NetworkDataModel;
+import cloudcity.networking.models.NetworkDataModelRequest;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
@@ -24,11 +29,6 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInforma
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.CloudCityHelpers;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.CellInfoModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.MeasurementsModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModelRequest;
 
 public class LoggingServiceExtensions {
     private static final String TAG = "LoggingServiceExtensions";
@@ -77,7 +77,6 @@ public class LoggingServiceExtensions {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Exception happened! exception "+e, e);
-                throw new RuntimeException(e);
             }
 
             CloudCityHandler.postDelayed(this, interval);
@@ -91,7 +90,7 @@ public class LoggingServiceExtensions {
     /**
      * initialize a new remote Cloud City connection
      */
-    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, DataProvider dataProvider, SharedPreferences sharedPrefs) {
+    public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, @NonNull DataProvider dataProvider, SharedPreferences sharedPrefs) {
         Log.d(TAG, "setupCloudCity");
 
         gv = globalVars;
@@ -112,7 +111,13 @@ public class LoggingServiceExtensions {
         }
 
         // And finally, update all data providers
-        dp.refreshAll();
+        if (dp != null) {
+            // This has to be done since i'm getting crashes due to this 'dp' being null after the app
+            // works for a while.
+            dp.refreshAll();
+        } else {
+            Log.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
+        }
     }
 
     /**
@@ -146,6 +151,10 @@ public class LoggingServiceExtensions {
     }
 
     private static NetworkDataModel getCloudCityData() {
+        if (dp == null) {
+            Log.e(TAG, "DataProvider was null! Bailing out, returning null...");
+            return null;
+        }
         List<CellInformation> cellsInfo = dp.getCellInformation();
         List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
         LocationInformation location = dp.getLocation();
@@ -160,22 +169,23 @@ public class LoggingServiceExtensions {
 
         String category = currentCell.getCellType().toString();
 
-        NetworkDataModel dataModel = new NetworkDataModel();
-
-        dataModel.setCategory(currentCell.getCellType().toString());
-        dataModel.setLatitude(location.getLatitude());
-        dataModel.setLongitude(location.getLongitude());
-        dataModel.setAccuracy(location.getAccuracy());
-        /* Convert to km/h */
-        dataModel.setSpeed(location.getSpeed() * 3.6);
-
-        dataModel.setCellData(getCellInfoModel(category, currentCell));
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
         MeasurementsModel modelForSending = getMeasurementsModel(category, currentCell);
         updateMeasurementModelByCell(modelForSending, currentSignal);
 
-        dataModel.setValues(modelForSending);
+        //TODO SHARK replace this location with GPSMonitor's location
+        MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
+                location,
+                modelForSending
+        );
+
+        dataModel.setCategory(currentCell.getCellType().toString());
+        dataModel.setAccuracy(location.getAccuracy());
+        /* Convert to km/h */
+        dataModel.setSpeed(location.getSpeed() * 3.6);
+
+        dataModel.setCellData(getCellInfoModel(category, currentCell));
 
         return dataModel;
     }

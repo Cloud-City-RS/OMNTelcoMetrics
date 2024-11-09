@@ -57,8 +57,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
+import cloudcity.CloudCityConstants;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
@@ -119,6 +121,8 @@ public class Iperf3Fragment extends Fragment {
             progressIndicator.setIndicatorColor(runningColors);
         }
     };
+
+    private Button btnPrefill;
 
     @Override
     public void onPause() {
@@ -220,7 +224,7 @@ public class Iperf3Fragment extends Fragment {
         iperf3EtBandwidth = v.findViewById(R.id.iperf3_bandwidth);
         iperf3EtDuration = v.findViewById(R.id.iperf3_duration);
 
-
+        btnPrefill = v.findViewById(R.id.cc_iperf3_prefill);
 
 
         iperf3EtInterval = v.findViewById(R.id.iperf3_interval);
@@ -284,6 +288,24 @@ public class Iperf3Fragment extends Fragment {
         progressIndicator.setIndeterminateAnimationType(
             LinearProgressIndicator.INDETERMINATE_ANIMATION_TYPE_CONTIGUOUS);
         progressIndicator.setVisibility(LinearProgressIndicator.INVISIBLE);
+
+        btnPrefill.setOnClickListener(v -> {
+            // Set URL
+            iperf3EtIp.setText(CloudCityConstants.CLOUD_CITY_IPERF3_SERVER);
+
+            // Set random port in valid range
+            int validPortMin = CloudCityConstants.CLOUD_CITY_IPERF3_VALID_PORT_MIN;
+            int validPortMax = CloudCityConstants.CLOUD_CITY_IPERF3_VALID_PORT_MAX;
+            Random rnd = new Random();
+            int randomPort = rnd.nextInt((validPortMax - validPortMin) + 1) + validPortMin;
+            iperf3EtPort.setText(String.valueOf(randomPort));
+
+            // Set duration to 30
+            iperf3EtDuration.setText(String.valueOf(CloudCityConstants.CLOUD_CITY_IPERF3_DEFAULT_DURATION));
+
+            // tick of checkboxes
+            iperf3BiDir.setChecked(true);
+        });
 
         editTexts = new LinkedList<>();
         editTexts.add(iperf3EtIp);

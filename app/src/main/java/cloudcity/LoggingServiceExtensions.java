@@ -77,7 +77,6 @@ public class LoggingServiceExtensions {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Exception happened! exception "+e, e);
-                throw new RuntimeException(e);
             }
 
             CloudCityHandler.postDelayed(this, interval);
@@ -152,6 +151,10 @@ public class LoggingServiceExtensions {
     }
 
     private static NetworkDataModel getCloudCityData() {
+        if (dp == null) {
+            Log.e(TAG, "DataProvider was null! Bailing out, returning null...");
+            return null;
+        }
         List<CellInformation> cellsInfo = dp.getCellInformation();
         LocationInformation location = dp.getLocation();
         CellInformation currentCell = null;

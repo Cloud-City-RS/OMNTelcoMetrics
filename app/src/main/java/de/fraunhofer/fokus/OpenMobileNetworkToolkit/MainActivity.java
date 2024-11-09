@@ -355,7 +355,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                         );
 
                 // Start GPS monitoring
-                //TODO tie in GPS monitoring with the yet-to-happen Iperf3Starter and ideally move that to IperfMonitor
                 MainActivityExtensions
                         .startGPSMonitoring(getApplicationContext());
             }

@@ -111,8 +111,12 @@ public class GPSMonitor {
     }
 
     public static void shutdown() {
-        instance.stopMonitoring();
-        instance = null;
+        if (instance != null) {
+            instance.stopMonitoring();
+            instance = null;
+        } else {
+            Log.w(TAG, "GPSMonitor instance is already null during shutdown.");
+        }
     }
 
     /**

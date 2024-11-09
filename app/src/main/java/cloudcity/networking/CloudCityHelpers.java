@@ -1,11 +1,11 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity;
+package cloudcity.networking;
 
 import android.util.Log;
 
 import java.io.IOException;
 import java.util.Locale;
 
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModelRequest;
+import cloudcity.networking.models.NetworkDataModelRequest;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 

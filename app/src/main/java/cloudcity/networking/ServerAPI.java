@@ -1,6 +1,6 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity;
+package cloudcity.networking;
 
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModelRequest;
+import cloudcity.networking.models.NetworkDataModelRequest;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Header;

@@ -1,4 +1,4 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models;
+package cloudcity.networking.models;
 
 import android.telephony.CellInfo;
 

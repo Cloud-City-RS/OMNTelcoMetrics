@@ -4,7 +4,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.telephony.CellInfo;
 import android.util.Log;
 import android.widget.ImageView;
@@ -24,11 +23,11 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInforma
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.CloudCityHelpers;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.CellInfoModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.MeasurementsModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModelRequest;
+import cloudcity.networking.CloudCityHelpers;
+import cloudcity.networking.models.CellInfoModel;
+import cloudcity.networking.models.MeasurementsModel;
+import cloudcity.networking.models.NetworkDataModel;
+import cloudcity.networking.models.NetworkDataModelRequest;
 
 public class LoggingServiceExtensions {
     private static final String TAG = "LoggingServiceExtensions";

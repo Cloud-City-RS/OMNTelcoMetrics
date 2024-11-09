@@ -1,4 +1,4 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity;
+package cloudcity.networking;
 
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.CertificateException;

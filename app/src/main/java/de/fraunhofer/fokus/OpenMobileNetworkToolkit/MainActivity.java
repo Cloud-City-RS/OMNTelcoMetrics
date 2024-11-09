@@ -357,9 +357,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                 // Start GPS monitoring
                 MainActivityExtensions
                         .startGPSMonitoring(getApplicationContext());
-
-                MainActivityExtensions
-                        .startListeningToIperf3ResultsAndUploadOnSuccess();
             }
         }
         Log.d(TAG, "<-- onRequestPermissionsResult()");

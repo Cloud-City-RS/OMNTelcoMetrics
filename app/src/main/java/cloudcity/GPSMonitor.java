@@ -144,6 +144,10 @@ public class GPSMonitor {
             this.callback = callback;
         }
 
+        /**
+         * Start a new {@link TimerTask} on the {@link #timer} which will call {@link #monitorValue()}
+         * every {@link #VALUE_MONITOR_INTERVAL}
+         */
         public void startMonitoring() {
             timer.schedule(new TimerTask() {
                 @Override
@@ -153,6 +157,9 @@ public class GPSMonitor {
             }, 0, VALUE_MONITOR_INTERVAL);
         }
 
+        /**
+         * Stops monitoring and calls {@link #timer}'s {@link TimerWrapper#stop()}
+         */
         public void stopMonitoring() {
             timer.stop();
         }

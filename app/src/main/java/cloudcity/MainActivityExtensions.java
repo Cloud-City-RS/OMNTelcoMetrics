@@ -9,12 +9,17 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import cloudcity.dataholders.MetricsPOJO;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 
 public class MainActivityExtensions {
+    private static final String TAG = "MainActivityExtensions";
+
     private static GPSMonitor gpsMonitor;
+    private static Iperf3Monitor iperf3Monitor;
 
     /**
      * We will be using the 'logging' shared pref since that's the only one that is displayed in the logging settings fragment...
@@ -86,5 +91,21 @@ public class MainActivityExtensions {
         // GPSMonitor
         gpsMonitor = new GPSMonitor(applicationContext);
         gpsMonitor.startMonitoring();
+    }
+
+    public static void startListeningToIperf3ResultsAndUploadOnSuccess() {
+        Log.d(TAG, "--> startListeningToIperf3ResultsAndUploadOnSuccess()");
+        iperf3Monitor = Iperf3Monitor.getInstance();
+
+        iperf3Monitor.startListeningForIperf3Updates(new Iperf3Monitor.Iperf3MonitorCompletionListener() {
+            @Override
+            public void onIperf3TestCompleted(MetricsPOJO metrics) {
+                Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
+                DataProvider dp = GlobalVars.getInstance().get_dp();
+                boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(metrics, dp.getLocation());
+                Log.wtf(TAG, "sending metrics result: "+iperf3SendingResult);
+            }
+        });
+        Log.d(TAG, "<-- startListeningToIperf3ResultsAndUploadOnSuccess()");
     }
 }

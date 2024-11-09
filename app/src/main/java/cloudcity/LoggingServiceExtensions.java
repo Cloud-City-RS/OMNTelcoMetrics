@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import cloudcity.networking.models.MobileSignalNetworkDataModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
@@ -172,7 +173,7 @@ public class LoggingServiceExtensions {
 
         String category = currentCell.getCellType().toString();
 
-        NetworkDataModel dataModel = new NetworkDataModel();
+        MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel();
 
         dataModel.setCategory(currentCell.getCellType().toString());
         dataModel.setLatitude(location.getLatitude());

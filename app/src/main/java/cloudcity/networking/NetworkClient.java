@@ -1,4 +1,4 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity;
+package cloudcity.networking;
 
 import android.util.Log;
 

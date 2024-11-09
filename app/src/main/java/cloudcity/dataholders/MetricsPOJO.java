@@ -1,5 +1,7 @@
 package cloudcity.dataholders;
 
+import androidx.annotation.NonNull;
+
 /**
  * Plain Old Java Object (POJO) for holding iPerf3 network performance metrics.
  * Contains statistical data for both download (DL) and upload (UL) measurements.
@@ -69,6 +71,28 @@ public class MetricsPOJO {
         );
     }
 
+    public MetricsPair toMetricsPair() {
+        return new MetricsPair(
+                new UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
+                new DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast)
+        );
+    }
+
+    public static class MetricsPair {
+        @NonNull
+        final UploadMetrics uploadMetrics;
+        @NonNull
+        final DownloadMetrics downloadMetrics;
+
+        MetricsPair(@NonNull UploadMetrics upload, @NonNull DownloadMetrics download) {
+            this.uploadMetrics = upload;
+            this.downloadMetrics = download;
+        }
+
+        public @NonNull UploadMetrics getUploadMetrics() { return uploadMetrics; }
+        public @NonNull DownloadMetrics getDownloadMetrics() { return downloadMetrics; }
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -104,6 +128,26 @@ public class MetricsPOJO {
             this.DLmax = DLmax;
             this.DLlast = DLlast;
         }
+
+        public double getDLmin() {
+            return DLmin;
+        }
+
+        public double getDLmedian() {
+            return DLmedian;
+        }
+
+        public double getDLmean() {
+            return DLmean;
+        }
+
+        public double getDLmax() {
+            return DLmax;
+        }
+
+        public double getDLlast() {
+            return DLlast;
+        }
     }
 
     public static class UploadMetrics {
@@ -119,6 +163,26 @@ public class MetricsPOJO {
             this.ULmean = ULmean;
             this.ULmax = ULmax;
             this.ULlast = ULlast;
+        }
+
+        public double getULmin() {
+            return ULmin;
+        }
+
+        public double getULmedian() {
+            return ULmedian;
+        }
+
+        public double getULmean() {
+            return ULmean;
+        }
+
+        public double getULmax() {
+            return ULmax;
+        }
+
+        public double getULlast() {
+            return ULlast;
         }
     }
 }

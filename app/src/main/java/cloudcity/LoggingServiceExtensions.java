@@ -4,7 +4,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.telephony.CellInfo;
 import android.util.Log;
 import android.widget.ImageView;
@@ -15,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import cloudcity.networking.models.MobileSignalNetworkDataModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
@@ -24,11 +24,11 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInforma
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.CloudCityHelpers;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.CellInfoModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.MeasurementsModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModel;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models.NetworkDataModelRequest;
+import cloudcity.networking.CloudCityHelpers;
+import cloudcity.networking.models.CellInfoModel;
+import cloudcity.networking.models.MeasurementsModel;
+import cloudcity.networking.models.NetworkDataModel;
+import cloudcity.networking.models.NetworkDataModelRequest;
 
 public class LoggingServiceExtensions {
     private static final String TAG = "LoggingServiceExtensions";
@@ -173,17 +173,18 @@ public class LoggingServiceExtensions {
 
         String category = currentCell.getCellType().toString();
 
-        NetworkDataModel dataModel = new NetworkDataModel();
+        //TODO SHARK replace this location with GPSMonitor's location
+        MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
+                location,
+                getMeasurementsModel(category, currentCell)
+        );
 
         dataModel.setCategory(currentCell.getCellType().toString());
-        dataModel.setLatitude(location.getLatitude());
-        dataModel.setLongitude(location.getLongitude());
         dataModel.setAccuracy(location.getAccuracy());
         /* Convert to km/h */
         dataModel.setSpeed(location.getSpeed() * 3.6);
 
         dataModel.setCellData(getCellInfoModel(category, currentCell));
-        dataModel.setValues(getMeasurementsModel(category, currentCell));
 
         return dataModel;
     }

@@ -3,6 +3,8 @@ package cloudcity;
 import android.app.Application;
 
 import cloudcity.dataholders.MetricsPOJO;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 
 public class CloudCityOMNTApplication extends Application {
     public static final String TAG = CloudCityOMNTApplication.class.getSimpleName();
@@ -21,6 +23,9 @@ public class CloudCityOMNTApplication extends Application {
             @Override
             public void onIperf3TestCompleted(MetricsPOJO metrics) {
                 android.util.Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
+                DataProvider dp = GlobalVars.getInstance().get_dp();
+                boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(metrics, dp.getLocation());
+                android.util.Log.d(TAG, "sending metrics result: "+iperf3SendingResult);
             }
         });
     }

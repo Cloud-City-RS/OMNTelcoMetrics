@@ -1,19 +1,22 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models;
+package cloudcity.networking.models;
+
+import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.SerializedName;
 
-public class NetworkDataModel {
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
+
+public class MobileSignalNetworkDataModel extends NetworkDataModel {
 
     private String category;
-    @SerializedName("lat")
-    private double latitude;
-    @SerializedName("lon")
-    private double longitude;
     private double accuracy;
     private double speed;
     @SerializedName("cell_info")
     private CellInfoModel cellData;
-    private MeasurementsModel values;
+
+    public MobileSignalNetworkDataModel(@NonNull LocationInformation locationInformation, @NonNull MeasurementsModel values) {
+        super(locationInformation.getLatitude(), locationInformation.getLongitude(), values);
+    }
 
     public String getCategory() {
         return category;
@@ -27,16 +30,8 @@ public class NetworkDataModel {
         return latitude;
     }
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
     public double getLongitude() {
         return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
     }
 
     public double getAccuracy() {
@@ -63,13 +58,6 @@ public class NetworkDataModel {
         this.cellData = cellData;
     }
 
-    public MeasurementsModel getValues() {
-        return values;
-    }
-
-    public void setValues(MeasurementsModel values) {
-        this.values = values;
-    }
 
     @Override
     public String toString() {

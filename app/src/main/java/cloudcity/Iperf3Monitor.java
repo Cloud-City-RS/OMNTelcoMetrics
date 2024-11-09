@@ -368,11 +368,12 @@ public class Iperf3Monitor {
                     startParsingThread(iperf3Parser);
                 } else {
                     // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
-                    Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result + "\t\tignoring...");
+                    Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result);
                     // We want to reset the test running marker on any non -100 result as well,
                     // since -100 means it's still running, and apparently anything non-zero means completion
                     // 1 for failure, -1 for cancellation and who knows what else
                     if (latestIperf3RunResult.result != -100) {
+                        Log.d(TAG, "latestIperf3RunResult.result was actually terminal, finishing iperf3 test run");
                         iperf3TestRunning.compareAndSet(true, false);
                     }
                 }
@@ -688,16 +689,16 @@ public class Iperf3Monitor {
                 }
             }
 
-            mainThreadExecutor.execute(() -> {
-                if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
-                    iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
-                } else if (iperf3Json) {
-                    iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
-                } else {
-                    iperf3WM.beginWith(iperf3WR).enqueue();
-                }
+            if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
+                iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
+            } else if (iperf3Json) {
+                iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
+            } else {
+                iperf3WM.beginWith(iperf3WR).enqueue();
+            }
 
-                iperf3WM.getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
+            mainThreadExecutor.execute(() -> {
+                getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
                     int iperf3_result;
                     iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
                     if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
@@ -706,7 +707,7 @@ public class Iperf3Monitor {
                     iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
                     Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
                 });
-                iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
+                getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
                     boolean iperf3_upload;
                     iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
                     Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);

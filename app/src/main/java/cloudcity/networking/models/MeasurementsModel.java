@@ -1,10 +1,10 @@
-package de.fraunhofer.fokus.OpenMobileNetworkToolkit.cloudCity.models;
+package cloudcity.networking.models;
 
 import android.telephony.CellInfo;
 
 import com.google.gson.annotations.SerializedName;
 
-public class MeasurementsModel {
+public class MeasurementsModel extends NetworkDataModel.NetworkDataModelValues {
 
     // LTE
     private Integer rsrp;

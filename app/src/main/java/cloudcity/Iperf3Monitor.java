@@ -287,6 +287,9 @@ public class Iperf3Monitor {
                                     Log.v(TAG, "END\tdefaultThroughput size: " + defaultThroughput.getMeanList().size() + ", defaultReverseThroughput size: " + defaultReverseThroughput.getMeanList().size());
                                     Log.v(TAG, "END\tend value is: " + evt.getNewValue() + "\t\tequals END_MARKER ? " + evt.getNewValue().equals(Iperf3Parser.END_MARKER));
 
+                                    //NOTE: while this is exactly the same as calculateAndLogMetrics(), we need these values here
+                                    // so we can pass them to the Iperf3MonitorCompletionListener
+                                    //
                                     // Throughput values need to be normalized by dividing by 1e6 so => realValue = value/1e+6
                                     double DLmin = normalize(defaultReverseThroughput.calcMin());
                                     double DLmedian = normalize(defaultReverseThroughput.calcMedian());
@@ -300,8 +303,8 @@ public class Iperf3Monitor {
                                     double ULmean = normalize(defaultThroughput.calcMean());
                                     double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-                                    Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
-                                    Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
+                                    Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST="+DLlast);
+                                    Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST="+ULlast);
 
                                     // Stop the thread to avoid spinning it needlessly forever...
                                     stopParsingThread();
@@ -344,18 +347,7 @@ public class Iperf3Monitor {
                         public void onParseCompleted() {
                             Log.v(TAG, "---> onParseCompleted");
 
-                            double DLmin = normalize(defaultReverseThroughput.calcMin());
-                            double DLmedian = normalize(defaultReverseThroughput.calcMedian());
-                            double DLmax = normalize(defaultReverseThroughput.calcMax());
-                            double DLmean = normalize(defaultReverseThroughput.calcMean());
-
-                            double ULmin = normalize(defaultThroughput.calcMin());
-                            double ULmedian = normalize(defaultThroughput.calcMedian());
-                            double ULmax = normalize(defaultThroughput.calcMax());
-                            double ULmean = normalize(defaultThroughput.calcMean());
-
-                            Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean);
-                            Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean);
+                            calculateAndLogMetrics();
                             stopParsingThread();
 
                             // And finally delete the temp copy of the file
@@ -390,6 +382,23 @@ public class Iperf3Monitor {
 
     private void stopParsingThread() {
         handler.removeCallbacks(parsingRunnable);
+    }
+
+    private void calculateAndLogMetrics() {
+        double DLmin = normalize(defaultReverseThroughput.calcMin());
+        double DLmedian = normalize(defaultReverseThroughput.calcMedian());
+        double DLmax = normalize(defaultReverseThroughput.calcMax());
+        double DLmean = normalize(defaultReverseThroughput.calcMean());
+        double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
+
+        double ULmin = normalize(defaultThroughput.calcMin());
+        double ULmedian = normalize(defaultThroughput.calcMedian());
+        double ULmax = normalize(defaultThroughput.calcMax());
+        double ULmean = normalize(defaultThroughput.calcMean());
+        double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
+
+        Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST="+DLlast);
+        Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST="+ULlast);
     }
 
     /**

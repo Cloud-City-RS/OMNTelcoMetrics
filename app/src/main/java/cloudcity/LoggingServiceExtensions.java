@@ -14,7 +14,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import cloudcity.networking.CloudCityHelpers;
+import cloudcity.networking.models.CellInfoModel;
+import cloudcity.networking.models.MeasurementsModel;
 import cloudcity.networking.models.MobileSignalNetworkDataModel;
+import cloudcity.networking.models.NetworkDataModel;
+import cloudcity.networking.models.NetworkDataModelRequest;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
@@ -24,11 +29,6 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInforma
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
-import cloudcity.networking.CloudCityHelpers;
-import cloudcity.networking.models.CellInfoModel;
-import cloudcity.networking.models.MeasurementsModel;
-import cloudcity.networking.models.NetworkDataModel;
-import cloudcity.networking.models.NetworkDataModelRequest;
 
 public class LoggingServiceExtensions {
     private static final String TAG = "LoggingServiceExtensions";
@@ -156,27 +156,28 @@ public class LoggingServiceExtensions {
             return null;
         }
         List<CellInformation> cellsInfo = dp.getCellInformation();
+        List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
         LocationInformation location = dp.getLocation();
-        CellInformation currentCell = null;
 
-        for (CellInformation ci: cellsInfo) {
-            if (!ci.isRegistered()) {
-                continue;
-            }
-
-            currentCell = ci;
-        }
-
-        if (currentCell == null) {
-            return null;
+        CellInformation currentCell = findRegisteredCell(cellsInfo);
+        CellInformation currentSignal = null;
+        // After testing on a real phone, apparently there's only one SignalStrengthInformation
+        // CellInformation member in the list, so lets just take the first one if it's there
+        if (!signalInfo.isEmpty()) {
+            currentSignal = signalInfo.get(0);
         }
 
         String category = currentCell.getCellType().toString();
 
+        // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
+        // with what we found in the SignalInformation
+        MeasurementsModel modelForSending = getMeasurementsModel(category, currentCell);
+        updateMeasurementModelByCell(modelForSending, currentSignal);
+
         //TODO SHARK replace this location with GPSMonitor's location
         MobileSignalNetworkDataModel dataModel = new MobileSignalNetworkDataModel(
                 location,
-                getMeasurementsModel(category, currentCell)
+                modelForSending
         );
 
         dataModel.setCategory(currentCell.getCellType().toString());
@@ -187,6 +188,25 @@ public class LoggingServiceExtensions {
         dataModel.setCellData(getCellInfoModel(category, currentCell));
 
         return dataModel;
+    }
+
+    /**
+     * Finds a registered cell information in a list of cell informations
+     * @param cellList
+     * @return the first registered cell in the list, or null if no registered cells were found
+     */
+    public static CellInformation findRegisteredCell(@NonNull List<CellInformation> cellList) {
+        CellInformation retVal = null;
+
+        for (CellInformation ci: cellList) {
+            if (!ci.isRegistered()) {
+                continue;
+            }
+
+            retVal = ci;
+        }
+
+        return retVal;
     }
 
     private static @NonNull CellInfoModel getCellInfoModel(String category, CellInformation currentCell) {
@@ -250,5 +270,24 @@ public class LoggingServiceExtensions {
             measurements.setDummy(1);
         }
         return measurements;
+    }
+
+    private static void updateMeasurementModelByCell(@NonNull MeasurementsModel measurements, @NonNull CellInformation cellForUpdating) {
+        if (cellForUpdating instanceof NRInformation) {
+            NRInformation nrCell = (NRInformation) cellForUpdating;
+            measurements.setCsirsrp(nrCell.getCsirsrp());
+            measurements.setCsirsrq(nrCell.getCsirsrq());
+            measurements.setCsisinr(nrCell.getCsisinr());
+            measurements.setSsrsrp(nrCell.getSsrsrp());
+            measurements.setSsrsrq(nrCell.getSsrsrq());
+            measurements.setSssinr(nrCell.getSssinr());
+        }
+
+        if (cellForUpdating instanceof LTEInformation) {
+            LTEInformation lteCell = (LTEInformation) cellForUpdating;
+            measurements.setRsrp(lteCell.getRsrp());
+            measurements.setRsrq(lteCell.getRsrq());
+            measurements.setRssnr(lteCell.getRssnr());
+        }
     }
 }

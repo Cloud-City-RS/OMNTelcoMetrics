@@ -44,7 +44,7 @@ public class GPSMonitor {
     private ValueMonitor valueMonitor;
 
     private volatile float lastSpeed;
-    private volatile AtomicLong timeUnderThreshold;
+    private volatile AtomicLong timeUnderThreshold = new AtomicLong(0);
 
     public GPSMonitor(Context context) {
         this.context = context;

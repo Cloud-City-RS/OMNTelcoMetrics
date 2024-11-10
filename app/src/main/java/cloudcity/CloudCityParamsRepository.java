@@ -8,8 +8,15 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.Nullable;
 
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.BuildConfig;
+
+
 public class CloudCityParamsRepository {
     private static final String SHARED_PREFS_NAME = "cloud_city_prefs";
+
+    private static final String STAGING_SERVER_URL = "staging.app.cloudcities.co";
+    private static final String PRODUCTION_SERVER_URL = "app.cloudcities.co";
+    private static final String DEMO_SERVER_URL = "demo.app.cloudcities.co";
 
     private Context context;
     private static CloudCityParamsRepository instance;
@@ -62,11 +69,8 @@ public class CloudCityParamsRepository {
     }
 
     private void prefillWithData() {
-        String sharkToken = "252|GI2CTemW2EX3TmQaDmCzYg1xrs3VEDslnGrfCwp245a84b22";
-        String chungaToken = "68|5LGMoNAd0mck4bmMaGdj2GqjqqYUB1NyqtbSrpFB82303173";
-
-        serverUrl = "staging.app.cloudcities.co";
-        serverToken = sharkToken;
+        serverUrl = getServerURLBasedOnBuildVariant();
+        serverToken = getServerTokenBasedOnBuildVariant();
 
         sharedPrefs
                 .edit()
@@ -150,5 +154,36 @@ public class CloudCityParamsRepository {
                 .edit()
                 .putString(key, value)
                 .commit();
+    }
+
+    private String getServerURLBasedOnBuildVariant() {
+        String serverUrl = null;
+        if(BuildConfig.IS_DEMO) {
+            serverUrl = DEMO_SERVER_URL;
+        } else if (BuildConfig.IS_STAGING) {
+            serverUrl = STAGING_SERVER_URL;
+        } else if (BuildConfig.IS_PRODUCTION) {
+            serverUrl = PRODUCTION_SERVER_URL;
+        } else {
+            throw new IllegalStateException("Which server environment are we trying to use? Something has went wrong here.");
+        }
+
+        return serverUrl;
+    }
+
+    private String getServerTokenBasedOnBuildVariant() {
+        // All of these tokens are Shark's tokens
+        String serverToken = null;
+        if(BuildConfig.IS_DEMO) {
+            serverToken = "4|VpmKNeLkoFtZbJFTIRVpVWdclzf7LiL9sp83JuVw91ed224b";
+        } else if (BuildConfig.IS_STAGING) {
+            serverToken = "252|GI2CTemW2EX3TmQaDmCzYg1xrs3VEDslnGrfCwp245a84b22";
+        } else if (BuildConfig.IS_PRODUCTION) {
+            serverToken = "41|lAp3yiiWJH3D3ftR54seY6oMO8EEjpees7Y3oJI63b71a1d3";
+        } else {
+            throw new IllegalStateException("Which server environment are we trying to use? Something has went wrong here.");
+        }
+
+        return serverToken;
     }
 }

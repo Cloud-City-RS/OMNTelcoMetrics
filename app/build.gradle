@@ -128,7 +128,22 @@ android {
      */
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
-            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${variant.buildType.name}_${defaultConfig.versionName}.apk"
+            def cleanFlavorName
+            switch (variant.flavorName) {
+                case "a_staging":
+                    cleanFlavorName = "Staging"
+                    break
+                case "b_demo":
+                    cleanFlavorName = "Demo"
+                    break
+                case "c_production":
+                    cleanFlavorName = "Production"
+                    break
+                default:
+                    cleanFlavorName = "Unknown"
+            }
+
+            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${cleanFlavorName}_${variant.buildType.name}_${defaultConfig.versionName}.apk"
         }
     }
 }

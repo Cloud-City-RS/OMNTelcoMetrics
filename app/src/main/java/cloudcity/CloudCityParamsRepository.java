@@ -173,6 +173,7 @@ public class CloudCityParamsRepository {
 
     private String getServerTokenBasedOnBuildVariant() {
         // All of these tokens are Shark's tokens
+        //TODO get rid of these tokens later on when we have actual login
         String serverToken = null;
         if(BuildConfig.IS_DEMO) {
             serverToken = "4|VpmKNeLkoFtZbJFTIRVpVWdclzf7LiL9sp83JuVw91ed224b";

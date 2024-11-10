@@ -72,6 +72,34 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    // We'll define the flavor dimensions here, and so far we only have one, for the server environment
+    // this new way of adding dimensions is kinda weird tho
+    flavorDimensions += ["environment"]
+
+    productFlavors {
+        // These are used in CloudCityParamsRepository, which - for now - defines our base server URL and token to use
+        // which can also be altered through the app's settings at runtime
+        staging {
+            dimension "environment"
+            buildConfigField "Boolean", "IS_DEMO", "false"
+            buildConfigField "Boolean", "IS_STAGING", "true"
+            buildConfigField "Boolean", "IS_PRODUCTION", "false"
+        }
+        demo {
+            dimension "environment"
+            buildConfigField "Boolean", "IS_DEMO", "true"
+            buildConfigField "Boolean", "IS_STAGING", "false"
+            buildConfigField "Boolean", "IS_PRODUCTION", "false"
+        }
+        production {
+            dimension "environment"
+            buildConfigField "Boolean", "IS_DEMO", "false"
+            buildConfigField "Boolean", "IS_STAGING", "false"
+            buildConfigField "Boolean", "IS_PRODUCTION", "true"
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11

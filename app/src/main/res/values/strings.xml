@@ -92,8 +92,8 @@
     <string name="enable_cloud_city">Cloud City log</string>
     <string name="cloud_city_url_dialog_title">Cloud City URL / IP (with protocol and port)</string>
     <string name="cloud_city_url">Cloud City instance URL / IP</string>
-    <string name="cloud_city_token_dialog_title">Set Cloud City Token</string>
-    <string name="cloud_city_token">Cloud City Token</string>
+    <string name="cloud_city_token_dialog_title">Set Cloud City MAC address</string>
+    <string name="cloud_city_token">Cloud City MAC address</string>
 
     <!-- Work Profile Management -->
 

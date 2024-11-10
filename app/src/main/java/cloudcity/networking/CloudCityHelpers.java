@@ -12,6 +12,8 @@ import retrofit2.Retrofit;
 public class CloudCityHelpers {
     public static final String TAG = CloudCityHelpers.class.getSimpleName();
 
+    private static final String X_MAC_ADDRESS_HEADER = "X-MAC-Address ";
+
     public static boolean sendData(String address, String token, NetworkDataModelRequest data) {
         Log.d(TAG, "--> sendData()\taddress=" + address + ", token=" + token + ", data=" + data);
         Retrofit retrofit = NetworkClient.getRetrofitClient(address);
@@ -24,7 +26,7 @@ public class CloudCityHelpers {
 
         try {
             Log.d(TAG, String.format(Locale.US, "sendData: Executing send data request: address %s", address));
-            response = api.sendData("Bearer " + token, data).execute();
+            response = api.sendData(X_MAC_ADDRESS_HEADER + token, data).execute();
             Log.d(TAG, String.format(Locale.US, "Received sendData response. %s", response));
 
             if (response.isSuccessful()) {

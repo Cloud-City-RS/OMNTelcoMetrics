@@ -5,13 +5,23 @@ import static cloudcity.CloudCityConstants.CLOUD_CITY_TOKEN;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
+
+import java.net.NetworkInterface;
+import java.util.Collections;
+import java.util.List;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.BuildConfig;
 
 
 public class CloudCityParamsRepository {
+    private static final String TAG = "CloudCityParamsRepository";
+
     private static final String SHARED_PREFS_NAME = "cloud_city_prefs";
 
     private static final String STAGING_SERVER_URL = "staging.app.cloudcities.co";
@@ -70,7 +80,7 @@ public class CloudCityParamsRepository {
 
     private void prefillWithData() {
         serverUrl = getServerURLBasedOnBuildVariant();
-        serverToken = getServerTokenBasedOnBuildVariant();
+        serverToken = getMacAddress();
 
         sharedPrefs
                 .edit()
@@ -171,20 +181,50 @@ public class CloudCityParamsRepository {
         return serverUrl;
     }
 
-    private String getServerTokenBasedOnBuildVariant() {
-        // All of these tokens are Shark's tokens
-        //TODO get rid of these tokens later on when we have actual login
-        String serverToken = null;
-        if(BuildConfig.IS_DEMO) {
-            serverToken = "4|VpmKNeLkoFtZbJFTIRVpVWdclzf7LiL9sp83JuVw91ed224b";
-        } else if (BuildConfig.IS_STAGING) {
-            serverToken = "252|GI2CTemW2EX3TmQaDmCzYg1xrs3VEDslnGrfCwp245a84b22";
-        } else if (BuildConfig.IS_PRODUCTION) {
-            serverToken = "41|lAp3yiiWJH3D3ftR54seY6oMO8EEjpees7Y3oJI63b71a1d3";
-        } else {
-            throw new IllegalStateException("Which server environment are we trying to use? Something has went wrong here.");
-        }
+    /**
+     * MAC address sniffer
+     */
 
-        return serverToken;
+    public String getMacAddress() {
+        // Even though our minSdk is 31 (and M is 23) better to be thorough
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+            return getMacAddressPreM();
+        } else {
+            return getMacAddressPostM();
+        }
+    }
+
+    public String getMacAddressPreM() {
+        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        return wifiInfo.getMacAddress();
+    }
+
+    public static String getMacAddressPostM() {
+        final String WLAN_INTERFACE = "wlan0";
+
+        try {
+            List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface nif : all) {
+                if (!nif.getName().equalsIgnoreCase(WLAN_INTERFACE)) continue;
+                byte[] macBytes = nif.getHardwareAddress();
+                if (macBytes == null) {
+                    return "";
+                }
+
+                StringBuilder res1 = new StringBuilder();
+                for (byte b : macBytes) {
+                    res1.append(String.format("%02X:", b));
+                }
+
+                if (res1.length() > 0) {
+                    res1.deleteCharAt(res1.length() - 1);
+                }
+                return res1.toString();
+            }
+        } catch (Exception ex) {
+            Log.e(TAG, "Exception happened while trying to lookup MAC address! ex: "+ex, ex);
+        }
+        return "02:00:00:00:00:00";
     }
 }

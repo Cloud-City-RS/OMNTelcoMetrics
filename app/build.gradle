@@ -147,7 +147,7 @@ android {
         }
     }
 }
-
+/*
 spdxSbom {
     targets {
         register("release") {
@@ -165,6 +165,50 @@ spdxSbom {
         }
     }
 }
+ */
+
+spdxSbom {
+    targets {
+        // Keep the original release target
+        register("release") {
+            configurations = ['a_stagingReleaseRuntimeClasspath', 'b_demoReleaseRuntimeClasspath', 'c_productionReleaseRuntimeClasspath']
+            scm {
+                uri.set("https://github.com/omnt/OpenMobileNetworkToolkit")
+                revision.set("0.3")
+            }
+            document {
+                name.set("OpenMobileNetworkToolkit")
+                namespace.set("de.fraunhofer.fokus.OpenMobileNetworkToolkit")
+                creator.set("Person: NGNI")
+                packageSupplier.set("Organization: Fraunhofer FOKUS NGNI")
+            }
+        }
+    }
+
+    // And a new thing for all variants
+    android.applicationVariants.configureEach { variant ->
+        def variantName = variant.name
+        println variantName
+        if (variantName != "Release") { // Avoid conflict with the original release target
+            targets {
+                register(variantName) {
+                    configurations = ["${variantName}RuntimeClasspath"]
+                    scm {
+                        uri.set("https://github.com/omnt/OpenMobileNetworkToolkit")
+                        revision.set("0.3")
+                    }
+                    document {
+                        name.set("OpenMobileNetworkToolkit")
+                        namespace.set("de.fraunhofer.fokus.OpenMobileNetworkToolkit")
+                        creator.set("Person: NGNI")
+                        packageSupplier.set("Organization: Fraunhofer FOKUS NGNI")
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 // Sentry
 sentry {

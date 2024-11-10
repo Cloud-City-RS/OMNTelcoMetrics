@@ -80,19 +80,21 @@ android {
     productFlavors {
         // These are used in CloudCityParamsRepository, which - for now - defines our base server URL and token to use
         // which can also be altered through the app's settings at runtime
-        staging {
+        // The whole a_, b_, c_ thing is so I can control the ordering, since they're lexicographically ordered
+        // and we really don't want to default to the 'demo' flavor...
+        a_staging {
             dimension "environment"
             buildConfigField "Boolean", "IS_DEMO", "false"
             buildConfigField "Boolean", "IS_STAGING", "true"
             buildConfigField "Boolean", "IS_PRODUCTION", "false"
         }
-        demo {
+        b_demo {
             dimension "environment"
             buildConfigField "Boolean", "IS_DEMO", "true"
             buildConfigField "Boolean", "IS_STAGING", "false"
             buildConfigField "Boolean", "IS_PRODUCTION", "false"
         }
-        production {
+        c_production {
             dimension "environment"
             buildConfigField "Boolean", "IS_DEMO", "false"
             buildConfigField "Boolean", "IS_STAGING", "false"

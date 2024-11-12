@@ -20,4 +20,8 @@ public class NetworkDataModel {
     }
 
     static class NetworkDataModelValues { }
+
+    public boolean hasNonZeroLatitudeAndLongitude() {
+        return (latitude != 0f && longitude != 0f);
+    }
 }

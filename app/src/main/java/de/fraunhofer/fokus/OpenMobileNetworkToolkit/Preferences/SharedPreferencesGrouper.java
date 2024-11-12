@@ -24,7 +24,8 @@ public class SharedPreferencesGrouper {
     private final SharedPreferences defaultSP;
     private final SharedPreferences pingSP;
     private final Context ct;
-    private ConcurrentHashMap <SPType, Set<SharedPreferences.OnSharedPreferenceChangeListener>> spMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap <SPType, Set<SharedPreferences.OnSharedPreferenceChangeListener>> spMap = new ConcurrentHashMap<>();
+
     public String getSharedPreferenceIdentifier(SPType key)  {
         return this.ct.getPackageName()+"_"+key.toString();
     }

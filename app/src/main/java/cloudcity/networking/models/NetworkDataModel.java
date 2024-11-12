@@ -28,9 +28,12 @@ public class NetworkDataModel {
     }
 
     private boolean isNonZero(double value) {
+        boolean isNotZero = value != 0f;
+        boolean isNotExactZero = value != 0.0;
         // if we have a zero, or some very small number e.g. 0.00000000234, subtracting EPSILON
         // from it and performing an abs() on the result will make it a number less than EPSILON
         // since effectivelly it'd be as if we performed (EPSILON - small number)
-        return value != 0f && value != 0.0 && Math.abs(value - EPSILON) <= EPSILON;
+        boolean isSmallerThanEpsilon = Math.abs(value - EPSILON) <= EPSILON;
+        return isNotZero && isNotExactZero && !isSmallerThanEpsilon;
     }
 }

@@ -252,6 +252,7 @@
     <!-- Wifi Information -->
     <string name="ssid">SSID</string>
     <string name="bssid">BSSID</string>
+
     <!-- RSSI is @ Cell Information -->
     <string name="frequency">Frequency</string>
     <string name="link_speed">Link Speed</string>
@@ -262,5 +263,4 @@
     <string name="standard">Standard</string>
     <string name="channel_bandwidth">Channel Bandwidth</string>
     <string name="wifi_security_type">Security Type</string>
-
 </resources>

@@ -72,6 +72,36 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    // We'll define the flavor dimensions here, and so far we only have one, for the server environment
+    // this new way of adding dimensions is kinda weird tho
+    flavorDimensions += ["environment"]
+
+    productFlavors {
+        // These are used in CloudCityParamsRepository, which - for now - defines our base server URL and token to use
+        // which can also be altered through the app's settings at runtime
+        // The whole a_, b_, c_ thing is so I can control the ordering, since they're lexicographically ordered
+        // and we really don't want to default to the 'demo' flavor...
+        a_staging {
+            dimension "environment"
+            buildConfigField "Boolean", "IS_DEMO", "false"
+            buildConfigField "Boolean", "IS_STAGING", "true"
+            buildConfigField "Boolean", "IS_PRODUCTION", "false"
+        }
+        b_demo {
+            dimension "environment"
+            buildConfigField "Boolean", "IS_DEMO", "true"
+            buildConfigField "Boolean", "IS_STAGING", "false"
+            buildConfigField "Boolean", "IS_PRODUCTION", "false"
+        }
+        c_production {
+            dimension "environment"
+            buildConfigField "Boolean", "IS_DEMO", "false"
+            buildConfigField "Boolean", "IS_STAGING", "false"
+            buildConfigField "Boolean", "IS_PRODUCTION", "true"
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
@@ -98,11 +128,26 @@ android {
      */
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
-            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${variant.buildType.name}_${defaultConfig.versionName}.apk"
+            def cleanFlavorName
+            switch (variant.flavorName) {
+                case "a_staging":
+                    cleanFlavorName = "Staging"
+                    break
+                case "b_demo":
+                    cleanFlavorName = "Demo"
+                    break
+                case "c_production":
+                    cleanFlavorName = "Production"
+                    break
+                default:
+                    cleanFlavorName = "Unknown"
+            }
+
+            outputFileName = "CloudCity_OpenMobileNetworkToolkit_${cleanFlavorName}_${variant.buildType.name}_${defaultConfig.versionName}.apk"
         }
     }
 }
-
+/*
 spdxSbom {
     targets {
         register("release") {
@@ -120,6 +165,50 @@ spdxSbom {
         }
     }
 }
+ */
+
+spdxSbom {
+    targets {
+        // Keep the original release target
+        register("release") {
+            configurations = ['a_stagingReleaseRuntimeClasspath', 'b_demoReleaseRuntimeClasspath', 'c_productionReleaseRuntimeClasspath']
+            scm {
+                uri.set("https://github.com/omnt/OpenMobileNetworkToolkit")
+                revision.set("0.3")
+            }
+            document {
+                name.set("OpenMobileNetworkToolkit")
+                namespace.set("de.fraunhofer.fokus.OpenMobileNetworkToolkit")
+                creator.set("Person: NGNI")
+                packageSupplier.set("Organization: Fraunhofer FOKUS NGNI")
+            }
+        }
+    }
+
+    // And a new thing for all variants
+    android.applicationVariants.configureEach { variant ->
+        def variantName = variant.name
+        println variantName
+        if (variantName != "Release") { // Avoid conflict with the original release target
+            targets {
+                register(variantName) {
+                    configurations = ["${variantName}RuntimeClasspath"]
+                    scm {
+                        uri.set("https://github.com/omnt/OpenMobileNetworkToolkit")
+                        revision.set("0.3")
+                    }
+                    document {
+                        name.set("OpenMobileNetworkToolkit")
+                        namespace.set("de.fraunhofer.fokus.OpenMobileNetworkToolkit")
+                        creator.set("Person: NGNI")
+                        packageSupplier.set("Organization: Fraunhofer FOKUS NGNI")
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 // Sentry
 sentry {
@@ -183,6 +272,7 @@ dependencies {
     implementation 'com.github.anastr:speedviewlib:1.6.1'
     implementation "androidx.viewpager2:viewpager2:1.1.0"
     implementation "androidx.compose.material3:material3:1.3.0"
+
     // OkHttp and Retrofit
     implementation 'com.squareup.retrofit2:retrofit:2.11.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.11.0'

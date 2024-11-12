@@ -25,7 +25,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.os.StrictMode;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
@@ -55,7 +54,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
-import cloudcity.GPSMonitor;
 import cloudcity.MainActivityExtensions;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.NetworkCallback;
@@ -76,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     private Handler requestCellInfoUpdateHandler;
     private HandlerThread requestCellInfoUpdateHandlerThread;
     private GlobalVars gv;
+    private Context context;
 
     /**
      * Runnable to handle Cell Info Updates
@@ -95,7 +94,6 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
             requestCellInfoUpdateHandler.postDelayed(this, Integer.parseInt(spg.getSharedPreference(SPType.logging_sp).getString("logging_interval", "1000")));
         }
     };
-    private Context context;
 
     @SuppressLint("ObsoleteSdkInt")
     @Override
@@ -347,16 +345,16 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
 
                 // Since we have the FINE_LOCATION, we can start sending to the server
 
+                // Start GPS monitoring
+                MainActivityExtensions
+                        .startGPSMonitoring(getApplicationContext());
+
                 // To avoid the possibility of a race-condition between 'spg' initialization and this callback,
                 // lets maybe also initiallize the SPG for the first time here as well.
                 MainActivityExtensions
                         .turnOnCloudCityLoggingAfterPermissionsGranted(
                                 SharedPreferencesGrouper.getInstance(getApplicationContext())
                         );
-
-                // Start GPS monitoring
-                MainActivityExtensions
-                        .startGPSMonitoring(getApplicationContext());
             }
         }
         Log.d(TAG, "<-- onRequestPermissionsResult()");

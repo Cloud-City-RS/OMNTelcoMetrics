@@ -13,7 +13,10 @@ import androidx.core.app.ActivityCompat;
 
 import java.util.List;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
@@ -94,6 +97,8 @@ public class GPSMonitor {
                     lastLocation = new Location("null");
                     lastLocation.reset();
 
+                    instance.requestCurrentLocation();
+
                     Log.d(TAG, "GPSMonitor initialized!");
                 }
             }
@@ -142,6 +147,8 @@ public class GPSMonitor {
         List<String> allGpsProviders = locationManager.getAllProviders();
         Log.d(TAG, "all GPS providers: "+allGpsProviders);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.FUSED_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
 
         Log.d(TAG, "Starting speed polling task...");
 
@@ -164,6 +171,48 @@ public class GPSMonitor {
         if(valueMonitor != null) {
             valueMonitor.stopMonitoring();
         }
+    }
+
+    public void requestCurrentLocation() {
+        boolean lacksFineLocationPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        boolean lacksCoarseLocationPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        if (lacksFineLocationPermission || lacksCoarseLocationPermission) {
+            Log.wtf(TAG, "We lack ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION permissions!");
+            return;
+        }
+
+        Executor executor = Executors.newSingleThreadExecutor();
+        Consumer<Location> locationConsumer = new Consumer<Location>() {
+            @Override
+            public void accept(Location location) {
+                Log.d(TAG, "Current location is: "+location);
+                lastLocation = location;
+                if (location != null) {
+                    Log.d(TAG, "Current location's LAT: " + location.getLatitude() + ", LNG: " + location.getLongitude());
+                } else {
+                    Log.w(TAG, "Cannot get current location's (LAT,LNG) because location was NULL");
+                }
+            }
+        };
+
+        locationManager.getCurrentLocation(
+                LocationManager.NETWORK_PROVIDER,
+                null,   //CancellationSignal
+                executor,
+                locationConsumer
+        );
+        locationManager.getCurrentLocation(
+                LocationManager.GPS_PROVIDER,
+                null,   //CancellationSignal
+                executor,
+                locationConsumer
+        );
+        locationManager.getCurrentLocation(
+                LocationManager.FUSED_PROVIDER,
+                null,   //CancellationSignal
+                executor,
+                locationConsumer
+        );
     }
 
     private class ValueMonitor {

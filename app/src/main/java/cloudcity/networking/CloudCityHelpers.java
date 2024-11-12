@@ -50,9 +50,14 @@ public class CloudCityHelpers {
     private static boolean validateData(NetworkDataModelRequest data) {
         // Assume data is valid
         boolean isValid = true;
-        // We have valid data if lattitude and longitude are non-zero
-        for (NetworkDataModel model : data.getData()) {
-            isValid = isValid && model.hasNonZeroLatitudeAndLongitude();
+
+        if (data != null) {
+            // We have valid data if lattitude and longitude are non-zero
+            for (NetworkDataModel model : data.getData()) {
+                isValid = isValid && model.hasNonZeroLatitudeAndLongitude();
+            }
+        } else {
+            isValid = false;
         }
 
         return isValid;

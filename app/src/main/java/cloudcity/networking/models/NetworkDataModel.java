@@ -33,7 +33,7 @@ public class NetworkDataModel {
         // if we have a zero, or some very small number e.g. 0.00000000234, subtracting EPSILON
         // from it and performing an abs() on the result will make it a number less than EPSILON
         // since effectivelly it'd be as if we performed (EPSILON - small number)
-        boolean isSmallerThanEpsilon = Math.abs(value - EPSILON) <= EPSILON;
-        return isNotZero && isNotExactZero && !isSmallerThanEpsilon;
+        boolean isNearlyZero = Math.abs(value - EPSILON) <= EPSILON;
+        return isNotZero && isNotExactZero && !isNearlyZero;
     }
 }

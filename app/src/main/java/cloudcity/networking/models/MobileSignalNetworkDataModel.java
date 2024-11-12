@@ -1,10 +1,10 @@
 package cloudcity.networking.models;
 
+import android.location.Location;
+
 import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.SerializedName;
-
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
 
 public class MobileSignalNetworkDataModel extends NetworkDataModel {
 
@@ -14,7 +14,7 @@ public class MobileSignalNetworkDataModel extends NetworkDataModel {
     @SerializedName("cell_info")
     private CellInfoModel cellData;
 
-    public MobileSignalNetworkDataModel(@NonNull LocationInformation locationInformation, @NonNull MeasurementsModel values) {
+    public MobileSignalNetworkDataModel(@NonNull Location locationInformation, @NonNull MeasurementsModel values) {
         super(locationInformation.getLatitude(), locationInformation.getLongitude(), values);
     }
 

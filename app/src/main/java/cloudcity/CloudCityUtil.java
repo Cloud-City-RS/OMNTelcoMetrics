@@ -1,5 +1,6 @@
 package cloudcity;
 
+import android.location.Location;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
@@ -32,7 +33,7 @@ public class CloudCityUtil {
         return param.trim().isEmpty();
     }
 
-    public static boolean sendIperf3Data(MetricsPOJO metricsPOJO, LocationInformation location) {
+    public static boolean sendIperf3Data(MetricsPOJO metricsPOJO, Location location) {
         MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
         MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
         MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();

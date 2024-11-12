@@ -23,8 +23,7 @@ public class CloudCityOMNTApplication extends Application {
             @Override
             public void onIperf3TestCompleted(MetricsPOJO metrics) {
                 android.util.Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
-                DataProvider dp = GlobalVars.getInstance().get_dp();
-                boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(metrics, dp.getLocation());
+                boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(metrics, GPSMonitor.getLastLocation());
                 android.util.Log.d(TAG, "sending metrics result: "+iperf3SendingResult);
             }
         });

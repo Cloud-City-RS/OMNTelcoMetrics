@@ -1,11 +1,12 @@
 package cloudcity.networking.models;
 
+import android.location.Location;
+
 import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.SerializedName;
 
 import cloudcity.dataholders.MetricsPOJO;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
 
 public class Iperf3NetworkDataModel extends NetworkDataModel {
 
@@ -20,7 +21,7 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
     public Iperf3NetworkDataModel(
             @NonNull MetricsPOJO.UploadMetrics upload,
             @NonNull MetricsPOJO.DownloadMetrics download,
-            @NonNull LocationInformation location
+            @NonNull Location location
     ) {
         super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download));
         this.accuracy = location.getAccuracy();

@@ -329,6 +329,7 @@ public class QuickFragment extends Fragment {
                 cellInformationList
                         .stream()
                         .filter(Objects::nonNull)
+                        .filter(cellInformation -> cellInformation.getCellType() != null)
                         .forEach(cellInformation -> addCellInformationToView(cellInformation));
             }
             if (spg.getSharedPreference(SPType.default_sp).getBoolean("show_neighbour_cells", false)) {
@@ -337,6 +338,7 @@ public class QuickFragment extends Fragment {
                     neighborCells
                             .stream()
                             .filter(Objects::nonNull)
+                            .filter(cellInformation -> cellInformation.getCellType() != null)
                             .forEach(cellInformation -> addCellInformationToView(cellInformation));
                 }
             }

@@ -144,6 +144,14 @@
             app:defaultValue="5"
             app:useSimpleSummaryProvider="true" />
 
+        <EditTextPreference
+            android:dialogTitle="@string/cloud_city_iperf3_test_throttling_distance"
+            app:iconSpaceReserved="false"
+            app:key="cloud_city_iperf3_throttling_distance"
+            app:title="@string/cloud_city_iperf3_test_throttling_distance"
+            app:defaultValue="0"
+            app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

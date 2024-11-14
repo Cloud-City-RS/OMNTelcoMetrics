@@ -24,8 +24,6 @@ import cloudcity.networking.models.NetworkDataModelRequest;
 import cloudcity.util.CellUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.NRInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
@@ -171,8 +169,11 @@ public class LoggingServiceExtensions {
 
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
-        MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(category, currentCell);
-        updateMeasurementModelByCell(modelForSending, currentSignal);
+        MeasurementsModel modelForSending =
+                CellUtil.updateMeasurementModelByCell(
+                        CellUtil.getMeasurementsModel(category, currentCell),
+                        currentCell
+                );
 
         Location location = GPSMonitor.getLastLocation();
 
@@ -226,24 +227,5 @@ public class LoggingServiceExtensions {
         }
 
         return cellInfoModel;
-    }
-
-    private static void updateMeasurementModelByCell(@NonNull MeasurementsModel measurements, @NonNull CellInformation cellForUpdating) {
-        if (cellForUpdating instanceof NRInformation) {
-            NRInformation nrCell = (NRInformation) cellForUpdating;
-            measurements.setCsirsrp(nrCell.getCsirsrp());
-            measurements.setCsirsrq(nrCell.getCsirsrq());
-            measurements.setCsisinr(nrCell.getCsisinr());
-            measurements.setSsrsrp(nrCell.getSsrsrp());
-            measurements.setSsrsrq(nrCell.getSsrsrq());
-            measurements.setSssinr(nrCell.getSssinr());
-        }
-
-        if (cellForUpdating instanceof LTEInformation) {
-            LTEInformation lteCell = (LTEInformation) cellForUpdating;
-            measurements.setRsrp(lteCell.getRsrp());
-            measurements.setRsrq(lteCell.getRsrq());
-            measurements.setRssnr(lteCell.getRssnr());
-        }
     }
 }

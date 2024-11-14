@@ -39,7 +39,13 @@ public class CloudCityUtil {
         MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
         MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
 
-        Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(uploadMetrics, downloadMetrics, location, cellInfoMeasurements);
+        Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(
+                uploadMetrics,
+                downloadMetrics,
+                location,
+                cellInfoMeasurements,
+                metricsPOJO.toTestDurationPair()
+        );
         return CloudCityUtil.sendIperf3Data(iperf3Data);
     }
 

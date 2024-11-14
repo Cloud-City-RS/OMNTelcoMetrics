@@ -91,6 +91,11 @@ public class Iperf3Monitor {
     private volatile Iperf3ResultsDataBase iperf3ResultsDatabase;
 
     /**
+     * This is kinda terrible but will most likely get the job done.
+     */
+    private volatile long testStartTimestamp;
+
+    /**
      * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
      * {@link Iperf3Parser#parse()} method every {@link #PARSING_DELAY_IN_MS} until it reaches the end
      * or ordered to stop by toggling {@link #shouldStop} flag
@@ -310,10 +315,13 @@ public class Iperf3Monitor {
                                     stopParsingThread();
                                     shouldStop.compareAndSet(false, true);
 
+                                    long endTimestamp = System.currentTimeMillis();
                                     // Instantiate the POJO stuff holder
                                     MetricsPOJO values = new MetricsPOJO(
                                             new MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
-                                            new MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast)
+                                            new MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
+                                            testStartTimestamp,
+                                            endTimestamp
                                     );
 
                                     // Notify the completion listener
@@ -323,6 +331,8 @@ public class Iperf3Monitor {
 
                                     // And set the new marker as 'no longer running'
                                     iperf3TestRunning.compareAndSet(true, false);
+                                    // Reset the test start timestamp
+                                    testStartTimestamp = 0;
 
                                     Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
                                 }
@@ -698,6 +708,10 @@ public class Iperf3Monitor {
                 }
             }
 
+            // Set the startTimestamp
+            testStartTimestamp = System.currentTimeMillis();
+
+            // Enqueue tasks onto the WorkManager
             if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
                 iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
             } else if (iperf3Json) {

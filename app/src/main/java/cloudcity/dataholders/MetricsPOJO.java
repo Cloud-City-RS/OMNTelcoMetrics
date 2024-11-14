@@ -22,8 +22,11 @@ public class MetricsPOJO {
     private final double ULmax;
     private final double ULlast;
 
+    private final long startTimestamp;
+    private final long endTimestamp;
+
     /**
-     * The all arg constructor. Please prefer using the other {@link #MetricsPOJO(DownloadMetrics, UploadMetrics)}
+     * The all arg constructor. Please prefer using the other {@link #MetricsPOJO(DownloadMetrics, UploadMetrics, long, long)}
      * over this one, as this one might be error-prone
      *
      * @param DLmin download min
@@ -36,9 +39,12 @@ public class MetricsPOJO {
      * @param ULmean upload mean (middle element of the sampling list)
      * @param ULmax upload max
      * @param ULlast last upload sample
+     * @param startTimestamp iperf3 test start timestamp
+     * @param endTimestamp iperf3 test end timestamp
      */
     public MetricsPOJO(double DLmin, double DLmedian, double DLmean, double DLmax, double DLlast,
-                       double ULmin, double ULmedian, double ULmean, double ULmax, double ULlast) {
+                       double ULmin, double ULmedian, double ULmean, double ULmax, double ULlast,
+                       long startTimestamp, long endTimestamp) {
         this.DLmin = DLmin;
         this.DLmedian = DLmedian;
         this.DLmean = DLmean;
@@ -49,6 +55,8 @@ public class MetricsPOJO {
         this.ULmean = ULmean;
         this.ULmax = ULmax;
         this.ULlast = ULlast;
+        this.startTimestamp = startTimestamp;
+        this.endTimestamp = endTimestamp;
     }
 
     /**
@@ -56,7 +64,7 @@ public class MetricsPOJO {
      * @param download the download metrics
      * @param upload the upload metrics
      */
-    public MetricsPOJO(DownloadMetrics download, UploadMetrics upload) {
+    public MetricsPOJO(DownloadMetrics download, UploadMetrics upload, long startTimestamp, long endTimestamp) {
         this(
                 download.DLmin,
                 download.DLmedian,
@@ -67,7 +75,9 @@ public class MetricsPOJO {
                 upload.ULmedian,
                 upload.ULmean,
                 upload.ULmax,
-                upload.ULlast
+                upload.ULlast,
+                startTimestamp,
+                endTimestamp
         );
     }
 
@@ -76,6 +86,10 @@ public class MetricsPOJO {
                 new UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
                 new DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast)
         );
+    }
+
+    public TestDurationPair toTestDurationPair() {
+        return new TestDurationPair(startTimestamp, endTimestamp);
     }
 
     public static class MetricsPair {
@@ -91,6 +105,19 @@ public class MetricsPOJO {
 
         public @NonNull UploadMetrics getUploadMetrics() { return uploadMetrics; }
         public @NonNull DownloadMetrics getDownloadMetrics() { return downloadMetrics; }
+    }
+
+    public static class TestDurationPair {
+        final long startTimestamp;
+        final long endTimestamp;
+
+        TestDurationPair(long startTs, long endTs) {
+            this.startTimestamp = startTs;
+            this.endTimestamp = endTs;
+        }
+
+        public long getTestStartTimestamp() { return startTimestamp; }
+        public long getTestEndTimestamp() { return endTimestamp; }
     }
 
     @Override

@@ -1,22 +1,16 @@
-package cloudcity;
+package cloudcity.util;
 
 import android.location.Location;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import java.util.Objects;
-
+import cloudcity.CloudCityParamsRepository;
 import cloudcity.dataholders.MetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
 import cloudcity.networking.models.Iperf3NetworkDataModel;
-import cloudcity.networking.models.MeasurementsModel;
 import cloudcity.networking.models.NetworkDataModel;
 import cloudcity.networking.models.NetworkDataModelRequest;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.NRInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.LocationInformation;
 
 public class CloudCityUtil {
 

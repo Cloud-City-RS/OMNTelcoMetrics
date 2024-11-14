@@ -3,8 +3,7 @@ package cloudcity;
 import android.app.Application;
 
 import cloudcity.dataholders.MetricsPOJO;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
+import cloudcity.util.CloudCityUtil;
 
 public class CloudCityOMNTApplication extends Application {
     public static final String TAG = CloudCityOMNTApplication.class.getSimpleName();

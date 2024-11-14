@@ -534,7 +534,7 @@ public class Iperf3Monitor {
      * @param newThrottlingValueInMeters the new value to use for {@link #THROTTLING_THRESHOLD_IN_METERS}
      * @return the new (current) value of that parameter
      */
-    public float setDistanceThrottlingThreshold(int newThrottlingValueInMeters) {
+    public float setDistanceThrottlingThreshold(float newThrottlingValueInMeters) {
         Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_METERS to "+newThrottlingValueInMeters);
         THROTTLING_THRESHOLD_IN_METERS = newThrottlingValueInMeters;
         return THROTTLING_THRESHOLD_IN_METERS;

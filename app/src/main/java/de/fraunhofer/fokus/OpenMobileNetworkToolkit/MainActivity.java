@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         } //todo this will go very wrong on android devices without telephony api, maybe show warning and exit?
 
         // CloudCity thing
-        MainActivityExtensions.performMainActivityThing(TAG, spg, dp);
+        MainActivityExtensions.performMainActivityThing(this, spg, dp);
         // Rest of how it was before
 
         gv.set_dp(dp);

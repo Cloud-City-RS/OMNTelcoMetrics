@@ -9,9 +9,11 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -53,7 +55,16 @@ public class GPSMonitor {
     private ValueMonitor valueMonitor;
 
     private static volatile float lastSpeed;
+    /**
+     * This is the 'last' current location received from {@link LocationManager}
+     */
     private static volatile Location lastLocation;
+
+    /**
+     * This is the previous location received from the {@link LocationManager}. It's the {@link #lastLocation}'s previous
+     * value which is used to check how much (far) we've moved recently
+     */
+    private static volatile Location previousLocation;
     private volatile AtomicLong timeUnderThreshold = new AtomicLong(0);
 
     private static volatile GPSMonitor instance;
@@ -70,7 +81,7 @@ public class GPSMonitor {
                         public void onLocationChanged(Location location) {
                             // Handle location update
                             Log.d(TAG, "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
-                            lastLocation = location;
+                            setLastLocation(location);
                             if (location.hasSpeed()) {
                                 Log.d(TAG, "Location has speed! speed: " + location.getSpeed());
                                 if (location.hasSpeedAccuracy()) {
@@ -94,6 +105,8 @@ public class GPSMonitor {
                     };
 
                     // Initialize lastLocation to something bogus
+                    // We won't use setLastLocation() because we don't want this value to end up
+                    // in the 'previousLocation'
                     lastLocation = new Location("null");
                     lastLocation.reset();
 
@@ -126,10 +139,39 @@ public class GPSMonitor {
 
     /**
      * Returns last location observed during monitoring
+     *
      * @return last location or rather {@link #lastLocation}
      */
     public static Location getLastLocation() {
         return lastLocation;
+    }
+
+    /**
+     * Utility function for {@link Location#distanceTo(Location)} but wrapped in an {@link Optional}
+     * If any of the two locations are null, the {@code Location.distanceTo} requires both of them
+     * to be non-null, and an empty Optional is returned. Otherwise, an Optional containing the
+     * distance is returned.
+     *
+     * @param location1 location to measure from
+     * @param location2 location to measure to
+     *
+     * @return {@link Optional#empty()} if any of the two locations is null or {@link Optional#of(Object)} their distance ({@code location1.distanceTo(location2)})
+     */
+    public static Optional<Float> calculateDistance(@NonNull Location location1, @NonNull Location location2) {
+        if (location1 != null && location2 != null) {
+            return Optional.of(location1.distanceTo(location2));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Calculates distance between {@link #previousLocation} and {@link #lastLocation} and returns an {@link Optional}
+     *
+     * @return an empty Optional if either of the two are null, or an Optional containing an actual value
+     */
+    public static Optional<Float> calculateDistanceBetweenLastTwoLocations() {
+        return calculateDistance(lastLocation, previousLocation);
     }
 
     /**
@@ -145,7 +187,7 @@ public class GPSMonitor {
             return;
         }
         List<String> allGpsProviders = locationManager.getAllProviders();
-        Log.d(TAG, "all GPS providers: "+allGpsProviders);
+        Log.d(TAG, "all GPS providers: " + allGpsProviders);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
         locationManager.requestLocationUpdates(LocationManager.FUSED_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
@@ -154,7 +196,7 @@ public class GPSMonitor {
 
         valueMonitor = new ValueMonitor();
         valueMonitor.setCallback(() -> {
-            Iperf3Monitor.getInstance().startDefault15secTest();
+            Iperf3Monitor.getInstance().startDefault15secTest(lastLocation);
         });
         valueMonitor.startMonitoring();
 
@@ -168,7 +210,7 @@ public class GPSMonitor {
      */
     public void stopMonitoring() {
         locationManager.removeUpdates(locationListener);
-        if(valueMonitor != null) {
+        if (valueMonitor != null) {
             valueMonitor.stopMonitoring();
         }
     }
@@ -185,7 +227,7 @@ public class GPSMonitor {
         Consumer<Location> locationConsumer = new Consumer<Location>() {
             @Override
             public void accept(Location location) {
-                Log.d(TAG, "Current location is: "+location);
+                Log.d(TAG, "Current location is: " + location);
                 lastLocation = location;
                 if (location != null) {
                     Log.d(TAG, "Current location's LAT: " + location.getLatitude() + ", LNG: " + location.getLongitude());
@@ -219,6 +261,11 @@ public class GPSMonitor {
         );
     }
 
+    public static void setLastLocation(Location newLocation) {
+        previousLocation = lastLocation;
+        lastLocation = newLocation;
+    }
+
     private class ValueMonitor {
         private static final String TAG = "ValueMonitor";
 
@@ -236,6 +283,7 @@ public class GPSMonitor {
 
         /**
          * Set or clear the {@link #callback} parameter
+         *
          * @param callback the new callback to set
          */
         public void setCallback(@Nullable ValueMonitorCallback callback) {
@@ -272,7 +320,7 @@ public class GPSMonitor {
 
                 // Check if the time under threshold exceeds 5 seconds
                 if (timeUnderThreshold.get() >= THRESHOLD_DURATION) {
-                    Log.d(TAG, "value has been under threshold for "+timeUnderThreshold+"ms, firing callback");
+                    Log.d(TAG, "value has been under threshold for " + timeUnderThreshold + "ms, firing callback");
                     // Trigger the callback if the condition is met
                     if (callback != null) {
                         callback.onUnderThresholdValueForAtLeastThresholdDuration();

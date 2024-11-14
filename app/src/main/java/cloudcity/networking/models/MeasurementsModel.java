@@ -22,6 +22,8 @@ public class MeasurementsModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("dummy_value")
     private Integer dummy;
 
+    private transient String cellType;
+
     public Integer getRsrp() {
         return rsrp;
     }
@@ -129,6 +131,10 @@ public class MeasurementsModel extends NetworkDataModel.NetworkDataModelValues {
         this.dummy = dummy;
     }
 
+    public void setCellType(String newType) { this.cellType = newType; }
+
+    public String getCellType() { return cellType; }
+
     @Override
     public String toString() {
         return "MeasurementsModel{" +
@@ -142,6 +148,7 @@ public class MeasurementsModel extends NetworkDataModel.NetworkDataModelValues {
                 ", ssrsrq=" + ssrsrq +
                 ", sssinr=" + sssinr +
                 ", dummy=" + dummy +
+                ", cellType='" + cellType + '\'' +
                 '}';
     }
 }

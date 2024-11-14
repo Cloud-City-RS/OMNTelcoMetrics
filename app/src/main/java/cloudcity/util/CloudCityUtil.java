@@ -9,6 +9,7 @@ import cloudcity.CloudCityParamsRepository;
 import cloudcity.dataholders.MetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
 import cloudcity.networking.models.Iperf3NetworkDataModel;
+import cloudcity.networking.models.MeasurementsModel;
 import cloudcity.networking.models.NetworkDataModel;
 import cloudcity.networking.models.NetworkDataModelRequest;
 
@@ -33,12 +34,12 @@ public class CloudCityUtil {
         return param.trim().isEmpty();
     }
 
-    public static boolean sendIperf3Data(MetricsPOJO metricsPOJO, Location location) {
+    public static boolean sendIperf3Data(MetricsPOJO metricsPOJO, Location location, MeasurementsModel cellInfoMeasurements) {
         MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
         MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
         MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
 
-        Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(uploadMetrics, downloadMetrics, location);
+        Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(uploadMetrics, downloadMetrics, location, cellInfoMeasurements);
         return CloudCityUtil.sendIperf3Data(iperf3Data);
     }
 

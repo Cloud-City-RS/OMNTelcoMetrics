@@ -63,6 +63,8 @@ public class CellUtil {
             /* In 3G no measurement data available set dummy data. */
             measurements.setDummy(1);
         }
+        measurements.setCellType(category);
+
         return measurements;
     }
 

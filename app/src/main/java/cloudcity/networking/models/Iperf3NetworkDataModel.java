@@ -21,9 +21,10 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
     public Iperf3NetworkDataModel(
             @NonNull MetricsPOJO.UploadMetrics upload,
             @NonNull MetricsPOJO.DownloadMetrics download,
-            @NonNull Location location
+            @NonNull Location location,
+            @NonNull MeasurementsModel measurementsModel
     ) {
-        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download));
+        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel));
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
     }
@@ -52,8 +53,24 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("download_last")
     private final double DLlast;
 
+    @SerializedName("cell_type")
+    private final String cellType;
+    // LTE
+    private final Integer rsrp;
+    private final Integer rsrq;
+    private final Integer rssnr;
+
+    // 5G
+    private final Integer csirsrp;
+    private final Integer csirsrq;
+    private final Integer csisinr;
+    private final Integer ssrsrp;
+    private final Integer ssrsrq;
+    private final Integer sssinr;
+
     public Iperf3ValuesModel(@NonNull MetricsPOJO.UploadMetrics upload,
-                             @NonNull MetricsPOJO.DownloadMetrics download) {
+                             @NonNull MetricsPOJO.DownloadMetrics download,
+                             @NonNull MeasurementsModel cellMeasurements) {
         ULmin = upload.getULmin();
         ULmedian = upload.getULmedian();
         ULmean = upload.getULmean();
@@ -65,5 +82,18 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
         DLmean = download.getDLmean();
         DLmax = download.getDLmax();
         DLlast = download.getDLlast();
+
+        rsrp = cellMeasurements.getRsrp();
+        rsrq = cellMeasurements.getRsrq();
+        rssnr = cellMeasurements.getRssnr();
+
+        csirsrp = cellMeasurements.getCsirsrp();
+        csirsrq = cellMeasurements.getCsirsrq();
+        csisinr = cellMeasurements.getCsisinr();
+        ssrsrp = cellMeasurements.getSsrsrp();
+        ssrsrq = cellMeasurements.getSsrsrq();
+        sssinr = cellMeasurements.getSssinr();
+
+        cellType = cellMeasurements.getCellType();
     }
 }

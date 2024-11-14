@@ -5,25 +5,31 @@ import static cloudcity.CloudCityConstants.CLOUD_CITY_GENERAL_LOGGING;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_SERVER_URL;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_TOKEN;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.util.Log;
+
+import androidx.core.app.ActivityCompat;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 
 public class MainActivityExtensions {
+    private static final String TAG = "MainActivityExtensions";
     private static GPSMonitor gpsMonitor;
 
     /**
      * We will be using the 'logging' shared pref since that's the only one that is displayed in the logging settings fragment...
      *
-     * @param TAG the log tag used for logging
+     * @param activityContext the Activity that will be used as host for requesting permissions
      * @param spg the {@link SharedPreferencesGrouper} on which we'll set the listener and from which we'll grab the logging shared pref
      * @param dp the {@link DataProvider} which will be used to refresh all 'data' necessary for the CC server updates
      */
-    public static void performMainActivityThing(String TAG, SharedPreferencesGrouper spg, DataProvider dp) {
+    public static void performMainActivityThing(Activity activityContext, SharedPreferencesGrouper spg, DataProvider dp) {
         // First, set a listener that will trigger when the actual CC logging changes
         spg.setListener((sharedPreferences, key) -> {
             if (key != null && !key.isEmpty() && !CloudCityUtil.isBlank(key)) {
@@ -54,6 +60,15 @@ public class MainActivityExtensions {
         // We can't get rid of the listener anymore, because the URL/token part of it ensures
         // there will never be a discrepancy between what's stored in the SharedPrefs and what's
         // in the actual repository.
+
+        // Finally, check the permission; and turn on GPS monitoring if we have the permissions
+        if (ActivityCompat.checkSelfPermission(activityContext, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Requesting ACCESS_BACKGROUND_LOCATION Permission");
+            ActivityCompat.requestPermissions(activityContext, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3);
+        } else {
+            // We have the BACKGROUND_LOCATION permission, can start GPS logging
+            startGPSMonitoring(activityContext.getApplicationContext());
+        }
     }
 
     public static void performMainActivityThing2(String TAG, SharedPreferences sp) {
@@ -74,6 +89,7 @@ public class MainActivityExtensions {
 
     public static void turnOnCloudCityLoggingAfterPermissionsGranted(SharedPreferencesGrouper spg) {
         // Finally, turn on CloudCity logging by default
+        Log.d(TAG, "Turning ON cloudcity logging");
         spg
                 .getSharedPreference(SPType.logging_sp)
                 .edit()
@@ -84,6 +100,7 @@ public class MainActivityExtensions {
 
     public static void startGPSMonitoring(Context applicationContext) {
         // GPSMonitor
+        Log.d(TAG, "Initializing GPSMonitor");
         GPSMonitor.initialize(applicationContext);
         gpsMonitor = GPSMonitor.getInstance();
         gpsMonitor.startMonitoring();

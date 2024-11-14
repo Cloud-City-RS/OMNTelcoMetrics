@@ -64,6 +64,12 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
  * @see #startDefault15secTest()
  */
 public class Iperf3Monitor {
+    /**
+     * Threshold for how much time needs to pass since the last test started, in seconds.
+     * Defaults to 5 minutes.
+     */
+    public static long THROTTLING_THRESHOLD_IN_SECONDS = 5 * 60;
+
     private static final String TAG = Iperf3Monitor.class.getSimpleName();
 
     private final static long PARSING_DELAY_IN_MS = 10L; //0.01sec, was 1000L
@@ -94,6 +100,7 @@ public class Iperf3Monitor {
      * This is kinda terrible but will most likely get the job done.
      */
     private volatile long testStartTimestamp;
+    private volatile long testEndTimestamp;
 
     /**
      * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
@@ -308,20 +315,20 @@ public class Iperf3Monitor {
                                     double ULmean = normalize(defaultThroughput.calcMean());
                                     double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-                                    Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST="+DLlast);
-                                    Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST="+ULlast);
+                                    Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
+                                    Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
 
                                     // Stop the thread to avoid spinning it needlessly forever...
                                     stopParsingThread();
                                     shouldStop.compareAndSet(false, true);
 
-                                    long endTimestamp = System.currentTimeMillis();
+                                    testEndTimestamp = System.currentTimeMillis();
                                     // Instantiate the POJO stuff holder
                                     MetricsPOJO values = new MetricsPOJO(
                                             new MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
                                             new MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
                                             testStartTimestamp,
-                                            endTimestamp
+                                            testEndTimestamp
                                     );
 
                                     // Notify the completion listener
@@ -407,8 +414,8 @@ public class Iperf3Monitor {
         double ULmean = normalize(defaultThroughput.calcMean());
         double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-        Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST="+DLlast);
-        Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST="+ULlast);
+        Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
+        Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
     }
 
     /**
@@ -632,7 +639,23 @@ public class Iperf3Monitor {
         startIperf3Test(appContext, testData);
     }
 
+    /**
+     * Method that will start the iPerf3 test; will also check if the test should be "throttled"
+     * meaning, if there has been less than <i>user-configurable time</i> seconds before the last test
+     * was started, the test will <b>not be started</b>
+     *
+     * @param applicationContext the application {@link Context}
+     * @param data               the data required to run the test
+     */
     private void startIperf3Test(Context applicationContext, Iperf3RunnerData data) {
+        // Check for throttling
+        if (lastTestWasStartedLessThanThrottlingTimeAgo()) {
+            // Log and return
+            long now = System.currentTimeMillis();
+            long diffToLastTestInMillis = now - testStartTimestamp;
+            long diffInSeconds = diffToLastTestInMillis / 1000L;
+            Log.w(TAG, "Last test was started only " + diffInSeconds + " seconds ago, which is shorter than THROTTLING_THRESHOLD_IN_SECONDS of " + THROTTLING_THRESHOLD_IN_SECONDS + " seconds ago! Cancelling test run!");
+        }
         // Init the database
         Iperf3RunResultDao iperf3RunResultDao = iperf3ResultsDatabase.iperf3RunResultDao();
         // Do everything else needed for the test
@@ -738,6 +761,18 @@ public class Iperf3Monitor {
                 });
             });
         }
+    }
+
+    /**
+     * Method that checks whether last test was started at least {@link #THROTTLING_THRESHOLD_IN_SECONDS} seconds ago
+     *
+     * @return false if it was started more than threshold seconds ago, true if it was started less than threshold seconds ago
+     */
+    private boolean lastTestWasStartedLessThanThrottlingTimeAgo() {
+        long now = System.currentTimeMillis();
+        long diffToLastTestInMillis = now - testStartTimestamp;
+        long diffInSeconds = diffToLastTestInMillis / 1000L;
+        return diffInSeconds < THROTTLING_THRESHOLD_IN_SECONDS;
     }
 
     private WorkManager getWorkManager() {

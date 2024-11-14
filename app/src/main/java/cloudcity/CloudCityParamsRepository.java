@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.Nullable;
 
+import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.BuildConfig;
 
 

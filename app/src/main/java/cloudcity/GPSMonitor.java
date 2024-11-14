@@ -191,6 +191,10 @@ public class GPSMonitor {
                     Log.d(TAG, "Current location's LAT: " + location.getLatitude() + ", LNG: " + location.getLongitude());
                 } else {
                     Log.w(TAG, "Cannot get current location's (LAT,LNG) because location was NULL");
+                    // It's better to have a bogus dummy location with (LAT,LNG) as (0,0) than a null location
+                    Location bogusLocation = new Location("null");
+                    bogusLocation.reset();
+                    lastLocation = bogusLocation;
                 }
             }
         };

@@ -43,7 +43,10 @@ public class CloudCityUtil {
      * @param cellInfoMeasurements The cellular network measurements during the test
      * @return true if the data was sent successfully, false otherwise
      */
-    public static boolean sendIperf3Data(MetricsPOJO metricsPOJO, Location location, MeasurementsModel cellInfoMeasurements) {
+    public static boolean sendIperf3Data(
+            @NonNull MetricsPOJO metricsPOJO,
+            @NonNull Location location,
+            @NonNull MeasurementsModel cellInfoMeasurements) {
         MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
         MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
         MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();

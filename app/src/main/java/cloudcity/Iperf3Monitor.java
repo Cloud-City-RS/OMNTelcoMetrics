@@ -68,7 +68,7 @@ public class Iperf3Monitor {
      * Threshold for how much time needs to pass since the last test started, in seconds.
      * Defaults to 5 minutes.
      */
-    public static long THROTTLING_THRESHOLD_IN_SECONDS = 5 * 60;
+    private static volatile long THROTTLING_THRESHOLD_IN_SECONDS = 5 * 60;
 
     private static final String TAG = Iperf3Monitor.class.getSimpleName();
 
@@ -338,8 +338,6 @@ public class Iperf3Monitor {
 
                                     // And set the new marker as 'no longer running'
                                     iperf3TestRunning.compareAndSet(true, false);
-                                    // Reset the test start timestamp
-                                    testStartTimestamp = 0;
 
                                     Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
                                 }
@@ -509,6 +507,18 @@ public class Iperf3Monitor {
         return value / 1e+6;
     }
 
+    /**
+     * Setter for the {@link #THROTTLING_THRESHOLD_IN_SECONDS} throttling constant,
+     * and also returns the new value of that parameter
+     * @param newThrottlingValueInSeconds the new value to use for {@link #THROTTLING_THRESHOLD_IN_SECONDS}
+     * @return the new (current) value of that parameter
+     */
+    public long setThrottlingThresshold(int newThrottlingValueInSeconds) {
+        Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_SECONDS to "+newThrottlingValueInSeconds);
+        THROTTLING_THRESHOLD_IN_SECONDS = newThrottlingValueInSeconds;
+        return THROTTLING_THRESHOLD_IN_SECONDS;
+    }
+
     public void startDefault15secTest() {
         // Sanity check
         if (iperf3TestRunning.get()) {
@@ -655,6 +665,7 @@ public class Iperf3Monitor {
             long diffToLastTestInMillis = now - testStartTimestamp;
             long diffInSeconds = diffToLastTestInMillis / 1000L;
             Log.w(TAG, "Last test was started only " + diffInSeconds + " seconds ago, which is shorter than THROTTLING_THRESHOLD_IN_SECONDS of " + THROTTLING_THRESHOLD_IN_SECONDS + " seconds ago! Cancelling test run!");
+            return;
         }
         // Init the database
         Iperf3RunResultDao iperf3RunResultDao = iperf3ResultsDatabase.iperf3RunResultDao();

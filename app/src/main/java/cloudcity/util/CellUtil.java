@@ -1,5 +1,7 @@
 package cloudcity.util;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import java.util.List;
@@ -12,6 +14,7 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformation
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 
 public class CellUtil {
+    private static final String TAG = "CellUtil";
 
     /**
      * Finds a registered cell information in a list of cell informations
@@ -68,27 +71,33 @@ public class CellUtil {
         return measurements;
     }
 
-    public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(DataProvider dp) {
-        List<CellInformation> cellsInfo = dp.getCellInformation();
-        List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
+    public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {
+        if (dp == null) {
+            // Don't bother me with this CodeRabbit, i've seen a NullPointerException happen because of this 'dp' being null
+            Log.e(TAG, "DataProvider was null, sending Iperf3 data without MeasurementModel");
+            return new MeasurementsModel();
+        } else {
+            List<CellInformation> cellsInfo = dp.getCellInformation();
+            List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
 
-        CellInformation currentCell = CellUtil.findRegisteredCell(cellsInfo);
-        CellInformation currentSignal = null;
-        // After testing on a real phone, apparently there's only one SignalStrengthInformation
-        // CellInformation member in the list, so lets just take the first one if it's there
-        if (!signalInfo.isEmpty()) {
-            currentSignal = signalInfo.get(0);
+            CellInformation currentCell = CellUtil.findRegisteredCell(cellsInfo);
+            CellInformation currentSignal = null;
+            // After testing on a real phone, apparently there's only one SignalStrengthInformation
+            // CellInformation member in the list, so lets just take the first one if it's there
+            if (!signalInfo.isEmpty()) {
+                currentSignal = signalInfo.get(0);
+            }
+
+            String category = currentCell.getCellType().toString();
+
+            // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
+            // with what we found in the SignalInformation
+            MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(category, currentCell);
+            // While this one isn't necessary, it's convenient for debugging
+            MeasurementsModel updatedModel = updateMeasurementModelByCell(modelForSending, currentSignal);
+
+            return updatedModel;
         }
-
-        String category = currentCell.getCellType().toString();
-
-        // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
-        // with what we found in the SignalInformation
-        MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(category, currentCell);
-        // While this one isn't necessary, it's convenient for debugging
-        MeasurementsModel updatedModel = updateMeasurementModelByCell(modelForSending, currentSignal);
-
-        return updatedModel;
     }
 
     /**

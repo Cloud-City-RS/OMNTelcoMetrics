@@ -1,6 +1,7 @@
 package cloudcity;
 
 import android.content.Context;
+import android.location.Location;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -61,7 +62,7 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
  * work together.
  *
  * @see #startListeningForIperf3Updates(Iperf3MonitorCompletionListener)
- * @see #startDefault15secTest()
+ * @see #startDefault15secTest(Location)
  */
 public class Iperf3Monitor {
     /**
@@ -69,6 +70,12 @@ public class Iperf3Monitor {
      * Defaults to 5 minutes.
      */
     private static volatile long THROTTLING_THRESHOLD_IN_SECONDS = 5 * 60;
+
+    /**
+     * Threshold for how much distance we need to move since the last test, in meters.
+     * Defaults to 0 meters
+     */
+    private static volatile float THROTTLING_THRESHOLD_IN_METERS = 0;
 
     private static final String TAG = Iperf3Monitor.class.getSimpleName();
 
@@ -101,6 +108,8 @@ public class Iperf3Monitor {
      */
     private volatile long testStartTimestamp;
     private volatile long testEndTimestamp;
+
+    private volatile @NonNull Location lastTestRunLocation;
 
     /**
      * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
@@ -513,13 +522,25 @@ public class Iperf3Monitor {
      * @param newThrottlingValueInSeconds the new value to use for {@link #THROTTLING_THRESHOLD_IN_SECONDS}
      * @return the new (current) value of that parameter
      */
-    public long setThrottlingThresshold(int newThrottlingValueInSeconds) {
+    public long setTimeThrottlingThreshold(int newThrottlingValueInSeconds) {
         Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_SECONDS to "+newThrottlingValueInSeconds);
         THROTTLING_THRESHOLD_IN_SECONDS = newThrottlingValueInSeconds;
         return THROTTLING_THRESHOLD_IN_SECONDS;
     }
 
-    public void startDefault15secTest() {
+    /**
+     * Setter for the {@link #THROTTLING_THRESHOLD_IN_METERS} throttling constant,
+     * and also returns the new value of that parameter
+     * @param newThrottlingValueInMeters the new value to use for {@link #THROTTLING_THRESHOLD_IN_METERS}
+     * @return the new (current) value of that parameter
+     */
+    public float setDistanceThrottlingThreshold(int newThrottlingValueInMeters) {
+        Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_METERS to "+newThrottlingValueInMeters);
+        THROTTLING_THRESHOLD_IN_METERS = newThrottlingValueInMeters;
+        return THROTTLING_THRESHOLD_IN_METERS;
+    }
+
+    public void startDefault15secTest(Location testRunLocation) {
         // Sanity check
         if (iperf3TestRunning.get()) {
             Log.e(TAG, "Iperf3 test is still running! aborting...");
@@ -646,7 +667,7 @@ public class Iperf3Monitor {
                 input
         );
 
-        startIperf3Test(appContext, testData);
+        startIperf3Test(appContext, testData, testRunLocation);
     }
 
     /**
@@ -656,9 +677,25 @@ public class Iperf3Monitor {
      *
      * @param applicationContext the application {@link Context}
      * @param data               the data required to run the test
+     * @param testRunLocation    the {@link Location} where the test is being ran
      */
-    private void startIperf3Test(Context applicationContext, Iperf3RunnerData data) {
+    private void startIperf3Test(Context applicationContext, Iperf3RunnerData data, Location testRunLocation) {
         // Check for throttling
+        if (lastTestWasStartedLessThanThrottlingDistanceAway(testRunLocation)) {
+            // If we haven't moved more than throttling distance away, log and return
+            if (testRunLocation != null && lastTestRunLocation != null) {
+                // We can calculate distances only if both are non-null
+                float distance = testRunLocation.distanceTo(lastTestRunLocation);
+                Log.w(TAG, "Last test was started only " + distance + " meters away, which is shorter than THROTTLING_THRESHOLD_IN_METERS of " + THROTTLING_THRESHOLD_IN_METERS + " meters! Cancelling test run!");
+            } else {
+                // This can't ever happen, but is here just for completeness sake.
+                // If any of these two locations are null, the lastTestWasStartedLessThanThrottlingDistanceAway()
+                // returns 'false' and we will not be here
+                Log.wtf(TAG, "Well, what do you know. The impossible has happened.");
+            }
+            return;
+        }
+
         if (lastTestWasStartedLessThanThrottlingTimeAgo()) {
             // Log and return
             long now = System.currentTimeMillis();
@@ -744,6 +781,7 @@ public class Iperf3Monitor {
 
             // Set the startTimestamp
             testStartTimestamp = System.currentTimeMillis();
+            lastTestRunLocation = testRunLocation;
 
             // Enqueue tasks onto the WorkManager
             if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
@@ -777,13 +815,35 @@ public class Iperf3Monitor {
     /**
      * Method that checks whether last test was started at least {@link #THROTTLING_THRESHOLD_IN_SECONDS} seconds ago
      *
-     * @return false if it was started more than threshold seconds ago, true if it was started less than threshold seconds ago
+     * @return false if it was started more than threshold seconds ago, true if it was started less than threshold seconds ago and should be filtered
      */
     private boolean lastTestWasStartedLessThanThrottlingTimeAgo() {
         long now = System.currentTimeMillis();
         long diffToLastTestInMillis = now - testStartTimestamp;
         long diffInSeconds = diffToLastTestInMillis / 1000L;
         return diffInSeconds < THROTTLING_THRESHOLD_IN_SECONDS;
+    }
+
+    /**
+     * Method that checks whether last test was started at least {@link #THROTTLING_THRESHOLD_IN_METERS} meters away.
+     * It really just checks whether the distance between {@code thisRunLocation} and {@link #lastTestRunLocation} is
+     * less than threshold and returns if the test should be filtered (throttled) or not.
+     *
+     * @param thisRunLocation the {@link Location} where this test should be started
+     * @return false if it was started more than threshold meters away, true if it was started less than threshold meters away and should be filtered
+     */
+    private boolean lastTestWasStartedLessThanThrottlingDistanceAway(@NonNull Location thisRunLocation) {
+        // Don't be mistaken by this 'lastTestRunLocation == null is always false' warning, it'll be null
+        // until it's initially set, and on first check of this method it will most surely still be null
+        //
+        // Same thing goes for 'thisRunLocation' as well, because the annotation cannot *enforce* them being
+        // non-null at runtime, it can only force compile-time non-nullability.
+        if (lastTestRunLocation == null || thisRunLocation == null) {
+            // If any of the two locations are null, don't filter
+            return false;
+        } else {
+            return thisRunLocation.distanceTo(lastTestRunLocation) < THROTTLING_THRESHOLD_IN_METERS;
+        }
     }
 
     private WorkManager getWorkManager() {

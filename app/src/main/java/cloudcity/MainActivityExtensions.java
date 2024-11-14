@@ -2,6 +2,7 @@ package cloudcity;
 
 import static cloudcity.CloudCityConstants.CLOUD_CITY_CC_LOGGING;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_GENERAL_LOGGING;
+import static cloudcity.CloudCityConstants.CLOUD_CITY_IPERF3_TEST_THROTTLING_THRESHOLD;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_SERVER_URL;
 import static cloudcity.CloudCityConstants.CLOUD_CITY_TOKEN;
 
@@ -50,6 +51,13 @@ public class MainActivityExtensions {
                     case CLOUD_CITY_TOKEN: {
                         String newSharedPrefValue = sharedPreferences.getString(key, "");
                         CloudCityParamsRepository.getInstance().setServerToken(newSharedPrefValue);
+                    }
+
+                    case CLOUD_CITY_IPERF3_TEST_THROTTLING_THRESHOLD: {
+                        String newSharedPrefValue = sharedPreferences.getString(key, "5");
+                        double sharedPrefValueInMinutes = Double.parseDouble(newSharedPrefValue);
+                        int sharedPrefValueInSeconds = (int)(sharedPrefValueInMinutes * 60);
+                        Iperf3Monitor.getInstance().setThrottlingThresshold(sharedPrefValueInSeconds);
                     }
                     break;
                 }

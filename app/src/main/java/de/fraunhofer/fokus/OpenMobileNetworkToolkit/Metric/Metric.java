@@ -35,7 +35,7 @@ public class Metric {
             LinearLayout ll = new LinearLayout(ct);
 
             GradientDrawable gd = new GradientDrawable();
-            gd.setColor(ct.getColor(R.color.cardview_dark_background));
+            gd.setColor(ct.getColor(R.color.cardview_lightgray_background));
             gd.setCornerRadius(10);
             gd.setStroke(2, 0xFF000000);
             ll.setBackground(gd);

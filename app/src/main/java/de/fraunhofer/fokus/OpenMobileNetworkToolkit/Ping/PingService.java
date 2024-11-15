@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import cloudcity.MainThreadExecutor;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x.InfluxdbConnection;
@@ -226,7 +227,9 @@ public class PingService extends Service {
                     pingLogging.postDelayed(pingUpdate, 200);
                 }
             };
-            wm.getWorkInfoByIdLiveData(pingWR.getId()).observeForever(observer);
+            // We cannot observe on a background thread, so lets do the same hack as in Iperf3Monitor
+            MainThreadExecutor mainThreadExecutor = MainThreadExecutor.getInstance();
+            mainThreadExecutor.execute(() -> wm.getWorkInfoByIdLiveData(pingWR.getId()).observeForever(observer));
         }
     };
 

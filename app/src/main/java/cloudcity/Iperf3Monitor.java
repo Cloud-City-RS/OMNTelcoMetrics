@@ -772,11 +772,7 @@ public class Iperf3Monitor {
 
             // Check if we have a main thread executor
             if (mainThreadExecutor == null) {
-                synchronized (this) {
-                    if (mainThreadExecutor == null) {
-                        mainThreadExecutor = new MainThreadExecutor();
-                    }
-                }
+                mainThreadExecutor = MainThreadExecutor.getInstance();
             }
 
             // Set the startTimestamp

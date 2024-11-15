@@ -94,6 +94,8 @@
     <string name="cloud_city_url">Cloud City instance URL / IP</string>
     <string name="cloud_city_token_dialog_title">Set Cloud City Token</string>
     <string name="cloud_city_token">Cloud City Token</string>
+    <string name="cloud_city_iperf3_test_throttling_interval">Cloud City iPerf3 test throttling (in minutes)</string>
+    <string name="cloud_city_iperf3_test_throttling_distance">Cloud City iPerf3 test throttling (in meters)</string>
 
     <!-- Work Profile Management -->
 

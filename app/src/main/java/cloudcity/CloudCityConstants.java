@@ -22,4 +22,9 @@ public class CloudCityConstants {
     public static final int CLOUD_CITY_IPERF3_VALID_PORT_MIN = 9200;
     public static final int CLOUD_CITY_IPERF3_VALID_PORT_MAX = 9240;
     public static final int CLOUD_CITY_IPERF3_DEFAULT_DURATION = 30;
+
+    // Iperf3 time-based throttling shared pref key
+    public static final String CLOUD_CITY_IPERF3_TEST_TIME_THROTTLING_THRESHOLD = "cloud_city_iperf3_throttling_interval";
+    // Iperf3 distance-based throttling shared pref key
+    public static final String CLOUD_CITY_IPERF3_TEST_DISTANCE_THROTTLING_THRESHOLD = "cloud_city_iperf3_throttling_distance";
 }

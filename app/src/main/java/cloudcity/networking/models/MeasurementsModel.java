@@ -22,7 +22,7 @@ public class MeasurementsModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("dummy_value")
     private Integer dummy;
 
-    private transient String cellType;
+    private transient int cellType;
 
     public Integer getRsrp() {
         return rsrp;
@@ -131,9 +131,9 @@ public class MeasurementsModel extends NetworkDataModel.NetworkDataModelValues {
         this.dummy = dummy;
     }
 
-    public void setCellType(String newType) { this.cellType = newType; }
+    public void setCellType(int newType) { this.cellType = newType; }
 
-    public String getCellType() { return cellType; }
+    public int getCellType() { return cellType; }
 
     @Override
     public String toString() {

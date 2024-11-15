@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Objects;
 
 import cloudcity.networking.models.MeasurementsModel;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.NRInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
@@ -66,9 +68,30 @@ public class CellUtil {
             /* In 3G no measurement data available set dummy data. */
             measurements.setDummy(1);
         }
-        measurements.setCellType(category);
+        // Remap based on category or better - the actual cell type class
+        // 3G is CDMA or GSM
+        // 4G is LTE
+        // 5G is NR
+        measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
 
         return measurements;
+    }
+
+    public static int remapCellClassTypeIntoInteger(CellInformation cellToRemap) {
+        // kotlin's exhaustive when() would be great but lets do with what we have
+        int retVal = -1;
+
+        if (cellToRemap instanceof GSMInformation || cellToRemap instanceof CDMAInformation) {
+            retVal = 3;
+        }
+        if (cellToRemap instanceof LTEInformation) {
+            retVal = 4;
+        }
+        if (cellToRemap instanceof NRInformation) {
+            retVal = 5;
+        }
+
+        return retVal;
     }
 
     public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {

@@ -55,7 +55,7 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     private final double DLlast;
 
     @SerializedName("cell_type")
-    private final String cellType;
+    private final int cellType;
 
     @SerializedName("test_start_timestamp")
     private final long startTimestamp;

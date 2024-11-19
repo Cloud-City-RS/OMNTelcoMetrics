@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Objects;
 
 import cloudcity.networking.models.MeasurementsModel;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.LTEInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.NRInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
@@ -18,7 +20,7 @@ public class CellUtil {
 
     /**
      * Finds a registered cell information in a list of cell informations
-     * @param cellList
+     * @param cellList list of cells to look through
      * @return the first registered cell in the list, or null if no registered cells were found
      */
     public static CellInformation findRegisteredCell(@NonNull List<CellInformation> cellList) {
@@ -37,9 +39,9 @@ public class CellUtil {
 
     /**
      * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
-     * @param category
-     * @param currentCell
-     * @return
+     * @param category    the category of the cell, equivallent to {@link CellInformation#getCellType()}
+     * @param currentCell the cell to get information from
+     * @return the {@link MeasurementsModel} obtained from information contained in the {@code currentCell}
      */
     public static @NonNull MeasurementsModel getMeasurementsModel(String category, CellInformation currentCell) {
         MeasurementsModel measurements = new MeasurementsModel();
@@ -66,9 +68,41 @@ public class CellUtil {
             /* In 3G no measurement data available set dummy data. */
             measurements.setDummy(1);
         }
-        measurements.setCellType(category);
+        // Remap based on category or better - the actual cell type class
+        // 3G is CDMA or GSM
+        // 4G is LTE
+        // 5G is NR
+        measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
 
         return measurements;
+    }
+
+    /**
+     * Maps cell type to an integer value for database compatibility
+     *
+     * @param cellToRemap The cell information to be remapped
+     * @return Integer representing the cell type:<br>
+     * 3 - 3G (GSM/CDMA)<br>
+     * 4 - 4G (LTE)<br>
+     * 5 - 5G (NR)<br>
+     * @throws IllegalStateException when an unknown/unsupported cell type is encountered
+     */
+    public static int remapCellClassTypeIntoInteger(CellInformation cellToRemap) {
+        // kotlin's exhaustive when() would be great but lets do with what we have
+        int retVal;
+
+        if (cellToRemap instanceof GSMInformation || cellToRemap instanceof CDMAInformation) {
+            retVal = 3;
+        } else if (cellToRemap instanceof LTEInformation) {
+            retVal = 4;
+        } else if (cellToRemap instanceof NRInformation) {
+            retVal = 5;
+        } else {
+            Log.e(TAG, "Unsupported cell type: "+cellToRemap.getCellType());
+            throw new IllegalStateException("Unsupported cell type encountered in CellUtil::remapCellClassTypeIntoInteger! cellType: "+cellToRemap.getCellType());
+        }
+
+        return retVal;
     }
 
     public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {

@@ -7,8 +7,10 @@ import androidx.annotation.NonNull;
 import com.google.gson.annotations.SerializedName;
 
 import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.util.CloudCityUtil;
 
 public class Iperf3NetworkDataModel extends NetworkDataModel {
+    private static final int NUMBER_OF_DECIMALS_FOR_ACCURACY = 4;
 
     @SerializedName("category")
     final private String category = "Iperf3";
@@ -22,16 +24,17 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
             @NonNull MetricsPOJO.UploadMetrics upload,
             @NonNull MetricsPOJO.DownloadMetrics download,
             @NonNull Location location,
-            @NonNull MeasurementsModel measurementsModel,
-            @NonNull MetricsPOJO.TestDurationPair testDurationPair
-            ) {
-        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel, testDurationPair));
+            @NonNull MeasurementsModel measurementsModel
+    ) {
+        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel));
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
     }
 }
 
 class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
+    private static final int NUMBER_OF_DECIMALS_FOR_METRICS = 2;
+
     @SerializedName("upload_min")
     private final double ULmin;
     @SerializedName("upload_median")
@@ -55,12 +58,7 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     private final double DLlast;
 
     @SerializedName("cell_type")
-    private final String cellType;
-
-    @SerializedName("test_start_timestamp")
-    private final long startTimestamp;
-    @SerializedName("test_end_timestamp")
-    private final long endTimestamp;
+    private final int cellType;
 
     // LTE
     private final Integer rsrp;
@@ -77,8 +75,7 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
 
     public Iperf3ValuesModel(@NonNull MetricsPOJO.UploadMetrics upload,
                              @NonNull MetricsPOJO.DownloadMetrics download,
-                             @NonNull MeasurementsModel cellMeasurements,
-                             @NonNull MetricsPOJO.TestDurationPair testDuration) {
+                             @NonNull MeasurementsModel cellMeasurements) {
         ULmin = upload.getULmin();
         ULmedian = upload.getULmedian();
         ULmean = upload.getULmean();
@@ -103,8 +100,5 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
         sssinr = cellMeasurements.getSssinr();
 
         cellType = cellMeasurements.getCellType();
-
-        startTimestamp = testDuration.getTestStartTimestamp();
-        endTimestamp = testDuration.getTestEndTimestamp();
     }
 }

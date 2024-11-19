@@ -55,8 +55,7 @@ public class CloudCityUtil {
                 uploadMetrics,
                 downloadMetrics,
                 location,
-                cellInfoMeasurements,
-                metricsPOJO.toTestDurationPair()
+                cellInfoMeasurements
         );
         return CloudCityUtil.sendIperf3Data(iperf3Data);
     }
@@ -74,5 +73,22 @@ public class CloudCityUtil {
         NetworkDataModelRequest requestData = new NetworkDataModelRequest();
         requestData.add(data);
         return CloudCityHelpers.sendData(address, token, requestData);
+    }
+
+    /**
+     * Method that rounds a double {@code numberToRound} to {@code numberOfDecimals} number of decimals and returns the
+     * corrected number
+     *
+     * @param numberToRound    the number to round to a fixed number of decimals
+     * @param numberOfDecimals the number of decimals to allow after the decimal point
+     * @return the fixed number
+     */
+    public static double roundToNumberOfDecimals(double numberToRound, int numberOfDecimals) {
+        // multiply by 10^numberOfDecimals, round, floor, then return divided
+        double multiplier = Math.pow(10, numberOfDecimals);
+        double basis = numberToRound * multiplier;
+        basis = Math.round(basis);
+        double retVal = basis / multiplier;
+        return retVal;
     }
 }

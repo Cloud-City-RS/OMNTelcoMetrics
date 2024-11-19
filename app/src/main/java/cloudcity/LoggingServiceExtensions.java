@@ -169,11 +169,11 @@ public class LoggingServiceExtensions {
 
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
-        MeasurementsModel modelForSending =
-                CellUtil.updateMeasurementModelByCell(
-                        CellUtil.getMeasurementsModel(category, currentCell),
-                        currentSignal
-                );
+        MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellUtil.CellInfoPrecedence.SIGNAL_INFO);
+//                CellUtil.updateMeasurementModelByCell(
+//                        CellUtil.getMeasurementsModel(category, currentCell),
+//                        currentSignal
+//                );
 
         Location location = GPSMonitor.getLastLocation();
 

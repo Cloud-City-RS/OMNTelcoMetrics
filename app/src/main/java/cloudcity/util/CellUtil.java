@@ -6,7 +6,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import java.util.List;
-import java.util.Objects;
 
 import cloudcity.networking.models.MeasurementsModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
@@ -39,46 +38,6 @@ public class CellUtil {
     }
 
     /**
-     * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
-     * @param category    the category of the cell, equivallent to {@link CellInformation#getCellType()}
-     * @param currentCell the cell to get information from
-     * @return the {@link MeasurementsModel} obtained from information contained in the {@code currentCell}
-     */
-    public static @NonNull MeasurementsModel getMeasurementsModel(String category, CellInformation currentCell) {
-        MeasurementsModel measurements = new MeasurementsModel();
-
-        if (Objects.equals(category, "NR")) {
-            // New safety
-            if (currentCell instanceof NRInformation) {
-                NRInformation nrCell = (NRInformation) currentCell;
-                measurements.setCsirsrp(nrCell.getCsirsrp());
-                measurements.setCsirsrq(nrCell.getCsirsrq());
-                measurements.setCsisinr(nrCell.getCsisinr());
-                measurements.setSsrsrp(nrCell.getSsrsrp());
-                measurements.setSsrsrq(nrCell.getSsrsrq());
-                measurements.setSssinr(nrCell.getSssinr());
-            }
-        } else if (Objects.equals(category, "LTE")) {
-            if (currentCell instanceof LTEInformation) {
-                LTEInformation lteCell = (LTEInformation) currentCell;
-                measurements.setRsrp(lteCell.getRsrp());
-                measurements.setRsrq(lteCell.getRsrq());
-                measurements.setRssnr(lteCell.getRssnr());
-            }
-        } else {
-            /* In 3G no measurement data available set dummy data. */
-            measurements.setDummy(1);
-        }
-        // Remap based on category or better - the actual cell type class
-        // 3G is CDMA or GSM
-        // 4G is LTE
-        // 5G is NR
-        measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
-
-        return measurements;
-    }
-
-    /**
      * Maps cell type to an integer value for database compatibility
      *
      * @param cellToRemap The cell information to be remapped
@@ -106,6 +65,13 @@ public class CellUtil {
         return retVal;
     }
 
+    /**
+     * Handy method for doint everything we normally do manually, find the registered cell, grab the signal strength
+     * and then init the {@link MeasurementsModel} from the registered cell and update with the signal strength
+     *
+     * @param dp the {@link DataProvider} to grab all of these things from
+     * @return the MeasurementsModel to be uploaded
+     */
     public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {
         if (dp == null) {
             // Don't bother me with this CodeRabbit, i've seen a NullPointerException happen because of this 'dp' being null
@@ -123,50 +89,31 @@ public class CellUtil {
                 currentSignal = signalInfo.get(0);
             }
 
-            String category = currentCell.getCellType().toString();
+            // Lets initialize the MeasurementsModel by taking non-null (and non-invalid) values from both the currently registered
+            // cell and the current signal info, and give precedence to one of them;
+            //
+            // in case both are non-null, the one with precedence will be used
+            // in case one of them is null, the other one will be used
+            // in case both of them are null, the one with precedence will be used
+            MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellInfoPrecedence.SIGNAL_INFO);
 
-            // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
-            // with what we found in the SignalInformation
-            MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(category, currentCell);
-            // While this one isn't necessary, it's convenient for debugging
-            MeasurementsModel updatedModel = updateMeasurementModelByCell(modelForSending, currentSignal);
-
-            return updatedModel;
+            return modelForSending;
         }
     }
 
     /**
-     * Updates the {@link MeasurementsModel} {@code measurements} with {@link CellInformation} {@code cellForUpdating} while
-     * overwriting all previous values in the model
-     * <p>
-     * <b>NOTE: has a side-effect of actually updating the measurements, it just returns the updated model as a convenience</b>
-     *
-     * @param measurements the model to update
-     * @param cellForUpdating the source of updated data to overwrite old values in the model
-     * @return the updated measurements
+     * Enum class used to give precedence to either the registered cell or the signal strength info
      */
-    public static MeasurementsModel updateMeasurementModelByCell(@NonNull MeasurementsModel measurements, @NonNull CellInformation cellForUpdating) {
-        if (cellForUpdating instanceof NRInformation) {
-            NRInformation nrCell = (NRInformation) cellForUpdating;
-            measurements.setCsirsrp(nrCell.getCsirsrp());
-            measurements.setCsirsrq(nrCell.getCsirsrq());
-            measurements.setCsisinr(nrCell.getCsisinr());
-            measurements.setSsrsrp(nrCell.getSsrsrp());
-            measurements.setSsrsrq(nrCell.getSsrsrq());
-            measurements.setSssinr(nrCell.getSssinr());
-        }
-
-        if (cellForUpdating instanceof LTEInformation) {
-            LTEInformation lteCell = (LTEInformation) cellForUpdating;
-            measurements.setRsrp(lteCell.getRsrp());
-            measurements.setRsrq(lteCell.getRsrq());
-            measurements.setRssnr(lteCell.getRssnr());
-        }
-
-        return measurements;
+    public enum CellInfoPrecedence {
+        /**
+         * Give precedence to Cell info
+         */
+        CELL_INFO,
+        /**
+         * Give precedence to Signal info
+         */
+        SIGNAL_INFO
     }
-
-    public enum CellInfoPrecedence { CELL_INFO, SIGNAL_INFO }
 
     /**
      * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}

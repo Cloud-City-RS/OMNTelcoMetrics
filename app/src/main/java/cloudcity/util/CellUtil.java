@@ -117,6 +117,9 @@ public class CellUtil {
 
     /**
      * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
+     * <p>
+     * <b>NOTE: in case 'null' is received for {@code signalStrength} then it will resort to using the {@code currentCell} instead of it</b>
+     *
      * @param currentCell the currently-registered cell to get information from
      * @param signalStrength the signal strength to get information from
      * @param precedence which cell info should take precedence
@@ -133,19 +136,25 @@ public class CellUtil {
         // If both of them are null, well then, take the null that takes precedence since it changes nothing
         //
         // We are in a bad situation if currentCell and signalStrength can end up being of different types.
+        Log.v(TAG, "--> getMeasurementsModel()\tcurrentCell: "+currentCell+", signalStrength: "+signalStrength+", precedence: "+precedence);
+        if (signalStrength == null) {
+            Log.e(TAG, "signalStrength was NULL !!! will use currentCell for both values to retain functionality.");
+        }
 
         // New safety
         if (currentCell instanceof NRInformation) {
             NRInformation nrCell = (NRInformation) currentCell;
             // Assume signalStrength is the same
             NRInformation nrSignal = (NRInformation) signalStrength;
+            //TODO get rid of this workaround
+            if (nrSignal == null) nrSignal = nrCell;
 
-            Integer validCsirsrp = getNonNullAndNonInvalidMember(nrCell.getCsirsrp(), nrSignal.getCsirsrp(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validCsirsrq = getNonNullAndNonInvalidMember(nrCell.getCsirsrq(), nrSignal.getCsirsrq(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validCsisinr = getNonNullAndNonInvalidMember(nrCell.getCsisinr(), nrSignal.getCsisinr(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validSsrsrp = getNonNullAndNonInvalidMember(nrCell.getSsrsrp(), nrSignal.getSsrsrp(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validSsrsrq = getNonNullAndNonInvalidMember(nrCell.getSsrsrq(), nrSignal.getSsrsrq(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validSssinr = getNonNullAndNonInvalidMember(nrCell.getSssinr(), nrSignal.getSssinr(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validCsirsrp = getNonNullAndNonInvalidMember(nrCell.getCsirsrp(), nrSignal.getCsirsrp(), precedence);
+            Integer validCsirsrq = getNonNullAndNonInvalidMember(nrCell.getCsirsrq(), nrSignal.getCsirsrq(), precedence);
+            Integer validCsisinr = getNonNullAndNonInvalidMember(nrCell.getCsisinr(), nrSignal.getCsisinr(), precedence);
+            Integer validSsrsrp = getNonNullAndNonInvalidMember(nrCell.getSsrsrp(), nrSignal.getSsrsrp(), precedence);
+            Integer validSsrsrq = getNonNullAndNonInvalidMember(nrCell.getSsrsrq(), nrSignal.getSsrsrq(), precedence);
+            Integer validSssinr = getNonNullAndNonInvalidMember(nrCell.getSssinr(), nrSignal.getSssinr(), precedence);
 
             measurements.setCsirsrp(validCsirsrp);
             measurements.setCsirsrq(validCsirsrq);
@@ -157,10 +166,12 @@ public class CellUtil {
             LTEInformation lteCell = (LTEInformation) currentCell;
             // Likewise, assume signal strength is the same
             LTEInformation lteSignal = (LTEInformation) signalStrength;
+            //TODO get rid of this workaround
+            if (lteSignal == null) lteSignal = lteCell;
 
-            Integer validRsrp = getNonNullAndNonInvalidMember(lteCell.getRsrp(), lteSignal.getRsrp(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validRsrq = getNonNullAndNonInvalidMember(lteCell.getRsrq(), lteSignal.getRsrq(), CellInfoPrecedence.SIGNAL_INFO);
-            Integer validRssnr = getNonNullAndNonInvalidMember(lteCell.getRssnr(), lteSignal.getRssnr(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validRsrp = getNonNullAndNonInvalidMember(lteCell.getRsrp(), lteSignal.getRsrp(), precedence);
+            Integer validRsrq = getNonNullAndNonInvalidMember(lteCell.getRsrq(), lteSignal.getRsrq(), precedence);
+            Integer validRssnr = getNonNullAndNonInvalidMember(lteCell.getRssnr(), lteSignal.getRssnr(), precedence);
 
             measurements.setRsrp(validRsrp);
             measurements.setRsrq(validRsrq);
@@ -175,6 +186,7 @@ public class CellUtil {
         // 5G is NR
         measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
 
+        Log.v(TAG, "<-- getMeasurementsModel()\tmeasurements: " + measurements);
         return measurements;
     }
 

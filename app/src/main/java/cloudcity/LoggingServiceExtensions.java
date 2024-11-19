@@ -39,7 +39,7 @@ public class LoggingServiceExtensions {
 
     private static int interval;
 
-    private static DataProvider dp;
+    private static volatile DataProvider dp;
 
     private static HandlerThread handlerThread;
 

@@ -55,8 +55,7 @@ public class CloudCityUtil {
                 uploadMetrics,
                 downloadMetrics,
                 location,
-                cellInfoMeasurements,
-                metricsPOJO.toTestDurationPair()
+                cellInfoMeasurements
         );
         return CloudCityUtil.sendIperf3Data(iperf3Data);
     }

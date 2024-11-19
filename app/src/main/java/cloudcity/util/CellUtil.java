@@ -20,7 +20,7 @@ public class CellUtil {
 
     /**
      * Finds a registered cell information in a list of cell informations
-     * @param cellList
+     * @param cellList list of cells to look through
      * @return the first registered cell in the list, or null if no registered cells were found
      */
     public static CellInformation findRegisteredCell(@NonNull List<CellInformation> cellList) {
@@ -39,9 +39,9 @@ public class CellUtil {
 
     /**
      * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
-     * @param category
-     * @param currentCell
-     * @return
+     * @param category    the category of the cell, equivallent to {@link CellInformation#getCellType()}
+     * @param currentCell the cell to get information from
+     * @return the {@link MeasurementsModel} obtained from information contained in the {@code currentCell}
      */
     public static @NonNull MeasurementsModel getMeasurementsModel(String category, CellInformation currentCell) {
         MeasurementsModel measurements = new MeasurementsModel();
@@ -77,18 +77,29 @@ public class CellUtil {
         return measurements;
     }
 
+    /**
+     * Maps cell type to an integer value for database compatibility
+     *
+     * @param cellToRemap The cell information to be remapped
+     * @return Integer representing the cell type:<br>
+     * 3 - 3G (GSM/CDMA)<br>
+     * 4 - 4G (LTE)<br>
+     * 5 - 5G (NR)<br>
+     * -1 - Unknown/unsupported cell type
+     */
     public static int remapCellClassTypeIntoInteger(CellInformation cellToRemap) {
         // kotlin's exhaustive when() would be great but lets do with what we have
-        int retVal = -1;
+        int retVal;
 
         if (cellToRemap instanceof GSMInformation || cellToRemap instanceof CDMAInformation) {
             retVal = 3;
-        }
-        if (cellToRemap instanceof LTEInformation) {
+        } else if (cellToRemap instanceof LTEInformation) {
             retVal = 4;
-        }
-        if (cellToRemap instanceof NRInformation) {
+        } else if (cellToRemap instanceof NRInformation) {
             retVal = 5;
+        } else {
+            Log.e(TAG, "Unsupported cell type: "+cellToRemap.getCellType());
+            throw new IllegalStateException("Unsupported cell type encountered in CellUtil::remapCellClassTypeIntoInteger! cellType: "+cellToRemap.getCellType());
         }
 
         return retVal;

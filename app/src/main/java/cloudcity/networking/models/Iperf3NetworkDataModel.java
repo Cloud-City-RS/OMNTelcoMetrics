@@ -24,10 +24,9 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
             @NonNull MetricsPOJO.UploadMetrics upload,
             @NonNull MetricsPOJO.DownloadMetrics download,
             @NonNull Location location,
-            @NonNull MeasurementsModel measurementsModel,
-            @NonNull MetricsPOJO.TestDurationPair testDurationPair
-            ) {
-        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel, testDurationPair));
+            @NonNull MeasurementsModel measurementsModel
+    ) {
+        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel));
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
     }
@@ -61,11 +60,6 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("cell_type")
     private final int cellType;
 
-    @SerializedName("test_start_timestamp")
-    private final long startTimestamp;
-    @SerializedName("test_end_timestamp")
-    private final long endTimestamp;
-
     // LTE
     private final Integer rsrp;
     private final Integer rsrq;
@@ -81,8 +75,7 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
 
     public Iperf3ValuesModel(@NonNull MetricsPOJO.UploadMetrics upload,
                              @NonNull MetricsPOJO.DownloadMetrics download,
-                             @NonNull MeasurementsModel cellMeasurements,
-                             @NonNull MetricsPOJO.TestDurationPair testDuration) {
+                             @NonNull MeasurementsModel cellMeasurements) {
         ULmin = upload.getULmin();
         ULmedian = upload.getULmedian();
         ULmean = upload.getULmean();
@@ -107,11 +100,5 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
         sssinr = cellMeasurements.getSssinr();
 
         cellType = cellMeasurements.getCellType();
-
-        //TODO revert this
-//        startTimestamp = testDuration.getTestStartTimestamp();
-//        endTimestamp = testDuration.getTestEndTimestamp();
-        startTimestamp = 0;
-        endTimestamp = 0;
     }
 }

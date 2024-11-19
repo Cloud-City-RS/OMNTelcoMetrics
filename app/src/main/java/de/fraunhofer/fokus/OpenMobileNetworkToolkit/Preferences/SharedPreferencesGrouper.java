@@ -3,7 +3,6 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
@@ -12,6 +11,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import cloudcity.util.CloudCityLogger;
 
 public class SharedPreferencesGrouper {
     private static final String TAG = "SharedPreferencesGrouper";
@@ -87,12 +88,12 @@ public class SharedPreferencesGrouper {
     public synchronized void removeListener(@NonNull SPType key, @NonNull SharedPreferences.OnSharedPreferenceChangeListener listener) {
         SharedPreferences sp = this.getSharedPreference(key);
         if(sp == null) {
-            Log.e(TAG, "SharedPreferences not found for "+key);
+            CloudCityLogger.e(TAG, "SharedPreferences not found for "+key);
             return;
         }
         Set<SharedPreferences.OnSharedPreferenceChangeListener> listenerList = this.spMap.get(key);
         if(listenerList == null || !listenerList.contains(listener)) {
-            Log.e(TAG, "Listener not found for "+key);
+            CloudCityLogger.e(TAG, "Listener not found for "+key);
             return;
         }
         sp.unregisterOnSharedPreferenceChangeListener(listener);
@@ -103,7 +104,7 @@ public class SharedPreferencesGrouper {
         } else {
             this.spMap.remove(key);
         }
-        Log.i(TAG, "Listener removed for "+key);
+        CloudCityLogger.i(TAG, "Listener removed for "+key);
     }
 
     /**
@@ -113,12 +114,12 @@ public class SharedPreferencesGrouper {
     public synchronized void removeAllListeners(SPType key){
         SharedPreferences sp = this.getSharedPreference(key);
         if(sp == null) {
-            Log.e(TAG, "SharedPreferences not found for "+key);
+            CloudCityLogger.e(TAG, "SharedPreferences not found for "+key);
             return;
         }
         Set<SharedPreferences.OnSharedPreferenceChangeListener> listenerList = this.spMap.get(key);
         if(listenerList == null) {
-            Log.e(TAG, "Listener(s) not found for "+key);
+            CloudCityLogger.e(TAG, "Listener(s) not found for "+key);
             return;
         }
         // Unregister all listeners
@@ -127,7 +128,7 @@ public class SharedPreferencesGrouper {
         }
         // Delete them all from the map
         this.spMap.remove(key);
-        Log.i(TAG, "Listener(s) removed for "+key);
+        CloudCityLogger.i(TAG, "Listener(s) removed for "+key);
     }
 
     /**
@@ -139,12 +140,12 @@ public class SharedPreferencesGrouper {
         for (SPType potentialMatch : spMap.keySet()) {
             SharedPreferences sp = this.getSharedPreference(potentialMatch);
             if (sp == null) {
-                Log.e(TAG, "SharedPreferences not found for " + potentialMatch);
+                CloudCityLogger.e(TAG, "SharedPreferences not found for " + potentialMatch);
                 continue;
             }
             Set<SharedPreferences.OnSharedPreferenceChangeListener> listenerList = this.spMap.get(potentialMatch);
             if (listener == null || !listenerList.contains(listener)) {
-                Log.e(TAG, "Listener not found for " + potentialMatch);
+                CloudCityLogger.e(TAG, "Listener not found for " + potentialMatch);
                 continue;
             }
             // Now the easy part, when we know which SharedPref owns the listener and it's in the
@@ -158,7 +159,7 @@ public class SharedPreferencesGrouper {
             } else {
                 this.spMap.put(potentialMatch, listenerList);
             }
-            Log.i(TAG, "Listener removed for " + potentialMatch);
+            CloudCityLogger.i(TAG, "Listener removed for " + potentialMatch);
         }
     }
     public HashMap<SPType,SharedPreferences> getAllSharedPreferences() {
@@ -172,7 +173,7 @@ public class SharedPreferencesGrouper {
     public synchronized void setListener(@NonNull SharedPreferences.OnSharedPreferenceChangeListener listener, @NonNull SPType key) {
         SharedPreferences sp = this.getSharedPreference(key);
         if(sp == null) {
-            Log.e(TAG, "SharedPreferences not found for "+key);
+            CloudCityLogger.e(TAG, "SharedPreferences not found for "+key);
             return;
         }
         Set<SharedPreferences.OnSharedPreferenceChangeListener> listenerList = this.spMap.get(key);
@@ -183,7 +184,7 @@ public class SharedPreferencesGrouper {
         sp.registerOnSharedPreferenceChangeListener(listener);
         listenerList.add(listener);
         this.spMap.put(key, listenerList);
-        Log.i(TAG, "Listener registered for "+key);
+        CloudCityLogger.i(TAG, "Listener registered for "+key);
     }
 
 }

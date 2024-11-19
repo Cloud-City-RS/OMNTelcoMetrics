@@ -45,7 +45,6 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -71,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellType;
@@ -125,7 +125,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             lm = (LocationManager) ct.getSystemService(Context.LOCATION_SERVICE);
             if (lm.isLocationEnabled()) {
-                Log.d(TAG, "Location Provider " + lm.getProviders(true));
+                CloudCityLogger.d(TAG, "Location Provider " + lm.getProviders(true));
                 li = new LocationInformation(); // empty LocationInformation to be filled by callback
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     lm.requestLocationUpdates(LocationManager.FUSED_PROVIDER, 0, 0, this);
@@ -138,11 +138,11 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
                     onLocationChanged(Objects.requireNonNull(lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)));
                 }
             } else {
-                Log.d(TAG, "GPS is disabled");
+                CloudCityLogger.d(TAG, "GPS is disabled");
                 // todo use same popup as in main activity
             }
         } else {
-            Log.d(TAG, "No Location Permissions");
+            CloudCityLogger.d(TAG, "No Location Permissions");
             // todo we need to handle this in more details as we can't do logging without it
         }
 
@@ -178,7 +178,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
             );
             ni.setTimeStamp(ts);
         } else {
-            Log.d(TAG, "refreshNetworkInformation called but permission phone state is missing");
+            CloudCityLogger.d(TAG, "refreshNetworkInformation called but permission phone state is missing");
         }
     }
 
@@ -240,7 +240,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
                 di.setSubscriberId(tm.getSubscriberId());
                 di.setNetworkAccessIdentifier(tm.getNai());
             } catch (SecurityException e) {
-                Log.d(TAG, "Can't get IMEI, MEID, SimSerial or SubscriberId");
+                CloudCityLogger.d(TAG, "Can't get IMEI, MEID, SimSerial or SubscriberId");
             }
             di.setIMSI(getIMSI());
 
@@ -277,7 +277,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
                 }
             }
         } catch (SocketException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.d(TAG,e.toString());
         }
         nii = niil;
     }
@@ -312,7 +312,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
                 }
             }
         } catch (SocketException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.d(TAG,e.toString());
 
         }
         return points;
@@ -428,7 +428,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
     public List<CellInfo> getAllCellInfo() {
         List<CellInfo> cellInfo;
         if (ActivityCompat.checkSelfPermission(ct, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Access Fine Location permission missing");
+            CloudCityLogger.d(TAG, "Access Fine Location permission missing");
             cellInfo = new ArrayList<>();
         } else {
             cellInfo = tm.getAllCellInfo();
@@ -633,7 +633,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
      */
     @Override
     public void onProviderDisabled(@NonNull String provider) {
-        Log.d(TAG, String.format("%s is disabled", provider));
+        CloudCityLogger.d(TAG, String.format("%s is disabled", provider));
     }
 
     /**
@@ -643,7 +643,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
      */
     @Override
     public void onProviderEnabled(@NonNull String provider) {
-        Log.d(TAG, String.format("%s is enabled", provider));
+        CloudCityLogger.d(TAG, String.format("%s is enabled", provider));
     }
 
     /**
@@ -702,7 +702,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
             try {
                 tags_map = Splitter.on(',').withKeyValueSeparator('=').split(tags);
             } catch (IllegalArgumentException e) {
-                Log.d(TAG, "can't parse tags, ignoring");
+                CloudCityLogger.d(TAG, "can't parse tags, ignoring");
             }
         }
         DeviceInformation di = getDeviceInformation();
@@ -732,7 +732,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
      */
     @Override
     public void onPhysicalChannelConfigChanged(@NonNull List<PhysicalChannelConfig> list) {
-        Log.d(TAG, list.toString());
+        CloudCityLogger.d(TAG, list.toString());
     }
 
     /**
@@ -884,7 +884,7 @@ public class DataProvider extends TelephonyCallback implements LocationListener,
                 cm.requestNetwork(request, networkCallback);
             }
         } catch (Exception e) {
-            Log.d("Network Callback: Exception in registerNetworkCallback", "Catch exception");
+            CloudCityLogger.d("Network Callback: Exception in registerNetworkCallback", "Catch exception");
         }
     }
 

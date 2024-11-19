@@ -8,7 +8,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -36,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x.InfluxdbConnection;
@@ -68,12 +68,12 @@ public class PingService extends Service {
     }
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy: Stop logging service");
+        CloudCityLogger.d(TAG, "onDestroy: Stop logging service");
         stopPing();
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand: Start logging service");
+        CloudCityLogger.d(TAG, "onStartCommand: Start logging service");
         GlobalVars gv = GlobalVars.getInstance();
         // setup class variables
         dp = gv.get_dp();
@@ -92,7 +92,7 @@ public class PingService extends Service {
 
 
     private void setupPing(){
-        Log.d(TAG, "starting Ping Service...");
+        CloudCityLogger.d(TAG, "starting Ping Service...");
 
         String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/omnt/ping/";
         try {
@@ -100,7 +100,7 @@ public class PingService extends Service {
         } catch (IOException e) {
             Toast.makeText(context, "could not create /omnt/ping Dir!", Toast.LENGTH_SHORT).show();
             spg.getSharedPreference(SPType.ping_sp).edit().putBoolean("ping", false).apply();
-            Log.d(TAG, "setupPing: could not create /omnt/ping Dir!");
+            CloudCityLogger.e(TAG, "setupPing: could not create /omnt/ping Dir!", e);
             return;
         }
 
@@ -108,13 +108,13 @@ public class PingService extends Service {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
         Date now = new Date();
         String filename = path + formatter.format(now) + ".txt";
-        Log.d(TAG, "logfile: " + filename);
+        CloudCityLogger.d(TAG, "logfile: " + filename);
         File logfile = new File(filename);
         try {
             logfile.createNewFile();
         } catch (IOException e) {
             Toast.makeText(context, "could not create logfile "+filename, Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "setupPing: could not create logfile");
+            CloudCityLogger.e(TAG, "setupPing: could not create logfile", e);
             spg.getSharedPreference(SPType.ping_sp).edit().putBoolean("ping", false).apply();
             return;
         }
@@ -124,7 +124,7 @@ public class PingService extends Service {
             ping_stream = new FileOutputStream(logfile);
         } catch (FileNotFoundException e) {
             Toast.makeText(context, "could not create output stream", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "setupPing: could not create output stream");
+            CloudCityLogger.e(TAG, "setupPing: could not create output stream", e);
             spg.getSharedPreference(SPType.ping_sp).edit().putBoolean("ping", false).apply();
             return;
         }
@@ -144,18 +144,18 @@ public class PingService extends Service {
 
                 Point point = pi.getPoint();
                 point.addTags(dp.getTagsMap());
-                Log.d(TAG, "propertyChange: "+point.toLineProtocol());
+                CloudCityLogger.d(TAG, "propertyChange: "+point.toLineProtocol());
                 try {
                     ping_stream.write((point.toLineProtocol() + "\n").getBytes());
                 } catch (IOException e) {
-                    Log.d(TAG,e.toString());
+                    CloudCityLogger.e(TAG,e.toString(), e);
                 }
 
                 if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && influx.getWriteApi() != null) {
                     try {
                         influx.writePoints(List.of(point));
                     } catch (IOException e) {
-                        Log.d(TAG,e.toString());
+                        CloudCityLogger.e(TAG,e.toString(), e);
                     }
                 }
 
@@ -215,7 +215,7 @@ public class PingService extends Service {
                             try {
                                 ping_stream.close();
                             } catch (IOException e) {
-                                Log.d(TAG,e.toString());
+                                CloudCityLogger.e(TAG,e.toString(), e);
                             }
                             pingLogging.removeCallbacks(pingUpdate);
                             return;
@@ -238,7 +238,7 @@ public class PingService extends Service {
             try {
                 pingLoggingHandleThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
             pingLoggingHandleThread = null;
         }

@@ -11,15 +11,15 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.SettingPreferences;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
-import android.util.Log;
 
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreferenceCompat;
 
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 public class LoggingSettingsFragment extends PreferenceFragmentCompat
     implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -48,7 +48,7 @@ public class LoggingSettingsFragment extends PreferenceFragmentCompat
         if(s == null) return;
         if (s.equals("enable_logging")) {
             boolean logger = sharedPreferences.getBoolean("enable_logging", false);
-            Log.d(TAG, "Logger update: " + logger);
+            CloudCityLogger.d(TAG, "Logger update: " + logger);
         }
     }
 

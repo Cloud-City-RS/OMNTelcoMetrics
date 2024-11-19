@@ -8,10 +8,10 @@
 
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import cloudcity.util.CloudCityLogger;
 
 public class Iperf3LibLoader {
 
@@ -37,7 +37,7 @@ public class Iperf3LibLoader {
         for (String library : IPERF_LIBRARIES) {
             try {
                 System.loadLibrary(library);
-                Log.i(TAG, library + " loaded!");
+                CloudCityLogger.i(TAG, library + " loaded!");
                 loadedLibs.add(library);
                 done = true;
                 return;
@@ -46,9 +46,9 @@ public class Iperf3LibLoader {
         }
 
         if (loadedLibs.size() > 1) {
-            Log.d(TAG, "static initializer: multiple libiperfs loaded!");
+            CloudCityLogger.d(TAG, "static initializer: multiple libiperfs loaded!");
         } else if (loadedLibs.isEmpty()) {
-            Log.d(TAG, "failed to load any iPerf3 libs!");
+            CloudCityLogger.d(TAG, "failed to load any iPerf3 libs!");
         }
         done = true;
     }

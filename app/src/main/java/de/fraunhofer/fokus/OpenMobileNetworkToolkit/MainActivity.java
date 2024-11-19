@@ -33,7 +33,6 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -55,6 +54,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 
 import cloudcity.MainActivityExtensions;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.NetworkCallback;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
@@ -202,17 +202,17 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
 
         loggingServiceIntent = new Intent(this, LoggingService.class);
         if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_logging", false)) {
-            Log.d(TAG, "Start logging service");
+            CloudCityLogger.d(TAG, "Start logging service");
             context.startForegroundService(loggingServiceIntent);
         }
 
         spg.setListener((prefs, key) -> {
             if (Objects.equals(key, "enable_logging")) {
                 if (prefs.getBoolean(key, false)) {
-                    Log.i(TAG, "Start logging service");
+                    CloudCityLogger.i(TAG, "Start logging service");
                     context.startForegroundService(loggingServiceIntent);
                 } else {
-                    Log.i(TAG, "Stop logging service");
+                    CloudCityLogger.i(TAG, "Stop logging service");
                     context.stopService(loggingServiceIntent);
                 }
             }
@@ -228,19 +228,19 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         try {
             info = pm.getPackageInfo("de.fraunhofer.fokus.OpenMobileNetworkToolkit", PackageManager.GET_SIGNING_CERTIFICATES);
             assert info.signingInfo != null;
-            Log.d(TAG, "Apk hash: " + info.signingInfo.getApkContentsSigners().length);
+            CloudCityLogger.d(TAG, "Apk hash: " + info.signingInfo.getApkContentsSigners().length);
             for (Signature signature : info.signingInfo.getApkContentsSigners()) {
                 MessageDigest md;
                 md = MessageDigest.getInstance("SHA256");
                 md.update(signature.toByteArray());
                 String hash = new String(Base64.encode(md.digest(), 0));
                 gv.setSigning_hash(hash);
-                Log.d(TAG, "Signature: " + toHexString(md.digest()));
+                CloudCityLogger.d(TAG, "Signature: " + toHexString(md.digest()));
             }
         } catch (PackageManager.NameNotFoundException e1) {
-            Log.e("name not found", e1.toString());
+            CloudCityLogger.e("name not found", e1.toString(), e1);
         } catch (Exception e) {
-            Log.e("exception", e.toString());
+            CloudCityLogger.e("exception", e.toString(), e);
         }
     }
 
@@ -267,49 +267,49 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     private void requestPermission() {
         List<String> permissions = new ArrayList<>();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Requesting READ_PHONE_STATE Permission");
+            CloudCityLogger.d(TAG, "Requesting READ_PHONE_STATE Permission");
             permissions.add(Manifest.permission.READ_PHONE_STATE);
         } else {
-            Log.d(TAG, "Got READ_PHONE_STATE Permission");
+            CloudCityLogger.d(TAG, "Got READ_PHONE_STATE Permission");
         }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Requesting COARSE_LOCATION Permission");
+            CloudCityLogger.d(TAG, "Requesting COARSE_LOCATION Permission");
             permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         } else {
-            Log.d(TAG, "Got COARSE_LOCATION_LOCATION Permission");
+            CloudCityLogger.d(TAG, "Got COARSE_LOCATION_LOCATION Permission");
         }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Requesting FINE_LOCATION Permission");
+            CloudCityLogger.d(TAG, "Requesting FINE_LOCATION Permission");
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
         } else {
-            Log.d(TAG, "Got FINE_LOCATION Permission");
+            CloudCityLogger.d(TAG, "Got FINE_LOCATION Permission");
         }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Requesting WIFI_STATE Permission");
+            CloudCityLogger.d(TAG, "Requesting WIFI_STATE Permission");
             permissions.add(Manifest.permission.ACCESS_WIFI_STATE);
         } else {
-            Log.d(TAG, "Got WIFI_STATE Permission");
+            CloudCityLogger.d(TAG, "Got WIFI_STATE Permission");
         }
 
         // on android 13 an newer we need to ask for permission to show the notification
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Requesting POST_NOTIFICATIONS Permission");
+                CloudCityLogger.d(TAG, "Requesting POST_NOTIFICATIONS Permission");
                 permissions.add(Manifest.permission.POST_NOTIFICATIONS);
             } else {
-                Log.d(TAG, "Got POST_NOTIFICATIONS Permission");
+                CloudCityLogger.d(TAG, "Got POST_NOTIFICATIONS Permission");
             }
         }
 
         // we can only request background after fine location. If that has failed on the first try we need to check again
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Requesting ACCESS_BACKGROUND_LOCATION Permission");
+                CloudCityLogger.d(TAG, "Requesting ACCESS_BACKGROUND_LOCATION Permission");
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3);
             } else {
-                Log.d(TAG, "Got ACCESS_BACKGROUND_LOCATION Permission");
+                CloudCityLogger.d(TAG, "Got ACCESS_BACKGROUND_LOCATION Permission");
             }
         }
 
@@ -329,18 +329,18 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
      */
     @Override
     public void onRequestPermissionsResult(int i, @NonNull String[] strArr, @NonNull int[] iArr) {
-        Log.d(TAG, "--> onRequestPermissionsResult()");
+        CloudCityLogger.d(TAG, "--> onRequestPermissionsResult()");
         super.onRequestPermissionsResult(i, strArr, iArr);
 
         for (int j = 0; j < strArr.length; j = j + 1) {
-            Log.d(TAG, "Permission Request Result with ID: " + i + " for " + strArr[j] + " is: " + iArr[j]);
+            CloudCityLogger.d(TAG, "Permission Request Result with ID: " + i + " for " + strArr[j] + " is: " + iArr[j]);
             // we need to request background location after we got foreground.
             if (Objects.equals(strArr[j], "android.permission.ACCESS_FINE_LOCATION") && iArr[j] == 0) {
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "Requesting ACCESS_BACKGROUND_LOCATION Permission");
+                    CloudCityLogger.d(TAG, "Requesting ACCESS_BACKGROUND_LOCATION Permission");
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3);
                 } else {
-                    Log.d(TAG, "Got ACCESS_BACKGROUND_LOCATION Permission");
+                    CloudCityLogger.d(TAG, "Got ACCESS_BACKGROUND_LOCATION Permission");
                 }
 
                 // Since we have the FINE_LOCATION, we can start sending to the server
@@ -357,7 +357,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
                         );
             }
         }
-        Log.d(TAG, "<-- onRequestPermissionsResult()");
+        CloudCityLogger.d(TAG, "<-- onRequestPermissionsResult()");
     }
 
     /**
@@ -398,9 +398,9 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         ComponentName componentName = getComponentName(context);
         if (dpm != null) {
             if (pm != null) {
-                Log.d(TAG, "isProfileOwnerApp:" + dpm.isProfileOwnerApp(context.getPackageName()));
-                Log.d(TAG, "isDeviceOwnerApp:" + dpm.isDeviceOwnerApp(context.getPackageName()));
-                Log.d(TAG, "Component Name: " + componentName);
+                CloudCityLogger.d(TAG, "isProfileOwnerApp:" + dpm.isProfileOwnerApp(context.getPackageName()));
+                CloudCityLogger.d(TAG, "isDeviceOwnerApp:" + dpm.isDeviceOwnerApp(context.getPackageName()));
+                CloudCityLogger.d(TAG, "Component Name: " + componentName);
             }
         }
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
@@ -408,7 +408,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
         intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
                 getString(R.string.device_admin_description));
         startActivity(intent);
-        Log.d(TAG, "Is admin active: " + Objects.requireNonNull(dpm).isAdminActive(componentName));
+        CloudCityLogger.d(TAG, "Is admin active: " + Objects.requireNonNull(dpm).isAdminActive(componentName));
     }
 
     /**
@@ -482,7 +482,7 @@ public class MainActivity extends AppCompatActivity implements PreferenceFragmen
     @Override
     public boolean onPreferenceStartFragment(@NonNull PreferenceFragmentCompat caller, Preference pref) {
         // Instantiate the new Fragment
-        Log.d(TAG, "onPreferenceStartFragment: " + pref.getKey());
+        CloudCityLogger.d(TAG, "onPreferenceStartFragment: " + pref.getKey());
         switch (pref.getKey()) {
             case "log_settings":
                 navController.navigate(R.id.loggingSettingsFragment);

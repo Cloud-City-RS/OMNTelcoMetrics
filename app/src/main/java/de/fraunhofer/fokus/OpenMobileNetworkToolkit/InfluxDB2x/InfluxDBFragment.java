@@ -9,7 +9,6 @@
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +28,7 @@ import com.influxdb.query.FluxTable;
 
 import java.util.List;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 public class InfluxDBFragment extends Fragment {
@@ -92,7 +92,7 @@ public class InfluxDBFragment extends Fragment {
                 result_layout.addView(col);
             }
         } catch (com.influxdb.exceptions.InfluxException e) {
-            Log.d(TAG, e.toString());
+            CloudCityLogger.e(TAG, e.toString(), e);
             Toast.makeText(getContext(), e.toString(), Toast.LENGTH_LONG).show();
         }
 
@@ -112,18 +112,18 @@ public class InfluxDBFragment extends Fragment {
                 or.username("omnt");
                 or.token("1234567890"); //todo generate a token
                 influxDBClient.onBoarding(or);
-                Log.d(TAG, "Database onboarding successfully");
+                CloudCityLogger.d(TAG, "Database onboarding successfully");
                 Toast.makeText(getContext(), "Database onboarding successfully", Toast.LENGTH_LONG)
                     .show();
             } else {
-                Log.d(TAG, "Database was already onboarded");
+                CloudCityLogger.d(TAG, "Database was already onboarded");
                 Toast.makeText(getContext(), "Database was already onboarded", Toast.LENGTH_LONG)
                     .show();
             }
             influxDBClient.close();
 
         } catch (com.influxdb.exceptions.InfluxException e) {
-            Log.d(TAG, e.toString());
+            CloudCityLogger.e(TAG, e.toString(), e);
             Toast.makeText(getContext(), "Something bad happened", Toast.LENGTH_LONG).show();
         }
     }

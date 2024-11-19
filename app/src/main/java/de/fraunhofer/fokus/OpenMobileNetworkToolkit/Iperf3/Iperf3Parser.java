@@ -1,7 +1,5 @@
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import org.json.JSONObject;
@@ -13,6 +11,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Error;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Interval;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.start.Start;
@@ -47,7 +46,7 @@ public class Iperf3Parser {
             br = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException ex) {
             System.out.println("File not found");
-            Log.e(TAG, "File not found!!! Path to file: "+pathToFile);
+            CloudCityLogger.e(TAG, "File not found!!! Path to file: "+pathToFile, ex);
             return;
         }
         this.support = new PropertyChangeSupport(this);
@@ -61,7 +60,7 @@ public class Iperf3Parser {
                 String event = obj.getString("event");
                 switch (event) {
                     case "start":
-                        Log.v(TAG, "Encountered START");
+                        CloudCityLogger.v(TAG, "Encountered START");
                         start = new Start();
                         JSONObject startData = obj.getJSONObject("data");
                         start.parseStart(startData);
@@ -74,7 +73,7 @@ public class Iperf3Parser {
                         intervals.addInterval(interval);
                         break;
                     case "end":
-                        Log.v(TAG, "Encountered END\t\tcompletionListener: "+completionListener);
+                        CloudCityLogger.v(TAG, "Encountered END\t\tcompletionListener: "+completionListener);
                         System.out.println("End");
                         support.firePropertyChange("end", null, END_MARKER);
                         break;
@@ -86,7 +85,7 @@ public class Iperf3Parser {
                         break;
                     default:
                         System.out.println("Unknown event");
-                        Log.w(TAG, "Unknown event "+event+" encountered during parsing!");
+                        CloudCityLogger.w(TAG, "Unknown event "+event+" encountered during parsing!");
                         break;
                 }
             }
@@ -95,7 +94,7 @@ public class Iperf3Parser {
             }
         } catch (Exception e) {
             System.out.println("Error reading file");
-            Log.e(TAG, "Exception " + e + " happened while trying to parse file!", e);
+            CloudCityLogger.e(TAG, "Exception " + e + " happened while trying to parse file!", e);
         }
     }
 

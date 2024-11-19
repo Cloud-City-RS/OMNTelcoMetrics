@@ -11,7 +11,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +27,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -37,12 +38,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.ClearPreferencesFragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.MultiSelectDialogFragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.SettingPreferences.ClearPreferencesListener;
-
-import org.json.JSONObject;
 
 public class SharedPreferencesIOFragment extends Fragment implements ClearPreferencesListener {
 
@@ -91,7 +91,7 @@ public class SharedPreferencesIOFragment extends Fragment implements ClearPrefer
         if (!configFolder.exists()) {
             boolean success = configFolder.mkdir();
             if(!success) {
-                Log.e(TAG, "Failed to create config folder");
+                CloudCityLogger.e(TAG, "Failed to create config folder");
             }
         }
         uri = Uri.parse(configDir);
@@ -176,7 +176,7 @@ public class SharedPreferencesIOFragment extends Fragment implements ClearPrefer
             writer.write(jsonString);
             showToast("Preferences exported");
         } catch (Exception e) {
-            Log.e(TAG, "Failed to export preferences", e);
+            CloudCityLogger.e(TAG, "Failed to export preferences", e);
             showToast("Failed to export preferences");
         }
     }
@@ -196,7 +196,7 @@ public class SharedPreferencesIOFragment extends Fragment implements ClearPrefer
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Failed to parse JSON", e);
+            CloudCityLogger.e(TAG, "Failed to parse JSON", e);
         }
         return keys;
     }
@@ -215,7 +215,7 @@ public class SharedPreferencesIOFragment extends Fragment implements ClearPrefer
             MultiSelectDialogFragment dialogFragment = getMultiSelectDialogFragment(jsonString, keys);
             dialogFragment.show(getParentFragmentManager(), "multiSelectDialog");
         } catch (Exception e) {
-            Log.e(TAG, "Failed to import Config", e);
+            CloudCityLogger.e(TAG, "Failed to import Config", e);
             showToast("Failed to import Config");
         }
     }
@@ -232,7 +232,7 @@ public class SharedPreferencesIOFragment extends Fragment implements ClearPrefer
                 onPreferenceChanged();
                 showToast("Config imported");
             } catch (Exception e) {
-                Log.e(TAG, "Failed to import Config", e);
+                CloudCityLogger.e(TAG, "Failed to import Config", e);
                 showToast("Failed to import Config");
             }
         };

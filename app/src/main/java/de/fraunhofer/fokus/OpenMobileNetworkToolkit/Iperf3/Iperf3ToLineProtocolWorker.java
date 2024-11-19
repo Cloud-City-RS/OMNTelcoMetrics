@@ -10,7 +10,6 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -30,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DeviceInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x.InfluxdbConnection;
@@ -121,7 +121,7 @@ public class Iperf3ToLineProtocolWorker extends Worker {
             try {
                 tags_map = Splitter.on(',').withKeyValueSeparator('=').split(tags);
             } catch (IllegalArgumentException e) {
-                Log.d(TAG, "can't parse tags, ignoring");
+                CloudCityLogger.e(TAG, "can't parse tags, ignoring", e);
             }
         }
         Map<String, String> tags_map_modifiable = new HashMap<>(tags_map);
@@ -150,7 +150,7 @@ public class Iperf3ToLineProtocolWorker extends Worker {
 
 
         long timestamp = Integer.toUnsignedLong( iperf3Parser.getStart().getTimestamp().getTimesecs())*1000;
-        Log.d(TAG, "doWork: "+timestamp);
+        CloudCityLogger.d(TAG, "doWork: "+timestamp);
 
         String role = "server";
         if(iperf3Parser.getStart().getConnecting_to() != null){
@@ -238,7 +238,7 @@ public class Iperf3ToLineProtocolWorker extends Worker {
             iperf3Stream = new FileOutputStream(iperf3LineProtocolFile, true);
         } catch (FileNotFoundException e) {
             Toast.makeText(getApplicationContext(), "logfile not created", Toast.LENGTH_SHORT).show();
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(), e);
         }
 
         if(iperf3Stream == null){
@@ -251,7 +251,7 @@ public class Iperf3ToLineProtocolWorker extends Worker {
                 iperf3Stream.write((point.toLineProtocol() + "\n").getBytes());
             }
         } catch (IOException e) {
-            Log.e(TAG, "doWork: ", e);
+            CloudCityLogger.e(TAG, "doWork: ", e);
         }
 
 

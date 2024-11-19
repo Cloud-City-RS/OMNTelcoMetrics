@@ -14,31 +14,31 @@ import android.os.PersistableBundle;
 import android.service.carrier.CarrierIdentifier;
 import android.service.carrier.CarrierService;
 import android.telephony.CarrierConfigManager;
-import android.util.Log;
 
 import java.util.Arrays;
 import java.util.HashSet;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 
 public class OpenMobileNetworkToolkit extends CarrierService {
     private static final String TAG = "OpenMobileNetworkToolkit";
     public OpenMobileNetworkToolkit() {
-        Log.d(TAG, "OpenMobileNetworkToolkit Carrier Config Service created");
+        CloudCityLogger.d(TAG, "OpenMobileNetworkToolkit Carrier Config Service created");
     }
 
     // we keep this for older SDK version
     @Override
     public PersistableBundle onLoadConfig(CarrierIdentifier id) {
-        Log.i(TAG, "CarrierIdentifier id " + id.toString());
+        CloudCityLogger.i(TAG, "CarrierIdentifier id " + id.toString());
         return applyCarrierSettings();
     }
 
     // from api 33 on we use
     @Override
     public PersistableBundle onLoadConfig(int subscription, CarrierIdentifier id) {
-        Log.i(TAG, "CarrierIdentifier id: " + id.toString() + " for subscription: " + subscription);
+        CloudCityLogger.i(TAG, "CarrierIdentifier id: " + id.toString() + " for subscription: " + subscription);
         return applyCarrierSettings();
     }
 
@@ -47,7 +47,7 @@ public class OpenMobileNetworkToolkit extends CarrierService {
         int sdk_version = Build.VERSION.SDK_INT;
         SharedPreferencesGrouper spg = SharedPreferencesGrouper.getInstance(this);
         PersistableBundle configForSubId = new PersistableBundle();
-        Log.d(TAG, "applying carrier config");
+        CloudCityLogger.d(TAG, "applying carrier config");
         // API 27
         if (sdk_version >= Build.VERSION_CODES.O_MR1) {
             configForSubId.putBoolean(CarrierConfigManager.KEY_DISPLAY_HD_AUDIO_PROPERTY_BOOL, spg.getSharedPreference(SPType.carrier_sp).getBoolean("switch_KEY_DISPLAY_HD_AUDIO_PROPERTY_BOOL",false));
@@ -119,7 +119,7 @@ public class OpenMobileNetworkToolkit extends CarrierService {
         configForSubId.putInt(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_MODE_INT, Integer.parseInt(spg.getSharedPreference(SPType.carrier_sp).getString("list_KEY_CARRIER_DEFAULT_WFC_IMS_MODE_INT", "1")));
         configForSubId.putInt(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_ROAMING_MODE_INT, Integer.parseInt(spg.getSharedPreference(SPType.carrier_sp).getString("list_KEY_CARRIER_DEFAULT_WFC_IMS_ROAMING_MODE_INT","1")));
         configForSubId.putBoolean(CarrierConfigManager.KEY_ALLOW_EMERGENCY_VIDEO_CALLS_BOOL, spg.getSharedPreference(SPType.carrier_sp).getBoolean("switch_KEY_ALLOW_EMERGENCY_VIDEO_CALLS_BOOL",false));
-        Log.d(TAG, "Carrier settings applied");
+        CloudCityLogger.d(TAG, "Carrier settings applied");
         return configForSubId;
     }
 }

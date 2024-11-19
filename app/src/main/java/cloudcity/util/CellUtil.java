@@ -1,5 +1,6 @@
 package cloudcity.util;
 
+import android.telephony.CellInfo;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -163,5 +164,109 @@ public class CellUtil {
         }
 
         return measurements;
+    }
+
+    public enum CellInfoPrecedence { CELL_INFO, SIGNAL_INFO }
+
+    /**
+     * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
+     * @param currentCell the currently-registered cell to get information from
+     * @param signalStrength the signal strength to get information from
+     * @param precedence which cell info should take precedence
+     * @return the {@link MeasurementsModel} obtained from information contained in the {@code currentCell}
+     */
+    public static @NonNull MeasurementsModel getMeasurementsModel(CellInformation currentCell, CellInformation signalStrength, CellInfoPrecedence precedence) {
+        MeasurementsModel measurements = new MeasurementsModel();
+
+        // Since all of these 'informations' are just numbers, they will never be NULL, however they
+        // will be CellInfo.UNAVAILABLE so we will use that as a NULL marker;
+        //
+        // The idea is simple, if both the 'currentCell' and 'signalStrength' contain a non-null
+        // value, take the one that takes precedence; otherwise take the non-null value.
+        // If both of them are null, well then, take the null that takes precedence since it changes nothing
+        //
+        // We are in a bad situation if currentCell and signalStrength can end up being of different types.
+
+        // New safety
+        if (currentCell instanceof NRInformation) {
+            NRInformation nrCell = (NRInformation) currentCell;
+            // Assume signalStrength is the same
+            NRInformation nrSignal = (NRInformation) signalStrength;
+
+            Integer validCsirsrp = getNonNullAndNonInvalidMember(nrCell.getCsirsrp(), nrSignal.getCsirsrp(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validCsirsrq = getNonNullAndNonInvalidMember(nrCell.getCsirsrq(), nrSignal.getCsirsrq(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validCsisinr = getNonNullAndNonInvalidMember(nrCell.getCsisinr(), nrSignal.getCsisinr(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validSsrsrp = getNonNullAndNonInvalidMember(nrCell.getSsrsrp(), nrSignal.getSsrsrp(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validSsrsrq = getNonNullAndNonInvalidMember(nrCell.getSsrsrq(), nrSignal.getSsrsrq(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validSssinr = getNonNullAndNonInvalidMember(nrCell.getSssinr(), nrSignal.getSssinr(), CellInfoPrecedence.SIGNAL_INFO);
+
+//            measurements.setCsirsrp(nrCell.getCsirsrp());
+//            measurements.setCsirsrq(nrCell.getCsirsrq());
+//            measurements.setCsisinr(nrCell.getCsisinr());
+//            measurements.setSsrsrp(nrCell.getSsrsrp());
+//            measurements.setSsrsrq(nrCell.getSsrsrq());
+//            measurements.setSssinr(nrCell.getSssinr());
+            measurements.setCsirsrp(validCsirsrp);
+            measurements.setCsirsrq(validCsirsrq);
+            measurements.setCsisinr(validCsisinr);
+            measurements.setSsrsrp(validSsrsrp);
+            measurements.setSsrsrq(validSsrsrq);
+            measurements.setSssinr(validSssinr);
+        } else if (currentCell instanceof LTEInformation) {
+            LTEInformation lteCell = (LTEInformation) currentCell;
+            // Likewise, assume signal strength is the same
+            LTEInformation lteSignal = (LTEInformation) signalStrength;
+
+            Integer validRsrp = getNonNullAndNonInvalidMember(lteCell.getRsrp(), lteSignal.getRsrp(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validRsrq = getNonNullAndNonInvalidMember(lteCell.getRsrq(), lteSignal.getRsrq(), CellInfoPrecedence.SIGNAL_INFO);
+            Integer validRssnr = getNonNullAndNonInvalidMember(lteCell.getRssnr(), lteSignal.getRssnr(), CellInfoPrecedence.SIGNAL_INFO);
+
+//            measurements.setRsrp(lteCell.getRsrp());
+//            measurements.setRsrq(lteCell.getRsrq());
+//            measurements.setRssnr(lteCell.getRssnr());
+
+            measurements.setRsrp(validRsrp);
+            measurements.setRsrq(validRsrq);
+            measurements.setRssnr(validRssnr);
+        } else {
+            /* In 3G no measurement data available set dummy data. */
+            measurements.setDummy(1);
+        }
+        // Remap based on category or better - the actual cell type class
+        // 3G is CDMA or GSM
+        // 4G is LTE
+        // 5G is NR
+        measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
+
+        return measurements;
+    }
+
+    private static Integer getNonNullAndNonInvalidMember(Integer cellValue, Integer signalValue, CellInfoPrecedence precedence) {
+        boolean cellValueNonNull = cellValue != null && cellValue != CellInfo.UNAVAILABLE;
+        boolean signalValueNonNull = signalValue != null && signalValue != CellInfo.UNAVAILABLE;
+
+        // The idea is simple, if both the 'currentCell' and 'signalStrength' contain a non-null
+        // value, take the one that takes precedence; otherwise take the non-null value.
+        // If both of them are null, well then, take the null that takes precedence since it changes nothing
+        if (cellValueNonNull && signalValueNonNull) {
+            switch (precedence) {
+                case CELL_INFO: return cellValue;
+                case SIGNAL_INFO: return signalValue;
+            }
+        } else if (cellValueNonNull) {
+            return cellValue;
+        } else if (signalValueNonNull) {
+            return signalValue;
+        } else {
+            // This is the case when both of them are null, so return the one with precendence
+            // since it changes nothing
+            switch (precedence) {
+                case CELL_INFO: return cellValue;
+                case SIGNAL_INFO: return signalValue;
+            }
+        }
+
+        // We will not return here, but actually throw. We must surely have returned by now
+        throw new IllegalStateException("No suitable information found in CellUtil::getNonNullAndNonInvalidMember()");
     }
 }

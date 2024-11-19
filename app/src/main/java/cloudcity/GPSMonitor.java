@@ -26,7 +26,7 @@ import cloudcity.dataholders.TimerWrapper;
 
 /**
  * Class for monitoring GPS location and speed via {@link LocationManager}, monitoring if the speed
- * is under threshold {@link #THRESHOLD_VALUE} for minimum threshold millis {@link #THRESHOLD_DURATION},
+ * is under threshold {@link CloudCityConstants#CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE} for minimum threshold millis {@link CloudCityConstants#CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_DURATION_IN_MILLIS},
  * firing callbacks via {@link ValueMonitorCallback} when that condition has been met.
  */
 public class GPSMonitor {
@@ -34,14 +34,6 @@ public class GPSMonitor {
     private static final long GPS_POLLING_SPEED_IN_MS = 1000L;
     private static final long GPS_POLLING_MIN_DIST_IN_M = 0L;
 
-    /**
-     * The threshold value we need to be under to start the Iperf3 test
-     */
-    private static final int THRESHOLD_VALUE = 5;
-    /**
-     * How long do we need to be under threshold to fire a callback
-     */
-    private static final int THRESHOLD_DURATION = 5000;
     /**
      * How often to poll the value, in milliseconds<p>
      * Try to keep it faster then {@link #GPS_POLLING_SPEED_IN_MS}
@@ -176,7 +168,7 @@ public class GPSMonitor {
 
     /**
      * Start monitoring for GPS location changes, and turn on the internal {@link ValueMonitor}
-     * and assign it a {@link ValueMonitorCallback} to call {@link Iperf3Monitor#startDefault15secTest()}
+     * and assign it a {@link ValueMonitorCallback} to call {@link Iperf3Monitor#startDefaultAutomatedTest(Location)}
      */
     public void startMonitoring() {
         Log.d(TAG, "--> startMonitoring()");
@@ -196,7 +188,7 @@ public class GPSMonitor {
 
         valueMonitor = new ValueMonitor();
         valueMonitor.setCallback(() -> {
-            Iperf3Monitor.getInstance().startDefault15secTest(lastLocation);
+            Iperf3Monitor.getInstance().startDefaultAutomatedTest(lastLocation);
         });
         valueMonitor.startMonitoring();
 
@@ -271,8 +263,8 @@ public class GPSMonitor {
 
         private final TimerWrapper timer;
         /**
-         * Callback that will be invoked when the monitored value has been under {@link #THRESHOLD_VALUE}
-         * for at least {@link #THRESHOLD_DURATION} millis
+         * Callback that will be invoked when the monitored value has been under {@link CloudCityConstants#CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE}
+         * for at least {@link CloudCityConstants#CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_DURATION_IN_MILLIS} millis
          */
         private @Nullable ValueMonitorCallback callback;
 
@@ -314,12 +306,12 @@ public class GPSMonitor {
          * Logic to monitor the value and track the time under threshold
          */
         private void monitorValue() {
-            if (lastSpeed < THRESHOLD_VALUE) {
+            if (lastSpeed < CloudCityConstants.CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE) {
                 // If value is under threshold, increment the time under threshold
                 timeUnderThreshold.addAndGet(VALUE_MONITOR_INTERVAL);
 
                 // Check if the time under threshold exceeds 5 seconds
-                if (timeUnderThreshold.get() >= THRESHOLD_DURATION) {
+                if (timeUnderThreshold.get() >= CloudCityConstants.CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_DURATION_IN_MILLIS) {
                     Log.d(TAG, "value has been under threshold for " + timeUnderThreshold + "ms, firing callback");
                     // Trigger the callback if the condition is met
                     if (callback != null) {
@@ -341,8 +333,8 @@ public class GPSMonitor {
      */
     interface ValueMonitorCallback {
         /**
-         * Callback to be invoked when the speed has been under {@link #THRESHOLD_VALUE}
-         * for at least {@link #THRESHOLD_DURATION} millis
+         * Callback to be invoked when the speed has been under {@link CloudCityConstants#CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE}
+         * for at least {@link CloudCityConstants#CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_DURATION_IN_MILLIS} millis
          */
         void onUnderThresholdValueForAtLeastThresholdDuration();
     }

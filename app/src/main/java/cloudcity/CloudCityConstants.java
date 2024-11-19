@@ -41,6 +41,16 @@ public class CloudCityConstants {
      */
     public static final int CLOUD_CITY_IPERF3_TEST_DURATION_IN_SECONDS = 10;
 
+    /**
+     * The threshold value we need to be under to start the iPerf3 test
+     * Since 1m/s = 3.6km/h, and we need to run tests as long as we're under 5km/h, we're looking at something ~1.8m/s
+     */
+    public static final float CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE = 1.8f;
+    /**
+     * How long do we need to be under threshold to fire a callback that starts the automated iPerf3 test
+     */
+    public static final int CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_DURATION_IN_MILLIS = 5000;
+
     // Iperf3 time-based throttling shared pref key
     public static final String CLOUD_CITY_IPERF3_TEST_TIME_THROTTLING_THRESHOLD = "cloud_city_iperf3_throttling_interval";
     // Iperf3 distance-based throttling shared pref key

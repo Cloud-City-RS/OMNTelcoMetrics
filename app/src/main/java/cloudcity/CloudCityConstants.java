@@ -43,11 +43,11 @@ public class CloudCityConstants {
 
     /**
      * The threshold value we need to be under to start the iPerf3 test
-     * Since 1m/s = 3.6km/h, and we need to run tests as long as we're under 5km/h, we're looking at something ~1.8m/s
+     * Since 1m/s = 3.6km/h, and we need to run tests as long as we're under 5km/h, we're looking at something ~1.3888m/s
      *
      * Used only for CloudCity automated tests
      */
-    public static final float CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE = 1.8f;
+    public static final float CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_VALUE = 1.4f;
     /**
      * How long do we need to be under threshold to fire a callback that starts the automated iPerf3 test
      *

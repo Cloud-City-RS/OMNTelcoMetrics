@@ -7,7 +7,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -126,7 +125,7 @@ public class GPSMonitor {
             instance.stopMonitoring();
             instance = null;
         } else {
-            Log.w(TAG, "GPSMonitor instance is already null during shutdown.");
+            CloudCityLogger.w(TAG, "GPSMonitor instance is already null during shutdown.");
         }
     }
 
@@ -176,7 +175,7 @@ public class GPSMonitor {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Request permissions if not granted
-            Log.e(TAG, "GPS Permissions not granted! fix this");
+            CloudCityLogger.e(TAG, "GPS Permissions not granted! fix this");
             return;
         }
         List<String> allGpsProviders = locationManager.getAllProviders();
@@ -212,7 +211,7 @@ public class GPSMonitor {
         boolean lacksFineLocationPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
         boolean lacksCoarseLocationPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED;
         if (lacksFineLocationPermission || lacksCoarseLocationPermission) {
-            Log.wtf(TAG, "We lack ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION permissions!");
+            CloudCityLogger.wtf(TAG, "We lack ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION permissions!");
             return;
         }
 
@@ -225,7 +224,7 @@ public class GPSMonitor {
                 if (location != null) {
                     CloudCityLogger.d(TAG, "Current location's LAT: " + location.getLatitude() + ", LNG: " + location.getLongitude());
                 } else {
-                    Log.w(TAG, "Cannot get current location's (LAT,LNG) because location was NULL");
+                    CloudCityLogger.w(TAG, "Cannot get current location's (LAT,LNG) because location was NULL");
                     // It's better to have a bogus dummy location with (LAT,LNG) as (0,0) than a null location
                     Location bogusLocation = new Location("null");
                     bogusLocation.reset();

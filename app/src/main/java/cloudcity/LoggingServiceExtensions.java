@@ -6,7 +6,6 @@ import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.telephony.CellInfo;
-import android.util.Log;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -59,7 +58,7 @@ public class LoggingServiceExtensions {
                 NetworkDataModel data = getCloudCityData();
                 CloudCityLogger.d(TAG, "getCloudCityData() returned "+data);
                 if (data == null) {
-                    Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
+                    CloudCityLogger.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
                 } else {
                     NetworkDataModelRequest requestData = new NetworkDataModelRequest();
                     requestData.add(data);
@@ -76,7 +75,7 @@ public class LoggingServiceExtensions {
                     }
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Exception happened! exception "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened! exception "+e, e);
             }
 
             CloudCityHandler.postDelayed(this, interval);
@@ -116,7 +115,7 @@ public class LoggingServiceExtensions {
             // works for a while.
             dp.refreshAll();
         } else {
-            Log.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
+            CloudCityLogger.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
         }
     }
 
@@ -131,7 +130,7 @@ public class LoggingServiceExtensions {
                 CloudCityHandler.removeCallbacks(CloudCityUpdate);
                 boolean unset = isUpdating.compareAndSet(true, false);
                 if(!unset) {
-                    Log.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
+                    CloudCityLogger.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
                 }
             } catch (java.lang.NullPointerException e) {
                 CloudCityLogger.d(TAG, "trying to stop cloud city service while it was not running");
@@ -143,7 +142,7 @@ public class LoggingServiceExtensions {
             try {
                 handlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
         }
 
@@ -152,7 +151,7 @@ public class LoggingServiceExtensions {
 
     private static NetworkDataModel getCloudCityData() {
         if (dp == null) {
-            Log.e(TAG, "DataProvider was null! Bailing out, returning null...");
+            CloudCityLogger.e(TAG, "DataProvider was null! Bailing out, returning null...");
             return null;
         }
         List<CellInformation> cellsInfo = dp.getCellInformation();

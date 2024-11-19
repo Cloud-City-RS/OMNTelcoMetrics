@@ -1,7 +1,6 @@
 package cloudcity.util;
 
 import android.telephony.CellInfo;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -58,7 +57,7 @@ public class CellUtil {
         } else if (cellToRemap instanceof NRInformation) {
             retVal = 5;
         } else {
-            Log.e(TAG, "Unsupported cell type: "+cellToRemap.getCellType());
+            CloudCityLogger.e(TAG, "Unsupported cell type: "+cellToRemap.getCellType());
             throw new IllegalStateException("Unsupported cell type encountered in CellUtil::remapCellClassTypeIntoInteger! cellType: "+cellToRemap.getCellType());
         }
 
@@ -75,7 +74,7 @@ public class CellUtil {
     public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {
         if (dp == null) {
             // Don't bother me with this CodeRabbit, i've seen a NullPointerException happen because of this 'dp' being null
-            Log.e(TAG, "DataProvider was null, sending Iperf3 data without MeasurementModel");
+            CloudCityLogger.e(TAG, "DataProvider was null, sending Iperf3 data without MeasurementModel");
             return new MeasurementsModel();
         } else {
             List<CellInformation> cellsInfo = dp.getCellInformation();
@@ -136,9 +135,9 @@ public class CellUtil {
         // If both of them are null, well then, take the null that takes precedence since it changes nothing
         //
         // We are in a bad situation if currentCell and signalStrength can end up being of different types.
-        Log.v(TAG, "--> getMeasurementsModel()\tcurrentCell: "+currentCell+", signalStrength: "+signalStrength+", precedence: "+precedence);
+        CloudCityLogger.v(TAG, "--> getMeasurementsModel()\tcurrentCell: "+currentCell+", signalStrength: "+signalStrength+", precedence: "+precedence);
         if (signalStrength == null) {
-            Log.e(TAG, "signalStrength was NULL !!! will use currentCell for both values to retain functionality.");
+            CloudCityLogger.e(TAG, "signalStrength was NULL !!! will use currentCell for both values to retain functionality.");
         }
 
         // New safety
@@ -188,7 +187,7 @@ public class CellUtil {
         // 5G is NR
         measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
 
-        Log.v(TAG, "<-- getMeasurementsModel()\tmeasurements: " + measurements);
+        CloudCityLogger.v(TAG, "<-- getMeasurementsModel()\tmeasurements: " + measurements);
         return measurements;
     }
 

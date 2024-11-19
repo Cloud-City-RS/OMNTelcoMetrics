@@ -1,7 +1,5 @@
 package cloudcity.networking;
 
-import android.util.Log;
-
 import java.io.IOException;
 import java.util.Locale;
 
@@ -18,7 +16,7 @@ public class CloudCityHelpers {
         CloudCityLogger.d(TAG, "--> sendData()\taddress=" + address + ", token=" + token + ", data=" + data);
         Retrofit retrofit = NetworkClient.getRetrofitClient(address);
         if (retrofit == null) {
-            Log.e(TAG, "sendData: Retrofit not set, exiting.");
+            CloudCityLogger.e(TAG, "sendData: Retrofit not set, exiting.");
             return false;
         }
         ServerAPI api = retrofit.create(ServerAPI.class);
@@ -39,11 +37,11 @@ public class CloudCityHelpers {
                 }
                 return false;
             } else {
-                Log.e(TAG, "sendData: data's location information was (0,0) - skipping sending!");
+                CloudCityLogger.e(TAG, "sendData: data's location information was (0,0) - skipping sending!");
                 return false;
             }
         } catch (IOException e) {
-            Log.e(TAG, "sendData: Failure to receive response.", e);
+            CloudCityLogger.e(TAG, "sendData: Failure to receive response.", e);
             return false;
         }
     }

@@ -563,7 +563,7 @@ public class Iperf3Monitor {
         cmdList.add(randomPortStr);
         // Add duration
         cmdList.add("-t");
-        String duration = "15";
+        String duration = String.valueOf(CloudCityConstants.CLOUD_CITY_IPERF3_TEST_DURATION_IN_SECONDS);
         cmdList.add(duration);
         // Protocol
         String protocol = "TCP";

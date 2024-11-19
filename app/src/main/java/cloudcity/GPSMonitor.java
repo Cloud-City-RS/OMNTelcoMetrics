@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import cloudcity.dataholders.TimerWrapper;
+import cloudcity.util.CloudCityLogger;
 
 /**
  * Class for monitoring GPS location and speed via {@link LocationManager}, monitoring if the speed
@@ -30,7 +31,7 @@ import cloudcity.dataholders.TimerWrapper;
  * firing callbacks via {@link ValueMonitorCallback} when that condition has been met.
  */
 public class GPSMonitor {
-    private static final String TAG = GPSMonitor.class.getSimpleName();
+    private static final String TAG = "GPSMonitor";
     private static final long GPS_POLLING_SPEED_IN_MS = 1000L;
     private static final long GPS_POLLING_MIN_DIST_IN_M = 0L;
 
@@ -72,12 +73,12 @@ public class GPSMonitor {
                         @Override
                         public void onLocationChanged(Location location) {
                             // Handle location update
-                            Log.d(TAG, "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
+                            CloudCityLogger.d(TAG, "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
                             setLastLocation(location);
                             if (location.hasSpeed()) {
-                                Log.d(TAG, "Location has speed! speed: " + location.getSpeed());
+                                CloudCityLogger.d(TAG, "Location has speed! speed: " + location.getSpeed());
                                 if (location.hasSpeedAccuracy()) {
-                                    Log.d(TAG, "Location has speed accuracy! speed: " + location.getSpeedAccuracyMetersPerSecond());
+                                    CloudCityLogger.d(TAG, "Location has speed accuracy! speed: " + location.getSpeedAccuracyMetersPerSecond());
                                 }
                                 lastSpeed = location.getSpeed();
                             }
@@ -104,7 +105,7 @@ public class GPSMonitor {
 
                     instance.requestCurrentLocation();
 
-                    Log.d(TAG, "GPSMonitor initialized!");
+                    CloudCityLogger.d(TAG, "GPSMonitor initialized!");
                 }
             }
         } else {
@@ -171,7 +172,7 @@ public class GPSMonitor {
      * and assign it a {@link ValueMonitorCallback} to call {@link Iperf3Monitor#startDefaultAutomatedTest(Location)}
      */
     public void startMonitoring() {
-        Log.d(TAG, "--> startMonitoring()");
+        CloudCityLogger.d(TAG, "--> startMonitoring()");
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Request permissions if not granted
@@ -179,12 +180,12 @@ public class GPSMonitor {
             return;
         }
         List<String> allGpsProviders = locationManager.getAllProviders();
-        Log.d(TAG, "all GPS providers: " + allGpsProviders);
+        CloudCityLogger.d(TAG, "all GPS providers: " + allGpsProviders);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
         locationManager.requestLocationUpdates(LocationManager.FUSED_PROVIDER, GPS_POLLING_SPEED_IN_MS, GPS_POLLING_MIN_DIST_IN_M, locationListener);
 
-        Log.d(TAG, "Starting speed polling task...");
+        CloudCityLogger.d(TAG, "Starting speed polling task...");
 
         valueMonitor = new ValueMonitor();
         valueMonitor.setCallback(() -> {
@@ -192,7 +193,7 @@ public class GPSMonitor {
         });
         valueMonitor.startMonitoring();
 
-        Log.d(TAG, "<-- startMonitoring()");
+        CloudCityLogger.d(TAG, "<-- startMonitoring()");
     }
 
     /**
@@ -219,10 +220,10 @@ public class GPSMonitor {
         Consumer<Location> locationConsumer = new Consumer<Location>() {
             @Override
             public void accept(Location location) {
-                Log.d(TAG, "Current location is: " + location);
+                CloudCityLogger.d(TAG, "Current location is: " + location);
                 lastLocation = location;
                 if (location != null) {
-                    Log.d(TAG, "Current location's LAT: " + location.getLatitude() + ", LNG: " + location.getLongitude());
+                    CloudCityLogger.d(TAG, "Current location's LAT: " + location.getLatitude() + ", LNG: " + location.getLongitude());
                 } else {
                     Log.w(TAG, "Cannot get current location's (LAT,LNG) because location was NULL");
                     // It's better to have a bogus dummy location with (LAT,LNG) as (0,0) than a null location
@@ -312,7 +313,7 @@ public class GPSMonitor {
 
                 // Check if the time under threshold exceeds 5 seconds
                 if (timeUnderThreshold.get() >= CloudCityConstants.CLOUD_CITY_IPERF3_TEST_SPEED_THRESHOLD_DURATION_IN_MILLIS) {
-                    Log.d(TAG, "value has been under threshold for " + timeUnderThreshold + "ms, firing callback");
+                    CloudCityLogger.d(TAG, "value has been under threshold for " + timeUnderThreshold + "ms, firing callback");
                     // Trigger the callback if the condition is met
                     if (callback != null) {
                         callback.onUnderThresholdValueForAtLeastThresholdDuration();

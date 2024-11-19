@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
@@ -77,7 +78,7 @@ public class Iperf3Monitor {
      */
     private static volatile float THROTTLING_THRESHOLD_IN_METERS = 0;
 
-    private static final String TAG = Iperf3Monitor.class.getSimpleName();
+    private static final String TAG = "Iperf3Monitor";
 
     private final static long PARSING_DELAY_IN_MS = 10L; //0.01sec, was 1000L
 
@@ -220,7 +221,7 @@ public class Iperf3Monitor {
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
             // in the DB.
-            Log.d(TAG, "Latest iPerf3 emission: " + latestIperf3RunResult + "\tshouldStop: " + shouldStop.get());
+            CloudCityLogger.d(TAG, "Latest iPerf3 emission: " + latestIperf3RunResult + "\tshouldStop: " + shouldStop.get());
             // The first emmision is always a null so...
             if (latestIperf3RunResult != null) {
                 Log.v(TAG, "Latest iPerf3 result is: " + latestIperf3RunResult.result);
@@ -285,7 +286,7 @@ public class Iperf3Monitor {
                         }
 
                         public void propertyChange(PropertyChangeEvent evt) {
-                            Log.d(TAG, "--> onPropertyChange()\tchanged event: " + evt);
+                            CloudCityLogger.d(TAG, "--> onPropertyChange()\tchanged event: " + evt);
 
                             switch (evt.getPropertyName()) {
                                 case "interval": {
@@ -324,8 +325,8 @@ public class Iperf3Monitor {
                                     double ULmean = normalize(defaultThroughput.calcMean());
                                     double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-                                    Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
-                                    Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
+                                    CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
+                                    CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
 
                                     // Stop the thread to avoid spinning it needlessly forever...
                                     stopParsingThread();
@@ -380,16 +381,16 @@ public class Iperf3Monitor {
                     });
 
 
-                    Log.d(TAG, "Starting parsing...");
+                    CloudCityLogger.d(TAG, "Starting parsing...");
                     startParsingThread(iperf3Parser);
                 } else {
                     // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
-                    Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result);
+                    CloudCityLogger.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result);
                     // We want to reset the test running marker on any non -100 result as well,
                     // since -100 means it's still running, and apparently anything non-zero means completion
                     // 1 for failure, -1 for cancellation and who knows what else
                     if (latestIperf3RunResult.result != -100) {
-                        Log.d(TAG, "latestIperf3RunResult.result was actually terminal, finishing iperf3 test run");
+                        CloudCityLogger.d(TAG, "latestIperf3RunResult.result was actually terminal, finishing iperf3 test run");
                         iperf3TestRunning.compareAndSet(true, false);
                     }
                 }
@@ -398,10 +399,10 @@ public class Iperf3Monitor {
     }
 
     private void startParsingThread(Iperf3Parser newIperf3Parser) {
-        Log.d(TAG, "--> startParsingThread()");
+        CloudCityLogger.d(TAG, "--> startParsingThread()");
         iperf3Parser = newIperf3Parser;
         handler.post(parsingRunnable);
-        Log.d(TAG, "<-- startParsingThread()");
+        CloudCityLogger.d(TAG, "<-- startParsingThread()");
     }
 
     private void stopParsingThread() {
@@ -421,8 +422,8 @@ public class Iperf3Monitor {
         double ULmean = normalize(defaultThroughput.calcMean());
         double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-        Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
-        Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
+        CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
+        CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
     }
 
     /**
@@ -478,10 +479,10 @@ public class Iperf3Monitor {
         boolean retVal;
         if (file.exists()) {
             if (file.delete()) {
-                Log.d(TAG, "File deleted successfully! filepath: " + filePath);
+                CloudCityLogger.d(TAG, "File deleted successfully! filepath: " + filePath);
                 retVal = true;
             } else {
-                Log.d(TAG, "Failed to delete the file at filepath: " + filePath);
+                CloudCityLogger.d(TAG, "Failed to delete the file at filepath: " + filePath);
                 retVal = false;
             }
         } else {
@@ -523,7 +524,7 @@ public class Iperf3Monitor {
      * @return the new (current) value of that parameter
      */
     public long setTimeThrottlingThreshold(int newThrottlingValueInSeconds) {
-        Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_SECONDS to "+newThrottlingValueInSeconds);
+        CloudCityLogger.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_SECONDS to "+newThrottlingValueInSeconds);
         THROTTLING_THRESHOLD_IN_SECONDS = newThrottlingValueInSeconds;
         return THROTTLING_THRESHOLD_IN_SECONDS;
     }
@@ -535,7 +536,7 @@ public class Iperf3Monitor {
      * @return the new (current) value of that parameter
      */
     public float setDistanceThrottlingThreshold(float newThrottlingValueInMeters) {
-        Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_METERS to "+newThrottlingValueInMeters);
+        CloudCityLogger.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_METERS to "+newThrottlingValueInMeters);
         THROTTLING_THRESHOLD_IN_METERS = newThrottlingValueInMeters;
         return THROTTLING_THRESHOLD_IN_METERS;
     }
@@ -601,7 +602,7 @@ public class Iperf3Monitor {
 
         String joined = String.join(" ", cmdList);
 
-        Log.d(TAG, "Joined command " + joined);
+        CloudCityLogger.d(TAG, "Joined command " + joined);
 
         // Generate a key-value hashmap to hold the rest of the necessary duplicated crap
         HashMap<String, String> stringMap = new HashMap<>();
@@ -804,12 +805,12 @@ public class Iperf3Monitor {
                         iperf3_result = -1;
                     }
                     iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                    Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+                    CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
                 });
                 getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
                     boolean iperf3_upload;
                     iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                    Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                    CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
                     iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
                 });
             });

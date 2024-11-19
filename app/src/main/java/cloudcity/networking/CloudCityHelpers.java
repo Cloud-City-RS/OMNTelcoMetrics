@@ -7,14 +7,15 @@ import java.util.Locale;
 
 import cloudcity.networking.models.NetworkDataModel;
 import cloudcity.networking.models.NetworkDataModelRequest;
+import cloudcity.util.CloudCityLogger;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
 public class CloudCityHelpers {
-    public static final String TAG = CloudCityHelpers.class.getSimpleName();
+    public static final String TAG = "CloudCityHelpers";
 
     public static boolean sendData(String address, String token, NetworkDataModelRequest data) {
-        Log.d(TAG, "--> sendData()\taddress=" + address + ", token=" + token + ", data=" + data);
+        CloudCityLogger.d(TAG, "--> sendData()\taddress=" + address + ", token=" + token + ", data=" + data);
         Retrofit retrofit = NetworkClient.getRetrofitClient(address);
         if (retrofit == null) {
             Log.e(TAG, "sendData: Retrofit not set, exiting.");
@@ -27,14 +28,14 @@ public class CloudCityHelpers {
             // Check if data has valid Lat,Lng pair, do not send if they are (0,0)
             boolean continueSending = validateData(data);
             if (continueSending) {
-                Log.d(TAG, String.format(Locale.US, "sendData: Executing send data request: address %s", address));
+                CloudCityLogger.d(TAG, String.format(Locale.US, "sendData: Executing send data request: address %s", address));
                 response = api.sendData("Bearer " + token, data).execute();
-                Log.d(TAG, String.format(Locale.US, "Received sendData response. %s", response));
+                CloudCityLogger.d(TAG, String.format(Locale.US, "Received sendData response. %s", response));
 
                 if (response.isSuccessful()) {
                     return true;
                 } else {
-                    Log.d(TAG, "sendData: Send data request failed.");
+                    CloudCityLogger.d(TAG, "sendData: Send data request failed.");
                 }
                 return false;
             } else {

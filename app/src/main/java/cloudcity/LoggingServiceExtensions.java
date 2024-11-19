@@ -22,6 +22,7 @@ import cloudcity.networking.models.MobileSignalNetworkDataModel;
 import cloudcity.networking.models.NetworkDataModel;
 import cloudcity.networking.models.NetworkDataModelRequest;
 import cloudcity.util.CellUtil;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
@@ -50,20 +51,20 @@ public class LoggingServiceExtensions {
         @Override
         public void run() {
             try {
-                Log.d(TAG, "run: CC Update");
+                CloudCityLogger.d(TAG, "run: CC Update");
                 interval = Integer.parseInt(sp.getString("logging_interval", "1000"));
                 String address = CloudCityParamsRepository.getInstance().getServerUrl();
                 String token = CloudCityParamsRepository.getInstance().getServerToken();
 
                 NetworkDataModel data = getCloudCityData();
-                Log.d(TAG, "getCloudCityData() returned "+data);
+                CloudCityLogger.d(TAG, "getCloudCityData() returned "+data);
                 if (data == null) {
                     Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
                 } else {
                     NetworkDataModelRequest requestData = new NetworkDataModelRequest();
                     requestData.add(data);
 
-                    Log.d(TAG, "sending data at addr=" + address + ", token=" + token + ", interval=" + interval);
+                    CloudCityLogger.d(TAG, "sending data at addr=" + address + ", token=" + token + ", interval=" + interval);
 
                     boolean status = CloudCityHelpers.sendData(address, token, requestData);
 
@@ -90,7 +91,7 @@ public class LoggingServiceExtensions {
      * initialize a new remote Cloud City connection
      */
     public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, @NonNull DataProvider dataProvider, SharedPreferences sharedPrefs) {
-        Log.d(TAG, "setupCloudCity");
+        CloudCityLogger.d(TAG, "setupCloudCity");
 
         gv = globalVars;
         interval = updateInterval;
@@ -123,7 +124,7 @@ public class LoggingServiceExtensions {
      * stop remote influx logging in clear up all internal instances of involved objects
      */
     public static void stopCloudCity() {
-        Log.d(TAG, "stopCloudCity");
+        CloudCityLogger.d(TAG, "stopCloudCity");
         // cleanup the handler is existing
         if (CloudCityHandler != null) {
             try {
@@ -133,7 +134,7 @@ public class LoggingServiceExtensions {
                     Log.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
                 }
             } catch (java.lang.NullPointerException e) {
-                Log.d(TAG, "trying to stop cloud city service while it was not running");
+                CloudCityLogger.d(TAG, "trying to stop cloud city service while it was not running");
             }
         }
 

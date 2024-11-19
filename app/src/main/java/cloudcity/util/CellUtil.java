@@ -147,6 +147,7 @@ public class CellUtil {
             // Assume signalStrength is the same
             NRInformation nrSignal = (NRInformation) signalStrength;
             //TODO get rid of this workaround
+            //FIXME get rid of this workaround
             if (nrSignal == null) nrSignal = nrCell;
 
             Integer validCsirsrp = getNonNullAndNonInvalidMember(nrCell.getCsirsrp(), nrSignal.getCsirsrp(), precedence);
@@ -167,6 +168,7 @@ public class CellUtil {
             // Likewise, assume signal strength is the same
             LTEInformation lteSignal = (LTEInformation) signalStrength;
             //TODO get rid of this workaround
+            //FIXME get rid of this workaround
             if (lteSignal == null) lteSignal = lteCell;
 
             Integer validRsrp = getNonNullAndNonInvalidMember(lteCell.getRsrp(), lteSignal.getRsrp(), precedence);

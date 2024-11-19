@@ -4,6 +4,7 @@ import android.app.Application;
 
 import cloudcity.dataholders.MetricsPOJO;
 import cloudcity.util.CellUtil;
+import cloudcity.util.CloudCityLogger;
 import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
@@ -13,7 +14,7 @@ import io.sentry.android.timber.SentryTimberTree;
 import timber.log.Timber;
 
 public class CloudCityOMNTApplication extends Application {
-    public static final String TAG = CloudCityOMNTApplication.class.getSimpleName();
+    public static final String TAG = "CloudCityOMNTApplication";
 
     private Iperf3Monitor iperf3Monitor;
 
@@ -37,14 +38,14 @@ public class CloudCityOMNTApplication extends Application {
         iperf3Monitor.startListeningForIperf3Updates(new Iperf3Monitor.Iperf3MonitorCompletionListener() {
             @Override
             public void onIperf3TestCompleted(MetricsPOJO metrics) {
-                android.util.Log.wtf(TAG, "One iperf3 cycle is completed! received metrics: "+metrics);
+                CloudCityLogger.d(TAG, "One iperf3 cycle is completed! received metrics: " + metrics);
                 DataProvider dataProvider = GlobalVars.getInstance().get_dp();
                 boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(
                         metrics,
                         GPSMonitor.getLastLocation(),
                         CellUtil.getRegisteredCellInformationUpdatedBySignalStrengthInformation(dataProvider)
                 );
-                android.util.Log.d(TAG, "sending metrics result: "+iperf3SendingResult);
+                CloudCityLogger.d(TAG, "sending metrics result: "+iperf3SendingResult);
             }
         });
     }

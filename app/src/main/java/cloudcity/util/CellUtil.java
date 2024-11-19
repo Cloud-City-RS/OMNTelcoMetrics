@@ -1,11 +1,11 @@
 package cloudcity.util;
 
+import android.telephony.CellInfo;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import java.util.List;
-import java.util.Objects;
 
 import cloudcity.networking.models.MeasurementsModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
@@ -38,46 +38,6 @@ public class CellUtil {
     }
 
     /**
-     * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
-     * @param category    the category of the cell, equivallent to {@link CellInformation#getCellType()}
-     * @param currentCell the cell to get information from
-     * @return the {@link MeasurementsModel} obtained from information contained in the {@code currentCell}
-     */
-    public static @NonNull MeasurementsModel getMeasurementsModel(String category, CellInformation currentCell) {
-        MeasurementsModel measurements = new MeasurementsModel();
-
-        if (Objects.equals(category, "NR")) {
-            // New safety
-            if (currentCell instanceof NRInformation) {
-                NRInformation nrCell = (NRInformation) currentCell;
-                measurements.setCsirsrp(nrCell.getCsirsrp());
-                measurements.setCsirsrq(nrCell.getCsirsrq());
-                measurements.setCsisinr(nrCell.getCsisinr());
-                measurements.setSsrsrp(nrCell.getSsrsrp());
-                measurements.setSsrsrq(nrCell.getSsrsrq());
-                measurements.setSssinr(nrCell.getSssinr());
-            }
-        } else if (Objects.equals(category, "LTE")) {
-            if (currentCell instanceof LTEInformation) {
-                LTEInformation lteCell = (LTEInformation) currentCell;
-                measurements.setRsrp(lteCell.getRsrp());
-                measurements.setRsrq(lteCell.getRsrq());
-                measurements.setRssnr(lteCell.getRssnr());
-            }
-        } else {
-            /* In 3G no measurement data available set dummy data. */
-            measurements.setDummy(1);
-        }
-        // Remap based on category or better - the actual cell type class
-        // 3G is CDMA or GSM
-        // 4G is LTE
-        // 5G is NR
-        measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
-
-        return measurements;
-    }
-
-    /**
      * Maps cell type to an integer value for database compatibility
      *
      * @param cellToRemap The cell information to be remapped
@@ -105,6 +65,13 @@ public class CellUtil {
         return retVal;
     }
 
+    /**
+     * Handy method for doint everything we normally do manually, find the registered cell, grab the signal strength
+     * and then init the {@link MeasurementsModel} from the registered cell and update with the signal strength
+     *
+     * @param dp the {@link DataProvider} to grab all of these things from
+     * @return the MeasurementsModel to be uploaded
+     */
     public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {
         if (dp == null) {
             // Don't bother me with this CodeRabbit, i've seen a NullPointerException happen because of this 'dp' being null
@@ -122,46 +89,135 @@ public class CellUtil {
                 currentSignal = signalInfo.get(0);
             }
 
-            String category = currentCell.getCellType().toString();
+            // Lets initialize the MeasurementsModel by taking non-null (and non-invalid) values from both the currently registered
+            // cell and the current signal info, and give precedence to one of them;
+            //
+            // in case both are non-null, the one with precedence will be used
+            // in case one of them is null, the other one will be used
+            // in case both of them are null, the one with precedence will be used
+            MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellInfoPrecedence.SIGNAL_INFO);
 
-            // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
-            // with what we found in the SignalInformation
-            MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(category, currentCell);
-            // While this one isn't necessary, it's convenient for debugging
-            MeasurementsModel updatedModel = updateMeasurementModelByCell(modelForSending, currentSignal);
-
-            return updatedModel;
+            return modelForSending;
         }
     }
 
     /**
-     * Updates the {@link MeasurementsModel} {@code measurements} with {@link CellInformation} {@code cellForUpdating} while
-     * overwriting all previous values in the model
-     * <p>
-     * <b>NOTE: has a side-effect of actually updating the measurements, it just returns the updated model as a convenience</b>
-     *
-     * @param measurements the model to update
-     * @param cellForUpdating the source of updated data to overwrite old values in the model
-     * @return the updated measurements
+     * Enum class used to give precedence to either the registered cell or the signal strength info
      */
-    public static MeasurementsModel updateMeasurementModelByCell(@NonNull MeasurementsModel measurements, @NonNull CellInformation cellForUpdating) {
-        if (cellForUpdating instanceof NRInformation) {
-            NRInformation nrCell = (NRInformation) cellForUpdating;
-            measurements.setCsirsrp(nrCell.getCsirsrp());
-            measurements.setCsirsrq(nrCell.getCsirsrq());
-            measurements.setCsisinr(nrCell.getCsisinr());
-            measurements.setSsrsrp(nrCell.getSsrsrp());
-            measurements.setSsrsrq(nrCell.getSsrsrq());
-            measurements.setSssinr(nrCell.getSssinr());
+    public enum CellInfoPrecedence {
+        /**
+         * Give precedence to Cell info
+         */
+        CELL_INFO,
+        /**
+         * Give precedence to Signal info
+         */
+        SIGNAL_INFO
+    }
+
+    /**
+     * Extract various measurement data from the currently registered {@link CellInformation} as returned by {@link DataProvider}
+     * <p>
+     * <b>NOTE: in case 'null' is received for {@code signalStrength} then it will resort to using the {@code currentCell} instead of it</b>
+     *
+     * @param currentCell the currently-registered cell to get information from
+     * @param signalStrength the signal strength to get information from
+     * @param precedence which cell info should take precedence
+     * @return the {@link MeasurementsModel} obtained from information contained in the {@code currentCell}
+     */
+    public static @NonNull MeasurementsModel getMeasurementsModel(CellInformation currentCell, CellInformation signalStrength, CellInfoPrecedence precedence) {
+        MeasurementsModel measurements = new MeasurementsModel();
+
+        // Since all of these 'informations' are just numbers, they will never be NULL, however they
+        // will be CellInfo.UNAVAILABLE so we will use that as a NULL marker;
+        //
+        // The idea is simple, if both the 'currentCell' and 'signalStrength' contain a non-null
+        // value, take the one that takes precedence; otherwise take the non-null value.
+        // If both of them are null, well then, take the null that takes precedence since it changes nothing
+        //
+        // We are in a bad situation if currentCell and signalStrength can end up being of different types.
+        Log.v(TAG, "--> getMeasurementsModel()\tcurrentCell: "+currentCell+", signalStrength: "+signalStrength+", precedence: "+precedence);
+        if (signalStrength == null) {
+            Log.e(TAG, "signalStrength was NULL !!! will use currentCell for both values to retain functionality.");
         }
 
-        if (cellForUpdating instanceof LTEInformation) {
-            LTEInformation lteCell = (LTEInformation) cellForUpdating;
-            measurements.setRsrp(lteCell.getRsrp());
-            measurements.setRsrq(lteCell.getRsrq());
-            measurements.setRssnr(lteCell.getRssnr());
-        }
+        // New safety
+        if (currentCell instanceof NRInformation) {
+            NRInformation nrCell = (NRInformation) currentCell;
+            // Assume signalStrength is the same
+            NRInformation nrSignal = (NRInformation) signalStrength;
+            //TODO get rid of this workaround
+            //FIXME get rid of this workaround
+            if (nrSignal == null) nrSignal = nrCell;
 
+            Integer validCsirsrp = getNonNullAndNonInvalidMember(nrCell.getCsirsrp(), nrSignal.getCsirsrp(), precedence);
+            Integer validCsirsrq = getNonNullAndNonInvalidMember(nrCell.getCsirsrq(), nrSignal.getCsirsrq(), precedence);
+            Integer validCsisinr = getNonNullAndNonInvalidMember(nrCell.getCsisinr(), nrSignal.getCsisinr(), precedence);
+            Integer validSsrsrp = getNonNullAndNonInvalidMember(nrCell.getSsrsrp(), nrSignal.getSsrsrp(), precedence);
+            Integer validSsrsrq = getNonNullAndNonInvalidMember(nrCell.getSsrsrq(), nrSignal.getSsrsrq(), precedence);
+            Integer validSssinr = getNonNullAndNonInvalidMember(nrCell.getSssinr(), nrSignal.getSssinr(), precedence);
+
+            measurements.setCsirsrp(validCsirsrp);
+            measurements.setCsirsrq(validCsirsrq);
+            measurements.setCsisinr(validCsisinr);
+            measurements.setSsrsrp(validSsrsrp);
+            measurements.setSsrsrq(validSsrsrq);
+            measurements.setSssinr(validSssinr);
+        } else if (currentCell instanceof LTEInformation) {
+            LTEInformation lteCell = (LTEInformation) currentCell;
+            // Likewise, assume signal strength is the same
+            LTEInformation lteSignal = (LTEInformation) signalStrength;
+            //TODO get rid of this workaround
+            //FIXME get rid of this workaround
+            if (lteSignal == null) lteSignal = lteCell;
+
+            Integer validRsrp = getNonNullAndNonInvalidMember(lteCell.getRsrp(), lteSignal.getRsrp(), precedence);
+            Integer validRsrq = getNonNullAndNonInvalidMember(lteCell.getRsrq(), lteSignal.getRsrq(), precedence);
+            Integer validRssnr = getNonNullAndNonInvalidMember(lteCell.getRssnr(), lteSignal.getRssnr(), precedence);
+
+            measurements.setRsrp(validRsrp);
+            measurements.setRsrq(validRsrq);
+            measurements.setRssnr(validRssnr);
+        } else {
+            /* In 3G no measurement data available set dummy data. */
+            measurements.setDummy(1);
+        }
+        // Remap based on category or better - the actual cell type class
+        // 3G is CDMA or GSM
+        // 4G is LTE
+        // 5G is NR
+        measurements.setCellType(remapCellClassTypeIntoInteger(currentCell));
+
+        Log.v(TAG, "<-- getMeasurementsModel()\tmeasurements: " + measurements);
         return measurements;
+    }
+
+    private static Integer getNonNullAndNonInvalidMember(Integer cellValue, Integer signalValue, CellInfoPrecedence precedence) {
+        boolean cellValueNonNull = cellValue != null && cellValue != CellInfo.UNAVAILABLE;
+        boolean signalValueNonNull = signalValue != null && signalValue != CellInfo.UNAVAILABLE;
+
+        // The idea is simple, if both the 'currentCell' and 'signalStrength' contain a non-null
+        // value, take the one that takes precedence; otherwise take the non-null value.
+        // If both of them are null, well then, take the null that takes precedence since it changes nothing
+        if (cellValueNonNull && signalValueNonNull) {
+            switch (precedence) {
+                case CELL_INFO: return cellValue;
+                case SIGNAL_INFO: return signalValue;
+            }
+        } else if (cellValueNonNull) {
+            return cellValue;
+        } else if (signalValueNonNull) {
+            return signalValue;
+        } else {
+            // This is the case when both of them are null, so return the one with precendence
+            // since it changes nothing
+            switch (precedence) {
+                case CELL_INFO: return cellValue;
+                case SIGNAL_INFO: return signalValue;
+            }
+        }
+
+        // We will not return here, but actually throw. We must surely have returned by now
+        throw new IllegalStateException("No suitable information found in CellUtil::getNonNullAndNonInvalidMember()");
     }
 }

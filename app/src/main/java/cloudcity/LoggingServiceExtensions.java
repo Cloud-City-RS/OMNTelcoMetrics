@@ -39,7 +39,7 @@ public class LoggingServiceExtensions {
 
     private static int interval;
 
-    private static DataProvider dp;
+    private static volatile DataProvider dp;
 
     private static HandlerThread handlerThread;
 
@@ -169,11 +169,7 @@ public class LoggingServiceExtensions {
 
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
-        MeasurementsModel modelForSending =
-                CellUtil.updateMeasurementModelByCell(
-                        CellUtil.getMeasurementsModel(category, currentCell),
-                        currentCell
-                );
+        MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellUtil.CellInfoPrecedence.SIGNAL_INFO);
 
         Location location = GPSMonitor.getLastLocation();
 

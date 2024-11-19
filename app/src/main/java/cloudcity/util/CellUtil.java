@@ -147,12 +147,6 @@ public class CellUtil {
             Integer validSsrsrq = getNonNullAndNonInvalidMember(nrCell.getSsrsrq(), nrSignal.getSsrsrq(), CellInfoPrecedence.SIGNAL_INFO);
             Integer validSssinr = getNonNullAndNonInvalidMember(nrCell.getSssinr(), nrSignal.getSssinr(), CellInfoPrecedence.SIGNAL_INFO);
 
-//            measurements.setCsirsrp(nrCell.getCsirsrp());
-//            measurements.setCsirsrq(nrCell.getCsirsrq());
-//            measurements.setCsisinr(nrCell.getCsisinr());
-//            measurements.setSsrsrp(nrCell.getSsrsrp());
-//            measurements.setSsrsrq(nrCell.getSsrsrq());
-//            measurements.setSssinr(nrCell.getSssinr());
             measurements.setCsirsrp(validCsirsrp);
             measurements.setCsirsrq(validCsirsrq);
             measurements.setCsisinr(validCsisinr);
@@ -167,10 +161,6 @@ public class CellUtil {
             Integer validRsrp = getNonNullAndNonInvalidMember(lteCell.getRsrp(), lteSignal.getRsrp(), CellInfoPrecedence.SIGNAL_INFO);
             Integer validRsrq = getNonNullAndNonInvalidMember(lteCell.getRsrq(), lteSignal.getRsrq(), CellInfoPrecedence.SIGNAL_INFO);
             Integer validRssnr = getNonNullAndNonInvalidMember(lteCell.getRssnr(), lteSignal.getRssnr(), CellInfoPrecedence.SIGNAL_INFO);
-
-//            measurements.setRsrp(lteCell.getRsrp());
-//            measurements.setRsrq(lteCell.getRsrq());
-//            measurements.setRssnr(lteCell.getRssnr());
 
             measurements.setRsrp(validRsrp);
             measurements.setRsrq(validRsrq);

@@ -62,7 +62,7 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
  * work together.
  *
  * @see #startListeningForIperf3Updates(Iperf3MonitorCompletionListener)
- * @see #startDefault15secTest(Location)
+ * @see #startDefaultAutomatedTest(Location)
  */
 public class Iperf3Monitor {
     /**
@@ -540,7 +540,11 @@ public class Iperf3Monitor {
         return THROTTLING_THRESHOLD_IN_METERS;
     }
 
-    public void startDefault15secTest(Location testRunLocation) {
+    /**
+     * Runs the default CloudCity automated iperf3 test when the movement speed is under the threshold
+     * @param testRunLocation
+     */
+    public void startDefaultAutomatedTest(Location testRunLocation) {
         // Sanity check
         if (iperf3TestRunning.get()) {
             Log.e(TAG, "Iperf3 test is still running! aborting...");
@@ -563,7 +567,7 @@ public class Iperf3Monitor {
         cmdList.add(randomPortStr);
         // Add duration
         cmdList.add("-t");
-        String duration = "15";
+        String duration = String.valueOf(CloudCityConstants.CLOUD_CITY_IPERF3_TEST_DURATION_IN_SECONDS);
         cmdList.add(duration);
         // Protocol
         String protocol = "TCP";

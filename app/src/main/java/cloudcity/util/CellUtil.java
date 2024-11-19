@@ -85,7 +85,7 @@ public class CellUtil {
      * 3 - 3G (GSM/CDMA)<br>
      * 4 - 4G (LTE)<br>
      * 5 - 5G (NR)<br>
-     * -1 - Unknown/unsupported cell type
+     * @throws IllegalStateException when an unknown/unsupported cell type is encountered
      */
     public static int remapCellClassTypeIntoInteger(CellInformation cellToRemap) {
         // kotlin's exhaustive when() would be great but lets do with what we have

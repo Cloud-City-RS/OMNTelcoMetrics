@@ -2,6 +2,9 @@ package cloudcity.util;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
+import okhttp3.logging.HttpLoggingInterceptor;
 import timber.log.Timber;
 
 public class CloudCityLogger {
@@ -58,5 +61,13 @@ public class CloudCityLogger {
 
     public static void wtf(String logtag, String message) {
         wtf(logtag, message, null);
+    }
+
+    public static class CloudCityLoggerOKHttpLogger implements HttpLoggingInterceptor.Logger {
+
+        @Override
+        public void log(@NonNull String s) {
+            CloudCityLogger.d("OkHttp", s);
+        }
     }
 }

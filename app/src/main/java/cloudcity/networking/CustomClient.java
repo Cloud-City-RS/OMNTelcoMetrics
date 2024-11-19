@@ -7,6 +7,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import cloudcity.util.CloudCityLogger;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 
@@ -21,7 +22,7 @@ public class CustomClient {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, new TrustManager[]{trustManager}, new SecureRandom());
 
-            HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+            HttpLoggingInterceptor logging = new HttpLoggingInterceptor(new CloudCityLogger.CloudCityLoggerOKHttpLogger());
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
             // Create an OkHttpClient with the custom SSL context

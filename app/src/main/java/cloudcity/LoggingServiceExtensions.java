@@ -172,7 +172,7 @@ public class LoggingServiceExtensions {
         MeasurementsModel modelForSending =
                 CellUtil.updateMeasurementModelByCell(
                         CellUtil.getMeasurementsModel(category, currentCell),
-                        currentCell
+                        currentSignal
                 );
 
         Location location = GPSMonitor.getLastLocation();

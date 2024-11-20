@@ -1,11 +1,13 @@
 package cloudcity.util;
 
 import android.telephony.CellInfo;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
 import java.util.List;
 
+import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.MeasurementsModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
@@ -64,6 +66,47 @@ public class CellUtil {
         return retVal;
     }
 
+    public static @NonNull CellInfoModel getCellInfoModel(CellInformation currentCell) {
+        CellInfoModel cellInfoModel = new CellInfoModel();
+
+        // Looking at the OMNT code, only CDMA doesn't have 'bands', GSM,LTE and NR all have it
+        if (currentCell instanceof CDMAInformation) {
+            /* No information in 2G and 3G set dummy data. */
+            cellInfoModel.setDummy(1);
+        } else {
+            /* Real data available for all other network types. */
+            // Ok so bands is technically the ARFCN
+            String bandsString = currentCell.getBands();
+            // Clean up the bandsString, which will come as [x], so we need to get rid of the brackets
+            // and then parse the number inside of it.
+            String sanitizedBandsString = bandsString.replaceAll("\\[","").replaceAll("]","");
+            if (!sanitizedBandsString.isBlank()) {
+                // Seems like this "[]" is what's being returned on SIM-less phones (or on WiFi)
+                // So try parsing only if the sanitized string is non-blank
+                int arfcn = Integer.parseInt(sanitizedBandsString);
+                cellInfoModel.setEarfcn(arfcn);
+            } else {
+                CloudCityLogger.e(TAG, "Error parsing bands (EARFCN) since it wasn't present!");
+            }
+            cellInfoModel.setPci(currentCell.getPci());
+        }
+
+        long id = currentCell.getCi();
+
+        if (currentCell instanceof NRInformation) {
+            if (id != CellInfo.UNAVAILABLE_LONG) {
+                cellInfoModel.setCellId(currentCell.getCi());
+            }
+        } else if (currentCell instanceof LTEInformation) {
+            if (id != CellInfo.UNAVAILABLE) {
+                cellInfoModel.setCellId((int)(currentCell.getCi() >> 8));
+                cellInfoModel.seteNodeBId((int) currentCell.getCi() & 0x000000FF);
+            }
+        }
+
+        return cellInfoModel;
+    }
+
     /**
      * Handy method for doint everything we normally do manually, find the registered cell, grab the signal strength
      * and then init the {@link MeasurementsModel} from the registered cell and update with the signal strength
@@ -71,11 +114,11 @@ public class CellUtil {
      * @param dp the {@link DataProvider} to grab all of these things from
      * @return the MeasurementsModel to be uploaded
      */
-    public static MeasurementsModel getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {
+    public static Pair<MeasurementsModel, CellInfoModel> getRegisteredCellInformationUpdatedBySignalStrengthInformation(@NonNull DataProvider dp) {
         if (dp == null) {
             // Don't bother me with this CodeRabbit, i've seen a NullPointerException happen because of this 'dp' being null
-            CloudCityLogger.e(TAG, "DataProvider was null, sending Iperf3 data without MeasurementModel");
-            return new MeasurementsModel();
+            CloudCityLogger.e(TAG, "DataProvider was null, sending Iperf3 data without MeasurementModel and CellInfoModel");
+            return Pair.create(new MeasurementsModel(), new CellInfoModel());
         } else {
             List<CellInformation> cellsInfo = dp.getCellInformation();
             List<CellInformation> signalInfo = dp.getSignalStrengthInformation();
@@ -95,8 +138,9 @@ public class CellUtil {
             // in case one of them is null, the other one will be used
             // in case both of them are null, the one with precedence will be used
             MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellInfoPrecedence.SIGNAL_INFO);
+            CellInfoModel cellInfoModel = getCellInfoModel(currentCell);
 
-            return modelForSending;
+            return Pair.create(modelForSending, cellInfoModel);
         }
     }
 

@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.telephony.CellInfo;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -15,7 +14,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.networking.CloudCityHelpers;
-import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.MeasurementsModel;
 import cloudcity.networking.models.MobileSignalNetworkDataModel;
 import cloudcity.networking.models.NetworkDataModel;
@@ -23,7 +21,6 @@ import cloudcity.networking.models.NetworkDataModelRequest;
 import cloudcity.util.CellUtil;
 import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
@@ -183,45 +180,10 @@ public class LoggingServiceExtensions {
         /* Convert to km/h */
         dataModel.setSpeed(location.getSpeed() * 3.6);
 
-        dataModel.setCellData(getCellInfoModel(category, currentCell));
+        dataModel.setCellData(
+                CellUtil.getCellInfoModel(currentCell)
+        );
 
         return dataModel;
-    }
-
-
-
-    private static @NonNull CellInfoModel getCellInfoModel(String category, CellInformation currentCell) {
-        CellInfoModel cellInfoModel = new CellInfoModel();
-
-        if (Objects.equals(category, "CDMA") || Objects.equals(category, "GSM")) {
-            /* No information in 2G and 3G set dummy data. */
-            cellInfoModel.setDummy(1);
-        } else {
-            /* Real data available for all other network types. */
-            if (currentCell instanceof GSMInformation) {
-                GSMInformation gsmCell = (GSMInformation) currentCell;
-                // Ok so bands is technically the ARFCN
-                String bandsString = gsmCell.getBands();
-                int arfcn = Integer.parseInt(bandsString);
-                cellInfoModel.setEarfcn(arfcn);
-                cellInfoModel.setPci(currentCell.getPci());
-            }
-        }
-
-        long id = currentCell.getCi();
-
-        if (Objects.equals(category, "NR")) {
-            if (id != CellInfo.UNAVAILABLE_LONG) {
-                cellInfoModel.setCellId(currentCell.getCi());
-            }
-        } else if (Objects.equals(category, "LTE")) {
-            if (id != CellInfo.UNAVAILABLE) {
-                cellInfoModel.setCellId((int)(currentCell.getCi() >> 8));
-                cellInfoModel.seteNodeBId((int) currentCell.getCi() & 0x000000FF);
-            }
-
-        }
-
-        return cellInfoModel;
     }
 }

@@ -2,12 +2,14 @@ package cloudcity.util;
 
 import android.location.Location;
 import android.os.Build;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
 import cloudcity.CloudCityParamsRepository;
 import cloudcity.dataholders.MetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
+import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.Iperf3NetworkDataModel;
 import cloudcity.networking.models.MeasurementsModel;
 import cloudcity.networking.models.NetworkDataModel;
@@ -46,7 +48,7 @@ public class CloudCityUtil {
     public static boolean sendIperf3Data(
             @NonNull MetricsPOJO metricsPOJO,
             @NonNull Location location,
-            @NonNull MeasurementsModel cellInfoMeasurements) {
+            @NonNull Pair<MeasurementsModel, CellInfoModel> cellInfoMeasurements) {
         MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
         MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
         MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
@@ -55,7 +57,8 @@ public class CloudCityUtil {
                 uploadMetrics,
                 downloadMetrics,
                 location,
-                cellInfoMeasurements
+                cellInfoMeasurements.first,
+                cellInfoMeasurements.second
         );
         return CloudCityUtil.sendIperf3Data(iperf3Data);
     }

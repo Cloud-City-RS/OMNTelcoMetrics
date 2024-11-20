@@ -80,9 +80,10 @@ public class CellUtil {
             String bandsString = currentCell.getBands();
             // Clean up the bandsString, which will come as [x], so we need to get rid of the brackets
             // and then parse the number inside of it.
-            String sanitizedBandsString = bandsString.replaceAll("\\[","").replaceAll("\\]","");
+            String sanitizedBandsString = bandsString.replaceAll("\\[","").replaceAll("]","");
             if (!sanitizedBandsString.isBlank()) {
                 // Seems like this "[]" is what's being returned on SIM-less phones (or on WiFi)
+                // So try parsing only if the sanitized string is non-blank
                 int arfcn = Integer.parseInt(sanitizedBandsString);
                 cellInfoModel.setEarfcn(arfcn);
             } else {

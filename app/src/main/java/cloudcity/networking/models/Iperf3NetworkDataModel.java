@@ -7,34 +7,32 @@ import androidx.annotation.NonNull;
 import com.google.gson.annotations.SerializedName;
 
 import cloudcity.dataholders.MetricsPOJO;
-import cloudcity.util.CloudCityUtil;
 
 public class Iperf3NetworkDataModel extends NetworkDataModel {
-    private static final int NUMBER_OF_DECIMALS_FOR_ACCURACY = 4;
-
     @SerializedName("category")
     final private String category = "Iperf3";
-
     @SerializedName("accuracy")
     private double accuracy;
     @SerializedName("speed")
     private double speed;
+    @SerializedName("cell_info")
+    private final CellInfoModel cellData;
 
     public Iperf3NetworkDataModel(
             @NonNull MetricsPOJO.UploadMetrics upload,
             @NonNull MetricsPOJO.DownloadMetrics download,
             @NonNull Location location,
-            @NonNull MeasurementsModel measurementsModel
+            @NonNull MeasurementsModel measurementsModel,
+            @NonNull CellInfoModel cellInfoModel
     ) {
         super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel));
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
+        this.cellData = cellInfoModel;
     }
 }
 
 class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
-    private static final int NUMBER_OF_DECIMALS_FOR_METRICS = 2;
-
     @SerializedName("upload_min")
     private final double ULmin;
     @SerializedName("upload_median")

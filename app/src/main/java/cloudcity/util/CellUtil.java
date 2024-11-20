@@ -78,13 +78,16 @@ public class CellUtil {
             /* Real data available for all other network types. */
             // Ok so bands is technically the ARFCN
             String bandsString = currentCell.getBands();
-            if (bandsString != null && !bandsString.isBlank() && !bandsString.equalsIgnoreCase("[]")) {
+            // Clean up the bandsString, which will come as [x], so we need to get rid of the brackets
+            // and then parse the number inside of it.
+            String sanitizedBandsString = bandsString.replaceAll("\\[","").replaceAll("\\]","");
+            if (!sanitizedBandsString.isBlank()) {
                 // Seems like this "[]" is what's being returned on SIM-less phones (or on WiFi)
-                int arfcn = Integer.parseInt(bandsString);
+                int arfcn = Integer.parseInt(sanitizedBandsString);
                 cellInfoModel.setEarfcn(arfcn);
             } else {
                 //TODO replace with CloudCityLogger when that's merged in (or on that other branch)
-                Log.e(TAG, "Error parsing bands (EARFCN)!");
+                Log.e(TAG, "Error parsing bands (EARFCN) since it wasn't present!");
             }
             cellInfoModel.setPci(currentCell.getPci());
         }

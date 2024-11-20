@@ -82,6 +82,9 @@ public class CellUtil {
                 // Seems like this "[]" is what's being returned on SIM-less phones (or on WiFi)
                 int arfcn = Integer.parseInt(bandsString);
                 cellInfoModel.setEarfcn(arfcn);
+            } else {
+                //TODO replace with CloudCityLogger when that's merged in (or on that other branch)
+                Log.e(TAG, "Error parsing bands (EARFCN)!");
             }
             cellInfoModel.setPci(currentCell.getPci());
         }

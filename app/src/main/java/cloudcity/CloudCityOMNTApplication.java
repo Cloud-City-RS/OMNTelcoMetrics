@@ -8,9 +8,6 @@ import cloudcity.util.CloudCityLogger;
 import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
-import io.sentry.Sentry;
-import io.sentry.SentryLevel;
-import io.sentry.android.timber.SentryTimberTree;
 import timber.log.Timber;
 
 public class CloudCityOMNTApplication extends Application {
@@ -23,14 +20,7 @@ public class CloudCityOMNTApplication extends Application {
         super.onCreate();
         CloudCityParamsRepository.initialize(getApplicationContext());
 
-        // Because Timber seems to be pure kotlin, and java can't quite interact well with pure kotlin code
-        // lets just make a kotlin class to instantiate timber and configure it, and call that method from here
         Timber.plant(new Timber.DebugTree());
-        Timber.plant(new SentryTimberTree(
-                Sentry.getCurrentHub(),
-                SentryLevel.DEBUG,
-                SentryLevel.DEBUG
-        ));
 
         Iperf3Monitor.initialize(getApplicationContext());
         iperf3Monitor = Iperf3Monitor.getInstance();

@@ -173,7 +173,9 @@ public class LoggingServiceExtensions {
                 modelForSending
         );
 
-        dataModel.setCategory(currentCell.getCellType().toString());
+        // TODO fix potential NPE when trying to get this category - I've seen it happen
+        String category = currentCell.getCellType().toString();
+        dataModel.setCategory(category);
         dataModel.setAccuracy(location.getAccuracy());
         /* Convert to km/h */
         dataModel.setSpeed(location.getSpeed() * 3.6);

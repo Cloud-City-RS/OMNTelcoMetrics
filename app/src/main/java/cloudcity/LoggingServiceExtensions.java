@@ -162,8 +162,6 @@ public class LoggingServiceExtensions {
             currentSignal = signalInfo.get(0);
         }
 
-        String category = currentCell.getCellType().toString();
-
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
         MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellUtil.CellInfoPrecedence.SIGNAL_INFO);

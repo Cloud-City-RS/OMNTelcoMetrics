@@ -11,11 +11,11 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.preference.PreferenceManager;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 
@@ -36,7 +36,7 @@ public class InfluxdbConnections {
             String bucket = spg.getSharedPreference(SPType.logging_sp).getString("influx_bucket", "");
             String token = spg.getSharedPreference(SPType.logging_sp).getString("influx_token", "");
             if (url.isEmpty() || org.isEmpty() || bucket.isEmpty() || token.isEmpty()) {
-                Log.e(TAG, "Influx parameters incomplete, can't setup logging");
+                CloudCityLogger.e(TAG, "Influx parameters incomplete, can't setup logging");
                 // if we are an UI thread we make a toast, if not logging have to be enough
                 if (Looper.getMainLooper().isCurrentThread()) {
                     Toast.makeText(context, "Influx Parameter not correctly set!", Toast.LENGTH_LONG).show();// On UI thread.
@@ -61,7 +61,7 @@ public class InfluxdbConnections {
             String bucket = "omnt";
             String token = "1234567890";
             if (url.isEmpty() || org.isEmpty() || bucket.isEmpty() || token.isEmpty()) {
-                Log.e(TAG, "Influx parameters incomplete, can't setup logging");
+                CloudCityLogger.e(TAG, "Influx parameters incomplete, can't setup logging");
                 return null;
             }
             lic = new InfluxdbConnection(url, token, org, bucket, context);

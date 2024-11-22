@@ -2,7 +2,6 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -12,6 +11,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.BuildInformation;
 
 public class SharedPreferencesIO {
@@ -27,14 +27,14 @@ public class SharedPreferencesIO {
             try {
                 preferencesJson.put(key.toString(), spJSON);
             } catch (JSONException e) {
-                Log.e(TAG, "Failed to export preference "+key, e);
+                CloudCityLogger.e(TAG, "Failed to export preference "+key, e);
             }
         }
         try {
             preferencesJson.put("BuildInformation", new BuildInformation().toJSON());
             return preferencesJson.toString(4);
         } catch (JSONException e) {
-            Log.e(TAG, "Failed to Preference JSON to String", e);
+            CloudCityLogger.e(TAG, "Failed to Preference JSON to String", e);
             return "{}";
         }
     }
@@ -46,7 +46,7 @@ public class SharedPreferencesIO {
             spJSON.keys().forEachRemaining(key -> {
                 SPType spType = SPType.fromString(key);
                 if (spType == null) {
-                    Log.e(TAG, "Unknown preference type: " + key);
+                    CloudCityLogger.e(TAG, "Unknown preference type: " + key);
                     return;
                 }
                 SharedPreferences prefs = SharedPreferencesGrouper.getInstance(context).getSharedPreference(spType);
@@ -55,7 +55,7 @@ public class SharedPreferencesIO {
                 try {
                     preferences = spJSON.getJSONObject(key);
                 } catch (JSONException e) {
-                    Log.e(TAG, "Failed to get preferences for: " + key, e);
+                    CloudCityLogger.e(TAG, "Failed to get preferences for: " + key, e);
                     return;
                 }
                 preferences.keys().forEachRemaining(preferenceKey -> {
@@ -63,7 +63,7 @@ public class SharedPreferencesIO {
                     try {
                         value = preferences.get(preferenceKey);
                     } catch (JSONException e) {
-                        Log.e(TAG, "Failed to get value for: " + preferenceKey, e);
+                        CloudCityLogger.e(TAG, "Failed to get value for: " + preferenceKey, e);
                         return;
                     }
                     if (value instanceof Boolean) {
@@ -79,11 +79,11 @@ public class SharedPreferencesIO {
                     }
                 });
                 editor.apply();
-                Log.d(TAG, "Imported: " + key);
+                CloudCityLogger.d(TAG, "Imported: " + key);
             });
 
         } catch (Exception e) {
-            Log.e(TAG, "Failed to import preferences", e);
+            CloudCityLogger.e(TAG, "Failed to import preferences", e);
             Toast.makeText(context, "Failed to import preferences", Toast.LENGTH_SHORT).show();
         }
     }

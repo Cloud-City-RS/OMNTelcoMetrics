@@ -13,7 +13,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +25,6 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
-import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
@@ -38,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
@@ -208,7 +207,7 @@ public class Iperf3RecyclerViewAdapter
 
         public ViewHolder(View itemView) {
             super(itemView);
-            Log.d(TAG, "ViewHolder: " + itemView);
+            CloudCityLogger.d(TAG, "ViewHolder: " + itemView);
             measurement = new TextView(context);
             timestamp = new TextView(context);
             iperf3State = new TextView(context);
@@ -227,8 +226,8 @@ public class Iperf3RecyclerViewAdapter
                 @Override
                 public boolean onLongClick(View v) {
                     int viewPosition = getLayoutPosition();
-                    Log.d(TAG, "onLongClick: " + v.toString());
-                    Log.d(TAG, "onLongClick: " + viewPosition);
+                    CloudCityLogger.d(TAG, "onLongClick: " + v.toString());
+                    CloudCityLogger.d(TAG, "onLongClick: " + viewPosition);
                     if (!selectedRuns.isEmpty()) {
                         return true;
                     }
@@ -260,7 +259,7 @@ public class Iperf3RecyclerViewAdapter
                         uploadBtn.setVisibility(View.VISIBLE);
                         return;
                     }
-                    Log.d(TAG, "onCreateView: CLICKED!");
+                    CloudCityLogger.d(TAG, "onCreateView: CLICKED!");
                     Bundle bundle = new Bundle();
                     bundle.putString("uid", uid);
                     Iperf3LogFragment test = new Iperf3LogFragment();

@@ -21,7 +21,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
-import android.util.Log;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -46,6 +45,7 @@ import java.util.Objects;
 
 import cloudcity.CloudCityConstants;
 import cloudcity.LoggingServiceExtensions;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.WifiInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x.InfluxdbConnection;
@@ -83,14 +83,14 @@ public class LoggingService extends Service {
                     try {
                         stream.write((point.toLineProtocol() + "\n").getBytes());
                     } catch (IOException e) {
-                        Log.d(TAG,e.toString());
+                        CloudCityLogger.e(TAG,e.toString(), e);
                     }
                 }
                 logFilePoints.clear();
                 try {
                     stream.flush();
                 } catch (IOException e) {
-                    Log.d(TAG,e.toString());
+                    CloudCityLogger.e(TAG,e.toString(), e);
                 }
             }
             localFileHandler.postDelayed(this, interval);
@@ -102,7 +102,7 @@ public class LoggingService extends Service {
         @Override
         public void run() {
             if(dp == null) {
-                Log.e(TAG, "run: Data provider is null!");
+                CloudCityLogger.e(TAG, "run: Data provider is null!");
                 return;
             }
             StringBuilder s = dp.getRegisteredCells().get(0).getStringBuilder();
@@ -157,14 +157,14 @@ public class LoggingService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate: Logging service created");
+        CloudCityLogger.d(TAG, "onCreate: Logging service created");
         gv = GlobalVars.getInstance();
     }
 
     @SuppressLint("ObsoleteSdkInt")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand: Start logging service");
+        CloudCityLogger.d(TAG, "onStartCommand: Start logging service");
         GlobalVars gv = GlobalVars.getInstance();
 
         // setup class variables
@@ -196,7 +196,7 @@ public class LoggingService extends Service {
             if (Objects.equals(key, "enable_influx")) {
                 if (prefs.getBoolean(key, false)) {
                     if (prefs.getString("influx_URL", "").isEmpty() || prefs.getString("influx_org", "").isEmpty() || prefs.getString("influx_token", "").isEmpty() || prefs.getString("influx_bucket", "").isEmpty()) {
-                        Log.i(TAG, "Not all influx settings are present in preferences");
+                        CloudCityLogger.i(TAG, "Not all influx settings are present in preferences");
                         Toast.makeText(getApplicationContext(), "Please fill all Influx Settings", Toast.LENGTH_LONG).show();
                         prefs.edit().putBoolean("enable_influx", false).apply();
                     } else {
@@ -208,7 +208,7 @@ public class LoggingService extends Service {
             } else if (Objects.equals(key, "enable_cloud_city")) {
                 if (prefs.getBoolean(key, false)) {
                     if (prefs.getString(CloudCityConstants.CLOUD_CITY_SERVER_URL, "").isEmpty() || prefs.getString(CloudCityConstants.CLOUD_CITY_TOKEN, "").isEmpty()) {
-                        Log.i(TAG, "Not all Cloud City settings are present in preferences");
+                        CloudCityLogger.i(TAG, "Not all Cloud City settings are present in preferences");
                         Toast.makeText(getApplicationContext(), "Please fill all Cloud City Settings", Toast.LENGTH_LONG).show();
                         prefs.edit().putBoolean("enable_cloud_city", false).apply();
                     } else {
@@ -268,7 +268,7 @@ public class LoggingService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy: Stop logging service");
+        CloudCityLogger.d(TAG, "onDestroy: Stop logging service");
         if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false)) {
             stopRemoteInfluxDB();
         }
@@ -303,7 +303,7 @@ public class LoggingService extends Service {
                     p.addTags(tags_map);
                     logPoints.add(p);
                 } else {
-                    Log.w(TAG, "Point without fields from getNetworkInformationPoint");
+                    CloudCityLogger.w(TAG, "Point without fields from getNetworkInformationPoint");
                 }
             }
 
@@ -314,7 +314,7 @@ public class LoggingService extends Service {
                     p.addTags(tags_map);
                     logPoints.add(p);
                 } else {
-                    Log.w(TAG, "Point without fields from getNetworkCapabilitiesPoint");
+                    CloudCityLogger.w(TAG, "Point without fields from getNetworkCapabilitiesPoint");
                 }
             }
 
@@ -325,7 +325,7 @@ public class LoggingService extends Service {
                     p.addTags(tags_map);
                     logPoints.add(p);
                 } else {
-                    Log.w(TAG, "Point without fields from getSignalStrengthPoint");
+                    CloudCityLogger.w(TAG, "Point without fields from getSignalStrengthPoint");
                 }
             }
 
@@ -338,7 +338,7 @@ public class LoggingService extends Service {
                         p.addTags(tags_map);
                         logPoints.add(p);
                     } else {
-                        Log.w(TAG, "Point without fields from getWifiInformationPoint");
+                        CloudCityLogger.w(TAG, "Point without fields from getWifiInformationPoint");
                     }
                 }
             }
@@ -350,7 +350,7 @@ public class LoggingService extends Service {
                         p.time(time, WritePrecision.MS);
                         p.addTags(tags_map);
                     } else {
-                        Log.w(TAG, "Point without fields from getCellInformationPoint");
+                        CloudCityLogger.w(TAG, "Point without fields from getCellInformationPoint");
                     }
                 }
                 logPoints.addAll(ps);
@@ -363,7 +363,7 @@ public class LoggingService extends Service {
                         p.time(time, WritePrecision.MS);
                         p.addTags(tags_map);
                     } else {
-                        Log.w(TAG, "Point without fields from getNetworkInterfaceInformationPoints");
+                        CloudCityLogger.w(TAG, "Point without fields from getNetworkInterfaceInformationPoints");
                     }
                 }
                 logPoints.addAll(ps);
@@ -381,13 +381,13 @@ public class LoggingService extends Service {
             p.addTags(tags_map);
             logPoints.add(p);
         } else {
-            Log.w(TAG,"data provider not initialized, generating empty point");
+            CloudCityLogger.w(TAG,"data provider not initialized, generating empty point");
         }
         return logPoints;
     }
 
     private void setupLocalFile() {
-        Log.d(TAG, "setupLocalFile");
+        CloudCityLogger.d(TAG, "setupLocalFile");
         logFilePoints = new ArrayList<>();
 
         // build log file path
@@ -402,7 +402,7 @@ public class LoggingService extends Service {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
         Date now = new Date();
         String filename = path + formatter.format(now) + ".txt";
-        Log.d(TAG, "logfile: " + filename);
+        CloudCityLogger.d(TAG, "logfile: " + filename);
         File logfile = new File(filename);
         try {
             boolean file_not_exists = logfile.createNewFile();
@@ -411,7 +411,7 @@ public class LoggingService extends Service {
                 file_not_exists = logfile.createNewFile();
             }
             if (!file_not_exists) {
-                Log.d(TAG, "can't create logfile " + logfile + " event after file rename");
+                CloudCityLogger.d(TAG, "can't create logfile " + logfile + " event after file rename");
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -422,22 +422,22 @@ public class LoggingService extends Service {
             stream = new FileOutputStream(logfile);
         } catch (FileNotFoundException e) {
             Toast.makeText(getApplicationContext(), "logfile not created", Toast.LENGTH_SHORT).show();
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(), e);
         }
 
         initLocalFileHandlerAndItsThread();
     }
 
     private void stopLocalFile() {
-        Log.d(TAG, "stopLocalFile");
+        CloudCityLogger.d(TAG, "stopLocalFile");
         if (localFileHandler != null) {
             try {
                 stream.close();
                 localFileHandler.removeCallbacks(localFileUpdate);
             } catch (java.lang.NullPointerException e) {
-                Log.d(TAG, "trying to stop local file service while it was not running");
+                CloudCityLogger.e(TAG, "trying to stop local file service while it was not running", e);
             } catch (IOException e) {
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG,e.toString(), e);
             }
         }
 
@@ -446,13 +446,13 @@ public class LoggingService extends Service {
             try {
                 localFileHandlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
         }
     }
 
     private void setupNotificationUpdate() {
-        Log.d(TAG, "setupNotificationUpdate");
+        CloudCityLogger.d(TAG, "setupNotificationUpdate");
         notificationHandlerThread = new HandlerThread("NotificationHandlerThread");
         notificationHandlerThread.start();
         notificationHandler = new Handler(Objects.requireNonNull(notificationHandlerThread.getLooper()));
@@ -460,7 +460,7 @@ public class LoggingService extends Service {
     }
 
     private void stopNotificationUpdate() {
-        Log.d(TAG, "stopNotificationUpdate");
+        CloudCityLogger.d(TAG, "stopNotificationUpdate");
         notificationHandler.removeCallbacks(notification_updater);
         builder.setContentText(null);
         nm.notify(1, builder.build());
@@ -470,14 +470,14 @@ public class LoggingService extends Service {
             try {
                 notificationHandlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
             notificationHandlerThread = null;
         }
     }
 
     private void setupLocalInfluxDB() {
-        Log.d(TAG, "setupLocalInfluxDB");
+        CloudCityLogger.d(TAG, "setupLocalInfluxDB");
         lic = InfluxdbConnections.getLicInstance(getApplicationContext());
         Objects.requireNonNull(lic).open_write_api();
         localInfluxHandlerThread = new HandlerThread("LocalInfluxHandlerThread");
@@ -487,12 +487,12 @@ public class LoggingService extends Service {
     }
 
     private void stopLocalInfluxDB() {
-        Log.d(TAG, "stopLocalInfluxDB");
+        CloudCityLogger.d(TAG, "stopLocalInfluxDB");
         if (localInfluxHandler != null) {
             try {
                 localInfluxHandler.removeCallbacks(RemoteInfluxUpdate);
             } catch (java.lang.NullPointerException e) {
-                Log.d(TAG, "trying to stop local influx service while it was not running");
+                CloudCityLogger.e(TAG, "trying to stop local influx service while it was not running", e);
             }
         }
         if (lic != null) {
@@ -503,7 +503,7 @@ public class LoggingService extends Service {
             try {
                 localInfluxHandlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
             localInfluxHandlerThread = null;
         }
@@ -513,7 +513,7 @@ public class LoggingService extends Service {
      * initialize a new remote influxDB connection
      */
     private void setupRemoteInfluxDB() {
-        Log.d(TAG, "setupRemoteInfluxDB");
+        CloudCityLogger.d(TAG, "setupRemoteInfluxDB");
         ic = InfluxdbConnections.getRicInstance(getApplicationContext());
         Objects.requireNonNull(ic).open_write_api();
         remoteInfluxHandlerThread = new HandlerThread("RemoteInfluxHandlerThread");
@@ -530,13 +530,13 @@ public class LoggingService extends Service {
      * stop remote influx logging in clear up all internal instances of involved objects
      */
     private void stopRemoteInfluxDB() {
-        Log.d(TAG, "stopRemoteInfluxDB");
+        CloudCityLogger.d(TAG, "stopRemoteInfluxDB");
         // cleanup the handler is existing
         if (remoteInfluxHandler != null) {
             try {
                 remoteInfluxHandler.removeCallbacks(RemoteInfluxUpdate);
             } catch (java.lang.NullPointerException e) {
-                Log.d(TAG, "trying to stop remote influx service while it was not running");
+                CloudCityLogger.d(TAG, "trying to stop remote influx service while it was not running");
             }
         }
 
@@ -545,7 +545,7 @@ public class LoggingService extends Service {
             try {
                 remoteInfluxHandlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
             remoteInfluxHandlerThread = null;
         }

@@ -17,7 +17,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -35,6 +34,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.MainActivity;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PingInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.RTTLine;
@@ -97,7 +97,7 @@ public class PingWorker extends Worker {
     @Override
     public void onStopped() {
         super.onStopped();
-        Log.d(TAG, "onStopped: worker stopped!");
+        CloudCityLogger.d(TAG, "onStopped: worker stopped!");
         if(pingProcess.isAlive()) pingProcess.destroy();
         spg.getSharedPreference(SPType.ping_sp).edit().putBoolean("ping_running", false).apply();
 
@@ -188,18 +188,18 @@ public class PingWorker extends Worker {
             int result = pingProcess.waitFor();
 
             if(isStopped()){
-                Log.d(TAG, "doWork: got cancelled because Worker got stopped!");
+                CloudCityLogger.d(TAG, "doWork: got cancelled because Worker got stopped!");
 
                 return Result.success();
             }
 
 
-            Log.d(TAG, "doWork: result " + result);
+            CloudCityLogger.d(TAG, "doWork: result " + result);
             if (result != 0) {
                 return Result.failure();
             }
         } catch (IOException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(), e);
             System.out.printf(e.toString());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

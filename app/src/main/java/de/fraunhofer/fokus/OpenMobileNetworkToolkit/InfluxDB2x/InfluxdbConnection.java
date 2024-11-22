@@ -28,6 +28,7 @@ import com.influxdb.client.write.events.WriteSuccessEvent;
 import java.io.IOException;
 import java.util.List;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
@@ -69,7 +70,7 @@ public class InfluxdbConnection {
                 .exponentialBase(4)
                 .build());
             writeApi.listenEvents(BackpressureEvent.class, value -> {
-                Log.d(TAG, "Backpressure: Reason: " + value.getReason());
+                CloudCityLogger.d(TAG, "Backpressure: Reason: " + value.getReason());
                 value.logEvent();
             });
             writeApi.listenEvents(WriteSuccessEvent.class, value -> {
@@ -91,8 +92,8 @@ public class InfluxdbConnection {
                 }
             });
         } catch (com.influxdb.exceptions.InfluxException e) {
-            Log.d(TAG, "connect: Can't connect to InfluxDB");
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG, "connect: Can't connect to InfluxDB", e);
+            CloudCityLogger.e(TAG,e.toString(), e);
         }
     }
 
@@ -102,26 +103,26 @@ public class InfluxdbConnection {
     public void disconnect() {
         // make sure we a instance of the client. This can happen on an app resume
         if (influxDBClient != null) {
-            Log.d(TAG, "disconnect: Flushing Influx write API if possible");
+            CloudCityLogger.d(TAG, "disconnect: Flushing Influx write API if possible");
             flush();
             try {
-                Log.d(TAG, "disconnect: Closing Influx write API");
+                CloudCityLogger.d(TAG, "disconnect: Closing Influx write API");
                 writeApi.close();
                 writeApi = null;
             } catch (com.influxdb.exceptions.InfluxException e) {
-                Log.d(TAG, "disconnect: Error while closing write API");
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG, "disconnect: Error while closing write API", e);
+                CloudCityLogger.e(TAG,e.toString(), e);
             }
             try {
-                Log.d(TAG, "disconnect: Closing influx connection");
+                CloudCityLogger.d(TAG, "disconnect: Closing influx connection");
                 influxDBClient.close();
                 influxDBClient = null;
             } catch (com.influxdb.exceptions.InfluxException e) {
-                Log.d(TAG, "disconnect: Error while closing influx connection");
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG, "disconnect: Error while closing influx connection", e);
+                CloudCityLogger.e(TAG,e.toString(), e);
             }
         } else {
-            Log.d(TAG, "disconnect() was called on not existing instance of the influx client");
+            CloudCityLogger.d(TAG, "disconnect() was called on not existing instance of the influx client");
         }
     }
 
@@ -133,13 +134,13 @@ public class InfluxdbConnection {
             try {
                 writeApi.writePoint(point);
             } catch (com.influxdb.exceptions.InfluxException e) {
-                Log.d(TAG, "writePoint: Error while writing points to influx DB");
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG, "writePoint: Error while writing points to influx DB", e);
+                CloudCityLogger.e(TAG,e.toString());
                 return false;
             }
             return true;
         } else {
-            Log.d(TAG, "writePoint: InfluxDB not reachable");
+            CloudCityLogger.d(TAG, "writePoint: InfluxDB not reachable");
             return false;
         }
     }
@@ -157,15 +158,15 @@ public class InfluxdbConnection {
                     try {
                         writeApi.writeRecords(WritePrecision.MS, points);
                     } catch (com.influxdb.exceptions.InfluxException e) {
-                        Log.d(TAG, "writeRecords: Error while writing points to influx DB");
-                        Log.d(TAG,e.toString());
+                        CloudCityLogger.e(TAG, "writeRecords: Error while writing points to influx DB", e);
+                        CloudCityLogger.e(TAG,e.toString(), e);
                     }
                 } else {
-                    Log.d(TAG, "writeRecords: InfluxDB not reachable: " + url);
+                    CloudCityLogger.d(TAG, "writeRecords: InfluxDB not reachable: " + url);
                 }
             }
             catch (Exception e) {
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG,e.toString(), e);
             }
         }).start();
         return true;
@@ -184,15 +185,15 @@ public class InfluxdbConnection {
                     try {
                         writeApi.writePoints(points);
                     } catch (com.influxdb.exceptions.InfluxException e) {
-                        Log.d(TAG, "writePoint: Error while writing points to influx DB");
-                        Log.d(TAG,e.toString());
+                        CloudCityLogger.e(TAG, "writePoint: Error while writing points to influx DB", e);
+                        CloudCityLogger.e(TAG,e.toString(), e);
                     }
                 } else {
-                    Log.d(TAG, "writePoints: InfluxDB not reachable: " + url);
+                    CloudCityLogger.d(TAG, "writePoints: InfluxDB not reachable: " + url);
                 }
             }
             catch (Exception e) {
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG,e.toString(), e);
             }
         }).start();
         return true;
@@ -212,10 +213,10 @@ public class InfluxdbConnection {
                 or.username("omnt");
                 or.token("1234567890"); //todo generate a token
                 influxDBClient.onBoarding(or);
-                Log.d(TAG, "setup: Database onboarding successfully");
+                CloudCityLogger.d(TAG, "setup: Database onboarding successfully");
                 return true;
             } else {
-                Log.d(TAG, "setup: Database was already onboarded");
+                CloudCityLogger.d(TAG, "setup: Database was already onboarded");
                 return false;
             }
         } catch (com.influxdb.exceptions.InfluxException e) {
@@ -234,7 +235,7 @@ public class InfluxdbConnection {
                     writeApi.flush();
                 }
             } catch (Exception e) {
-                Log.d(TAG,e.toString());
+                CloudCityLogger.e(TAG,e.toString(), e);
             }
         }).start();
         return true;

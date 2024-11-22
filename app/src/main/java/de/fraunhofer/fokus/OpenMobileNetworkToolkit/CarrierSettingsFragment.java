@@ -12,7 +12,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +29,8 @@ import androidx.fragment.app.Fragment;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import cloudcity.util.CloudCityLogger;
 
 public class CarrierSettingsFragment extends Fragment {
     final String TAG = "CarrierSettingsFragment";
@@ -102,7 +103,7 @@ public class CarrierSettingsFragment extends Fragment {
                 try {
                     obj.toString();
                 } catch (Exception e) {
-                    Log.d(TAG, "Not printable unknown obj received");
+                    CloudCityLogger.d(TAG, "Not printable unknown obj received", e);
                 }
             }
             map.put(key.toUpperCase(), ret);
@@ -116,7 +117,7 @@ public class CarrierSettingsFragment extends Fragment {
         TableLayout tl = new TableLayout(context);
         tl.setColumnShrinkable(1, true);
         PersistableBundle cf =  tm.getCarrierConfig();
-        Log.d(TAG, cf.toString());
+        CloudCityLogger.d(TAG, cf.toString());
         Map<String, String> map = bundle_to_map(cf);
         EditText filter = requireView().findViewById(R.id.carrier_settings_filter);
         String filter_string = filter.getText().toString().toUpperCase();

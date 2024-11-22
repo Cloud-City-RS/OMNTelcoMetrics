@@ -252,9 +252,10 @@ public class PingService extends Service {
             throw new RuntimeException(e);
         }
 
-        for (OneTimeWorkRequest wr : pingWRs){
-            wm.cancelWorkById(wr.getId());
-
+        if (pingWRs != null && !pingWRs.isEmpty()) {
+            for (OneTimeWorkRequest wr : pingWRs) {
+                wm.cancelWorkById(wr.getId());
+            }
         }
 
         spg.getSharedPreference(SPType.ping_sp).edit().putBoolean("ping", false).apply();

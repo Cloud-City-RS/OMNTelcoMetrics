@@ -27,7 +27,6 @@ import android.telephony.data.NetworkSlicingConfig;
 import android.telephony.data.RouteSelectionDescriptor;
 import android.telephony.data.TrafficDescriptor;
 import android.telephony.data.UrspRule;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -39,6 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 
 public class NetworkCallback {
@@ -103,19 +103,19 @@ public class NetworkCallback {
         List<String> networkRegistrationInfoList = new ArrayList<>();
         @SuppressLint("MissingPermission")
         ServiceState serviceState = tm.getServiceState();
-        Log.d(TAG, "Service State: " + serviceState.getState());
+        CloudCityLogger.d(TAG, "Service State: " + serviceState.getState());
         if (serviceState.getState() == 1) {  //2 for DATA_CONNECTED 1 FOR DATA_CONNECTING
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 networkRegistrationInfo = serviceState.getNetworkRegistrationInfoList();
                 for (NetworkRegistrationInfo nri: networkRegistrationInfo) {
-                    Log.d(TAG, "Network Registration Info " + nri);
+                    CloudCityLogger.d(TAG, "Network Registration Info " + nri);
                     String netwrokRegistrationInfoString = nri.toString();
                     networkRegistrationInfoList.add(netwrokRegistrationInfoString);
                 }
                 flag = true;
             }
         } else {
-            Log.d(TAG, "Network Registration Info Unavailable! Check Network State");
+            CloudCityLogger.d(TAG, "Network Registration Info Unavailable! Check Network State");
         }
         return flag;
     }
@@ -131,7 +131,7 @@ public class NetworkCallback {
         feature = pm.getSystemAvailableFeatures();
         for (FeatureInfo info : feature) {
             featureInfo = info;
-            Log.d(TAG, "Feature: " + Arrays.toString(feature));
+            CloudCityLogger.d(TAG, "Feature: " + Arrays.toString(feature));
             featureString.add(featureInfo.toString());
         }
         return featureString;
@@ -154,9 +154,9 @@ public class NetworkCallback {
                             @Override
                             public void onResult(@NonNull NetworkSlicingConfig result) {
                                 //List<UrspRule> urspRuleList = result.getUrspRules();
-                                //Log.d(TAG, "Slice config works!!");
-                                //Log.d(TAG, "URSP List: " + urspRuleList);
-                                //Log.d(TAG, "URSP received: " + urspRuleList.size());
+                                //CloudCityLogger.d(TAG, "Slice config works!!");
+                                //CloudCityLogger.d(TAG, "URSP List: " + urspRuleList);
+                                //CloudCityLogger.d(TAG, "URSP received: " + urspRuleList.size());
 
                                 //for (int i = 0; i < urspRuleList.size(); i++) {
                                 //    UrspRule urspRule =
@@ -165,21 +165,21 @@ public class NetworkCallback {
                                 //            urspRule.getTrafficDescriptors();
                                 //    List<RouteSelectionDescriptor> routeSelectionDescriptor =
                                 //            urspRule.getRouteSelectionDescriptor();
-                                    //Log.d(TAG, "URSP" + urspRule);
-                                    //Log.d(TAG, "Traffic Descriptor" + trafficDescriptor);
-                                    //Log.d(TAG, "Route Selection" + routeSelectionDescriptor);
+                                    //CloudCityLogger.d(TAG, "URSP" + urspRule);
+                                    //CloudCityLogger.d(TAG, "Traffic Descriptor" + trafficDescriptor);
+                                    //CloudCityLogger.d(TAG, "Route Selection" + routeSelectionDescriptor);
                                 //}
                             }
                             @Override
                             public void onError(
                                     @NonNull TelephonyManager.NetworkSlicingException error) {
                                 OutcomeReceiver.super.onError(error);
-                                Log.d(TAG, "Slice Config rejected!");
+                                CloudCityLogger.d(TAG, "Slice Config rejected!");
                             }
                         });
                 }
             } catch (Exception e) {
-                Log.d(TAG, "Network slice configuration Failed!");
+                CloudCityLogger.d(TAG, "Network slice configuration Failed!");
             }
         }
         return flag;
@@ -207,14 +207,14 @@ public class NetworkCallback {
                                             for (int j = 0; j < routeSelectionDescriptorsList.size(); j++) {
                                                 RouteSelectionDescriptor routeSelectionDescriptor = routeSelectionDescriptorsList.get(j);
                                                 if (routeSelectionDescriptor != null) {
-                                                    Log.d(TAG, "Route Selection Descriptor Available");
+                                                    CloudCityLogger.d(TAG, "Route Selection Descriptor Available");
                                                     List<String> dataNetworkNameList = routeSelectionDescriptor.getDataNetworkName();
                                                     for (int k = 0; k < dataNetworkNameList.size(); k++) {
-                                                        Log.d(TAG, "Data Network Name DNN: " + dataNetworkNameList.get(i));
+                                                        CloudCityLogger.d(TAG, "Data Network Name DNN: " + dataNetworkNameList.get(i));
                                                     }
-                                                    Log.d(TAG, "Route Selection Precedence: " + routeSelectionDescriptor.getPrecedence());
-                                                    Log.d(TAG, "Route Selection Session Type: " + routeSelectionDescriptor.getSessionType());
-                                                    Log.d(TAG, "Route Selection SSC Mode: " + routeSelectionDescriptor.getSscMode());
+                                                    CloudCityLogger.d(TAG, "Route Selection Precedence: " + routeSelectionDescriptor.getPrecedence());
+                                                    CloudCityLogger.d(TAG, "Route Selection Session Type: " + routeSelectionDescriptor.getSessionType());
+                                                    CloudCityLogger.d(TAG, "Route Selection SSC Mode: " + routeSelectionDescriptor.getSscMode());
                                                 }
                                             }
                                         }
@@ -222,14 +222,14 @@ public class NetworkCallback {
                                     @Override
                                     public void onError(@NonNull TelephonyManager.NetworkSlicingException error) {
                                         OutcomeReceiver.super.onError(error);
-                                        Log.d(TAG, "Slice Config rejected!");
+                                        CloudCityLogger.d(TAG, "Slice Config rejected!");
                                     }
                                 });
                         flag = true;
                     }
                 }
             } catch (Exception e) {
-                Log.d(TAG, "Network slice configuration Failed!");
+                CloudCityLogger.d(TAG, "Network slice configuration Failed!");
             }
         }
         return flag;
@@ -260,9 +260,9 @@ public class NetworkCallback {
                                             TrafficDescriptor trafficDescriptor =
                                                     urspRule.getTrafficDescriptors().get(i);
                                             if (trafficDescriptor != null) {
-                                                Log.d(TAG, "Traffic Descriptor Available");
-                                                Log.d(TAG, "Traffic Descriptor DNN: " + trafficDescriptor.getDataNetworkName());
-                                                Log.d(TAG, "Traffic Descriptor Os App ID: " + Arrays.toString(trafficDescriptor.getOsAppId()));
+                                                CloudCityLogger.d(TAG, "Traffic Descriptor Available");
+                                                CloudCityLogger.d(TAG, "Traffic Descriptor DNN: " + trafficDescriptor.getDataNetworkName());
+                                                CloudCityLogger.d(TAG, "Traffic Descriptor Os App ID: " + Arrays.toString(trafficDescriptor.getOsAppId()));
                                             }
                                         }
                                     }
@@ -271,13 +271,13 @@ public class NetworkCallback {
                                 public void onError(
                                         @NonNull TelephonyManager.NetworkSlicingException error) {
                                     OutcomeReceiver.super.onError(error);
-                                    Log.d(TAG, "Traffic Descriptor Failed!");
+                                    CloudCityLogger.d(TAG, "Traffic Descriptor Failed!");
                                 }
                             });
                     }
                 }
             } catch (Exception e) {
-                Log.d(TAG, "Traffic Descriptor Failed!");
+                CloudCityLogger.d(TAG, "Traffic Descriptor Failed!");
             }
         }
         return flag;
@@ -363,11 +363,11 @@ public class NetworkCallback {
                 networkRegistrationInfo = serviceState.getNetworkRegistrationInfoList();
                 for (NetworkRegistrationInfo nri: networkRegistrationInfo) {
                     regPLMN = nri.getRegisteredPlmn();
-                    Log.d(TAG, "Registered PLMN" + regPLMN);
+                    CloudCityLogger.d(TAG, "Registered PLMN" + regPLMN);
                 }
             }
         } else {
-            Log.d(TAG, "Network Registration Info Unavailable! Check Network State");
+            CloudCityLogger.d(TAG, "Network Registration Info Unavailable! Check Network State");
         }
         return regPLMN;
     }
@@ -493,13 +493,13 @@ public class NetworkCallback {
                                             RouteSelectionDescriptor routeSelectionDescriptor = routeSelectionDescriptorsList.get(i);
                                             if (routeSelectionDescriptor != null) {
                                                 List<NetworkSliceInfo> networkSliceInfoList = routeSelectionDescriptor.getSliceInfo();
-                                                Log.d(TAG, "Network Slices Available: " + networkSliceInfoList.size());
+                                                CloudCityLogger.d(TAG, "Network Slices Available: " + networkSliceInfoList.size());
                                                 for (int k = 0; k < networkSliceInfoList.size(); k++) {
                                                     NetworkSliceInfo networkSliceInfo = networkSliceInfoList.get(i);
-                                                    Log.d(TAG, "Slice Differentiator: " + networkSliceInfo.getSliceDifferentiator());
-                                                    Log.d(TAG, "Mapped PLMN Slice Differentiator: " + networkSliceInfo.getMappedHplmnSliceDifferentiator());
-                                                    Log.d(TAG, "Slice PLMN Service Type: " + networkSliceInfo.getMappedHplmnSliceServiceType());
-                                                    Log.d(TAG, "Slice Service Type: " + networkSliceInfo.getSliceServiceType());
+                                                    CloudCityLogger.d(TAG, "Slice Differentiator: " + networkSliceInfo.getSliceDifferentiator());
+                                                    CloudCityLogger.d(TAG, "Mapped PLMN Slice Differentiator: " + networkSliceInfo.getMappedHplmnSliceDifferentiator());
+                                                    CloudCityLogger.d(TAG, "Slice PLMN Service Type: " + networkSliceInfo.getMappedHplmnSliceServiceType());
+                                                    CloudCityLogger.d(TAG, "Slice Service Type: " + networkSliceInfo.getSliceServiceType());
                                                 }
                                             }
                                         }
@@ -508,13 +508,13 @@ public class NetworkCallback {
                                 @Override
                                 public void onError(@NonNull TelephonyManager.NetworkSlicingException error) {
                                     OutcomeReceiver.super.onError(error);
-                                    Log.d(TAG, "Slice Info Failed");
+                                    CloudCityLogger.d(TAG, "Slice Info Failed");
                                 }
                             });
                     flag = true;
                 }
             } catch (Exception e) {
-                Log.d(TAG, "Slice Info Failed!");
+                CloudCityLogger.d(TAG, "Slice Info Failed!");
             }
         }
         return flag;
@@ -541,25 +541,25 @@ public class NetworkCallback {
                                             List<RouteSelectionDescriptor> routeSelectionDescriptorsList = urspRule.getRouteSelectionDescriptor();
                                             for (int j = 0; j < routeSelectionDescriptorsList.size(); j++) {
                                                 RouteSelectionDescriptor routeSelectionDescriptor = routeSelectionDescriptorsList.get(j);
-                                                Log.d(TAG, "Route Selection" + routeSelectionDescriptor);
+                                                CloudCityLogger.d(TAG, "Route Selection" + routeSelectionDescriptor);
                                                 if (routeSelectionDescriptor != null) {
-                                                    Log.d(TAG, "Route Selection Descriptor Available");
+                                                    CloudCityLogger.d(TAG, "Route Selection Descriptor Available");
                                                     List<String> dataNetworkNameList = routeSelectionDescriptor.getDataNetworkName();
                                                     List<NetworkSliceInfo> networkSliceInfoList = routeSelectionDescriptor.getSliceInfo();
                                                     for (int k = 0; k < dataNetworkNameList.size(); k++) {
-                                                        Log.d(TAG, "Data Network Name DNN: " + dataNetworkNameList.get(k));
+                                                        CloudCityLogger.d(TAG, "Data Network Name DNN: " + dataNetworkNameList.get(k));
                                                     }
                                                     for (int l = 0; l < networkSliceInfoList.size(); l++) {
                                                         NetworkSliceInfo sliceInfo = networkSliceInfoList.get(l);
-                                                        Log.d(TAG, "Network Slice Status: " + sliceInfo.getStatus());
-                                                        Log.d(TAG, "Network Slice Service Type: " + sliceInfo.getSliceServiceType());
-                                                        Log.d(TAG, "Network Slice Differentiator: " + sliceInfo.getSliceDifferentiator());
-                                                        Log.d(TAG, "Network HPLMN Service Type" + sliceInfo.getMappedHplmnSliceServiceType());
-                                                        Log.d(TAG, "Network HPLMN Differentiator: " + sliceInfo.getMappedHplmnSliceDifferentiator());
+                                                        CloudCityLogger.d(TAG, "Network Slice Status: " + sliceInfo.getStatus());
+                                                        CloudCityLogger.d(TAG, "Network Slice Service Type: " + sliceInfo.getSliceServiceType());
+                                                        CloudCityLogger.d(TAG, "Network Slice Differentiator: " + sliceInfo.getSliceDifferentiator());
+                                                        CloudCityLogger.d(TAG, "Network HPLMN Service Type" + sliceInfo.getMappedHplmnSliceServiceType());
+                                                        CloudCityLogger.d(TAG, "Network HPLMN Differentiator: " + sliceInfo.getMappedHplmnSliceDifferentiator());
                                                     }
-                                                    Log.d(TAG, "Route Selection Precedence: " + routeSelectionDescriptor.getPrecedence());
-                                                    Log.d(TAG, "Route Selection Session Type: " + routeSelectionDescriptor.getSessionType());
-                                                    Log.d(TAG, "Route Selection SSC Mode: " + routeSelectionDescriptor.getSscMode());
+                                                    CloudCityLogger.d(TAG, "Route Selection Precedence: " + routeSelectionDescriptor.getPrecedence());
+                                                    CloudCityLogger.d(TAG, "Route Selection Session Type: " + routeSelectionDescriptor.getSessionType());
+                                                    CloudCityLogger.d(TAG, "Route Selection SSC Mode: " + routeSelectionDescriptor.getSscMode());
                                                 }
                                             }
                                         }
@@ -567,16 +567,16 @@ public class NetworkCallback {
                                     @Override
                                     public void onError(@NonNull TelephonyManager.NetworkSlicingException error) {
                                         OutcomeReceiver.super.onError(error);
-                                        Log.d(TAG, "Slice Config rejected!");
+                                        CloudCityLogger.d(TAG, "Slice Config rejected!");
                                     }
                                 });
                         flag = true;
                     }
                 } else {
-                    Log.d(TAG, "Context returned Null!!");
+                    CloudCityLogger.d(TAG, "Context returned Null!!");
                 }
             } catch (Exception e) {
-                Log.d(TAG, "Network slice configuration Failed!");
+                CloudCityLogger.d(TAG, "Network slice configuration Failed!");
             }
         }
         return flag;
@@ -648,16 +648,16 @@ public class NetworkCallback {
                         public void onAvailable(@NonNull Network network) {
                             super.onAvailable(network);
                             GlobalVars.isNetworkConnected = true;
-                            Log.d(TAG, "onAvailable");
+                            CloudCityLogger.d(TAG, "onAvailable");
                         }
                         @Override
                         public void onUnavailable() {
                             super.onUnavailable();
-                            Log.d(TAG, "onUnavailable");
+                            CloudCityLogger.d(TAG, "onUnavailable");
                         }
                     });
         } catch (Exception e) {
-            Log.d("Network Callback: Exception in requestNetworkCallback", "Catch exception RequestCallback");
+            CloudCityLogger.d("Network Callback: Exception in requestNetworkCallback", "Catch exception RequestCallback");
             GlobalVars.isNetworkConnected = false;
         }
     }
@@ -674,48 +674,48 @@ public class NetworkCallback {
                         @Override
                         public void onAvailable(@NonNull Network network) {
                             GlobalVars.isNetworkConnected = true;
-                            Log.d(TAG, "onAvailable");
+                            CloudCityLogger.d(TAG, "onAvailable");
                         }
 
                         @Override
                         public void onLost(@NonNull Network network) {
                             GlobalVars.isNetworkConnected = false;
-                            Log.d(TAG, "onLost");
+                            CloudCityLogger.d(TAG, "onLost");
                         }
 
                         @Override
                         public void onBlockedStatusChanged(@NonNull Network network, boolean blocked) {
                             super.onBlockedStatusChanged(network, blocked);
-                            Log.d(TAG, "onBlockedStatusChanged");
+                            CloudCityLogger.d(TAG, "onBlockedStatusChanged");
 
                         }
 
                         @Override
                         public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
                             super.onCapabilitiesChanged(network, networkCapabilities);
-                            Log.d(TAG, "onCapabilitiesChanged");
+                            CloudCityLogger.d(TAG, "onCapabilitiesChanged");
                         }
 
                         @Override
                         public void onLinkPropertiesChanged(@NonNull Network network, @NonNull LinkProperties linkProperties) {
                             super.onLinkPropertiesChanged(network, linkProperties);
-                            Log.d(TAG, "onLinkPropertiesChanged");
+                            CloudCityLogger.d(TAG, "onLinkPropertiesChanged");
                         }
 
                         @Override
                         public void onLosing(@NonNull Network network, int maxMsToLive) {
                             super.onLosing(network, maxMsToLive);
-                            Log.d(TAG, "onLosing");
+                            CloudCityLogger.d(TAG, "onLosing");
                         }
 
                         @Override
                         public void onUnavailable() {
                             super.onUnavailable();
-                            Log.d(TAG, "onUnavailable");
+                            CloudCityLogger.d(TAG, "onUnavailable");
                         }
                     });
         } catch (Exception e) {
-            Log.d("Network Callback: Exception in registerNetworkCallback", "Catch exception");
+            CloudCityLogger.d("Network Callback: Exception in registerNetworkCallback", "Catch exception");
             GlobalVars.isNetworkConnected = false;
         }
     }
@@ -744,7 +744,7 @@ public class NetworkCallback {
                         public void onLost(@NonNull android.net.Network network) {
                             super.onLost(network);
                             GlobalVars.isNetworkConnected = false;
-                            Log.d(TAG, "onLost"); // todo this needs to be handled somewhere else
+                            CloudCityLogger.d(TAG, "onLost"); // todo this needs to be handled somewhere else
                         }
 
                         @Override
@@ -759,9 +759,9 @@ public class NetworkCallback {
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                                 int[] enterpriseID = new int[0];
                                 enterpriseID = networkCapabilities.getEnterpriseIds();
-                                Log.d(TAG, " Enterprise IDs: " + Arrays.toString(enterpriseID));
+                                CloudCityLogger.d(TAG, " Enterprise IDs: " + Arrays.toString(enterpriseID));
                             }
-                            Log.d(TAG, " does it have validated network connection internet presence : "
+                            CloudCityLogger.d(TAG, " does it have validated network connection internet presence : "
                                     + networkCapabilities.hasCapability(
                                     NetworkCapabilities.NET_CAPABILITY_INTERNET)
                                     + " is it validated "
@@ -774,7 +774,7 @@ public class NetworkCallback {
                                     // handles the scenario when the internet is blocked by ISP,
                                     // or when the dsl/fiber/cable line to the router is disconnected
                                     GlobalVars.isNetworkConnected = false; // todo this needs to be handled somewhere else
-                                    Log.d(TAG, " Internet Connection is lost temporarily for network: " + network);
+                                    CloudCityLogger.d(TAG, " Internet Connection is lost temporarily for network: " + network);
                                 }
                             }
                         }
@@ -782,25 +782,25 @@ public class NetworkCallback {
                         @Override
                         public void onLinkPropertiesChanged(@NonNull Network network, @NonNull LinkProperties linkProperties) {
                             super.onLinkPropertiesChanged(network, linkProperties);
-                            Log.d(TAG, "onLinkPropertiesChanged: " + network);
+                            CloudCityLogger.d(TAG, "onLinkPropertiesChanged: " + network);
 
                         }
 
                         @Override
                         public void onLosing(@NonNull Network network, int maxMsToLive) {
                             super.onLosing(network, maxMsToLive);
-                            Log.d(TAG, "onLosing" + network);
+                            CloudCityLogger.d(TAG, "onLosing" + network);
                         }
 
                         @Override
                         public void onUnavailable() {
                             super.onUnavailable();
-                            Log.d(TAG, "onUnavailable");
+                            CloudCityLogger.d(TAG, "onUnavailable");
                         }
                     });
             return true;
         } catch (Exception e) {
-            Log.d("Network Callback: Exception in registerNetworkCallback", "Catch exception");
+            CloudCityLogger.d("Network Callback: Exception in registerNetworkCallback", "Catch exception");
             GlobalVars.isNetworkConnected = false; // todo this needs to be handled somewhere else
         }
         return false;

@@ -5,7 +5,6 @@ import android.location.Location;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.Log;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -34,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
@@ -62,7 +62,7 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
  * work together.
  *
  * @see #startListeningForIperf3Updates(Iperf3MonitorCompletionListener)
- * @see #startDefault15secTest(Location)
+ * @see #startDefaultAutomatedTest(Location)
  */
 public class Iperf3Monitor {
     /**
@@ -77,7 +77,7 @@ public class Iperf3Monitor {
      */
     private static volatile float THROTTLING_THRESHOLD_IN_METERS = 0;
 
-    private static final String TAG = Iperf3Monitor.class.getSimpleName();
+    private static final String TAG = "Iperf3Monitor";
 
     private final static long PARSING_DELAY_IN_MS = 10L; //0.01sec, was 1000L
 
@@ -119,7 +119,7 @@ public class Iperf3Monitor {
     private final Runnable parsingRunnable = new Runnable() {
         @Override
         public void run() {
-            Log.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
+            CloudCityLogger.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
 
             // And finally, parse a bit of the file.
             iperf3Parser.parse();
@@ -199,7 +199,7 @@ public class Iperf3Monitor {
                 // Clean up all callbacks from the handler
                 instance.handler.removeCallbacksAndMessages(null);
             } catch (Exception e) {
-                Log.e(TAG, "Exception " + e + " happened during shutdown() while cleaning up handler !!!", e);
+                CloudCityLogger.e(TAG, "Exception " + e + " happened during shutdown() while cleaning up handler !!!", e);
             }
         }
 
@@ -208,7 +208,7 @@ public class Iperf3Monitor {
             try {
                 instance.handlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception " + e + " happened during shutdown() while joining the handlerThread !!! ", e);
+                CloudCityLogger.e(TAG, "Exception " + e + " happened during shutdown() while joining the handlerThread !!! ", e);
             }
         }
     }
@@ -220,17 +220,17 @@ public class Iperf3Monitor {
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
             // in the DB.
-            Log.d(TAG, "Latest iPerf3 emission: " + latestIperf3RunResult + "\tshouldStop: " + shouldStop.get());
+            CloudCityLogger.d(TAG, "Latest iPerf3 emission: " + latestIperf3RunResult + "\tshouldStop: " + shouldStop.get());
             // The first emmision is always a null so...
             if (latestIperf3RunResult != null) {
-                Log.v(TAG, "Latest iPerf3 result is: " + latestIperf3RunResult.result);
+                CloudCityLogger.v(TAG, "Latest iPerf3 result is: " + latestIperf3RunResult.result);
                 // 0 is the magic number for success
                 if (latestIperf3RunResult.result == 0) {
-                    Log.v(TAG, "Result was fine, commencing further...");
+                    CloudCityLogger.v(TAG, "Result was fine, commencing further...");
                     if (latestIperf3RunResult.input != null) {
-                        Log.v(TAG, "Latest result's rawIperf3file is: " + latestIperf3RunResult.input.iperf3rawIperf3file);
+                        CloudCityLogger.v(TAG, "Latest result's rawIperf3file is: " + latestIperf3RunResult.input.iperf3rawIperf3file);
                     } else {
-                        Log.v(TAG, "Latest result's input was: NULL");
+                        CloudCityLogger.v(TAG, "Latest result's input was: NULL");
                     }
 
                     // Copy the file, for just in case
@@ -243,11 +243,11 @@ public class Iperf3Monitor {
                     try {
                         copyFile(originalFilePath, targetFilePath);
                     } catch (IOException e) {
-                        Log.e(TAG, "Exception " + e + " happened during iperf3 raw file copy!", e);
+                        CloudCityLogger.e(TAG, "Exception " + e + " happened during iperf3 raw file copy!", e);
                         throw new RuntimeException(e);
                     }
 
-                    Log.v(TAG, "File copying should be done, instantiating new parser with rawIperf3File: " + targetFilePath);
+                    CloudCityLogger.v(TAG, "File copying should be done, instantiating new parser with rawIperf3File: " + targetFilePath);
 
                     Iperf3Parser iperf3Parser = Iperf3Parser.instantiate(targetFilePath);
                     defaultThroughput = new Metric(METRIC_TYPE.THROUGHPUT, appContext);
@@ -261,7 +261,7 @@ public class Iperf3Monitor {
                     PACKET_LOSS.createMainLL("Packet Loss %");
                     // With this retarded problem out of the way... we can move on.
 
-                    Log.v(TAG, "Adding property change listener");
+                    CloudCityLogger.v(TAG, "Adding property change listener");
                     iperf3Parser.addPropertyChangeListener(new PropertyChangeListener() {
                         private void parseSum(Sum sum, Metric throughput) {
                             SUM_TYPE sumType = sum.getSumType();
@@ -285,7 +285,7 @@ public class Iperf3Monitor {
                         }
 
                         public void propertyChange(PropertyChangeEvent evt) {
-                            Log.d(TAG, "--> onPropertyChange()\tchanged event: " + evt);
+                            CloudCityLogger.d(TAG, "--> onPropertyChange()\tchanged event: " + evt);
 
                             switch (evt.getPropertyName()) {
                                 case "interval": {
@@ -295,18 +295,18 @@ public class Iperf3Monitor {
                                         parseSum(interval.getSumBidirReverse(), defaultReverseThroughput);
                                     }
 
-                                    Log.v(TAG, "INTERVAL\tdefaultThroughput size: " + defaultThroughput.getMeanList().size() + ", defaultReverseThroughput size: " + defaultReverseThroughput.getMeanList().size());
+                                    CloudCityLogger.v(TAG, "INTERVAL\tdefaultThroughput size: " + defaultThroughput.getMeanList().size() + ", defaultReverseThroughput size: " + defaultReverseThroughput.getMeanList().size());
                                 }
                                 break;
 
                                 case "start": {
-                                    Log.v(TAG, "START\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
+                                    CloudCityLogger.v(TAG, "START\tdefaultThroughput: " + defaultThroughput + ", defaultReverseThroughput: " + defaultReverseThroughput);
                                 }
                                 break;
 
                                 case "end": {
-                                    Log.v(TAG, "END\tdefaultThroughput size: " + defaultThroughput.getMeanList().size() + ", defaultReverseThroughput size: " + defaultReverseThroughput.getMeanList().size());
-                                    Log.v(TAG, "END\tend value is: " + evt.getNewValue() + "\t\tequals END_MARKER ? " + evt.getNewValue().equals(Iperf3Parser.END_MARKER));
+                                    CloudCityLogger.v(TAG, "END\tdefaultThroughput size: " + defaultThroughput.getMeanList().size() + ", defaultReverseThroughput size: " + defaultReverseThroughput.getMeanList().size());
+                                    CloudCityLogger.v(TAG, "END\tend value is: " + evt.getNewValue() + "\t\tequals END_MARKER ? " + evt.getNewValue().equals(Iperf3Parser.END_MARKER));
 
                                     //NOTE: while this is exactly the same as calculateAndLogMetrics(), we need these values here
                                     // so we can pass them to the Iperf3MonitorCompletionListener
@@ -324,8 +324,8 @@ public class Iperf3Monitor {
                                     double ULmean = normalize(defaultThroughput.calcMean());
                                     double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-                                    Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
-                                    Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
+                                    CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
+                                    CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
 
                                     // Stop the thread to avoid spinning it needlessly forever...
                                     stopParsingThread();
@@ -348,7 +348,7 @@ public class Iperf3Monitor {
                                     // And set the new marker as 'no longer running'
                                     iperf3TestRunning.compareAndSet(true, false);
 
-                                    Log.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
+                                    CloudCityLogger.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
                                 }
                                 break;
 
@@ -365,11 +365,11 @@ public class Iperf3Monitor {
                             }
                         }
                     });
-                    Log.v(TAG, "Adding completion listener");
+                    CloudCityLogger.v(TAG, "Adding completion listener");
                     iperf3Parser.setCompletionListener(new Iperf3Parser.Iperf3ParserCompletionListener() {
                         @Override
                         public void onParseCompleted() {
-                            Log.v(TAG, "---> onParseCompleted");
+                            CloudCityLogger.v(TAG, "---> onParseCompleted");
 
                             calculateAndLogMetrics();
                             stopParsingThread();
@@ -380,16 +380,16 @@ public class Iperf3Monitor {
                     });
 
 
-                    Log.d(TAG, "Starting parsing...");
+                    CloudCityLogger.d(TAG, "Starting parsing...");
                     startParsingThread(iperf3Parser);
                 } else {
                     // This could be either a 1, or a -100; first being a failure, the second one being a 'in progress' value.
-                    Log.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result);
+                    CloudCityLogger.d(TAG, "latestIperf3RunResult.result was: " + latestIperf3RunResult.result);
                     // We want to reset the test running marker on any non -100 result as well,
                     // since -100 means it's still running, and apparently anything non-zero means completion
                     // 1 for failure, -1 for cancellation and who knows what else
                     if (latestIperf3RunResult.result != -100) {
-                        Log.d(TAG, "latestIperf3RunResult.result was actually terminal, finishing iperf3 test run");
+                        CloudCityLogger.d(TAG, "latestIperf3RunResult.result was actually terminal, finishing iperf3 test run");
                         iperf3TestRunning.compareAndSet(true, false);
                     }
                 }
@@ -398,10 +398,10 @@ public class Iperf3Monitor {
     }
 
     private void startParsingThread(Iperf3Parser newIperf3Parser) {
-        Log.d(TAG, "--> startParsingThread()");
+        CloudCityLogger.d(TAG, "--> startParsingThread()");
         iperf3Parser = newIperf3Parser;
         handler.post(parsingRunnable);
-        Log.d(TAG, "<-- startParsingThread()");
+        CloudCityLogger.d(TAG, "<-- startParsingThread()");
     }
 
     private void stopParsingThread() {
@@ -421,8 +421,8 @@ public class Iperf3Monitor {
         double ULmean = normalize(defaultThroughput.calcMean());
         double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
 
-        Log.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
-        Log.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
+        CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
+        CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
     }
 
     /**
@@ -478,14 +478,14 @@ public class Iperf3Monitor {
         boolean retVal;
         if (file.exists()) {
             if (file.delete()) {
-                Log.d(TAG, "File deleted successfully! filepath: " + filePath);
+                CloudCityLogger.d(TAG, "File deleted successfully! filepath: " + filePath);
                 retVal = true;
             } else {
-                Log.d(TAG, "Failed to delete the file at filepath: " + filePath);
+                CloudCityLogger.d(TAG, "Failed to delete the file at filepath: " + filePath);
                 retVal = false;
             }
         } else {
-            Log.w(TAG, "File at path " + filePath + " does not exist!");
+            CloudCityLogger.w(TAG, "File at path " + filePath + " does not exist!");
             retVal = false;
         }
 
@@ -523,7 +523,7 @@ public class Iperf3Monitor {
      * @return the new (current) value of that parameter
      */
     public long setTimeThrottlingThreshold(int newThrottlingValueInSeconds) {
-        Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_SECONDS to "+newThrottlingValueInSeconds);
+        CloudCityLogger.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_SECONDS to "+newThrottlingValueInSeconds);
         THROTTLING_THRESHOLD_IN_SECONDS = newThrottlingValueInSeconds;
         return THROTTLING_THRESHOLD_IN_SECONDS;
     }
@@ -535,15 +535,19 @@ public class Iperf3Monitor {
      * @return the new (current) value of that parameter
      */
     public float setDistanceThrottlingThreshold(float newThrottlingValueInMeters) {
-        Log.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_METERS to "+newThrottlingValueInMeters);
+        CloudCityLogger.d(TAG, "Setting new THROTTLING_THRESHOLD_IN_METERS to "+newThrottlingValueInMeters);
         THROTTLING_THRESHOLD_IN_METERS = newThrottlingValueInMeters;
         return THROTTLING_THRESHOLD_IN_METERS;
     }
 
-    public void startDefault15secTest(Location testRunLocation) {
+    /**
+     * Runs the default CloudCity automated iperf3 test when the movement speed is under the threshold
+     * @param testRunLocation
+     */
+    public void startDefaultAutomatedTest(Location testRunLocation) {
         // Sanity check
         if (iperf3TestRunning.get()) {
-            Log.e(TAG, "Iperf3 test is still running! aborting...");
+            CloudCityLogger.e(TAG, "Iperf3 test is still running! aborting...");
             return;
         }
 
@@ -563,7 +567,7 @@ public class Iperf3Monitor {
         cmdList.add(randomPortStr);
         // Add duration
         cmdList.add("-t");
-        String duration = "15";
+        String duration = String.valueOf(CloudCityConstants.CLOUD_CITY_IPERF3_TEST_DURATION_IN_SECONDS);
         cmdList.add(duration);
         // Protocol
         String protocol = "TCP";
@@ -597,7 +601,7 @@ public class Iperf3Monitor {
 
         String joined = String.join(" ", cmdList);
 
-        Log.d(TAG, "Joined command " + joined);
+        CloudCityLogger.d(TAG, "Joined command " + joined);
 
         // Generate a key-value hashmap to hold the rest of the necessary duplicated crap
         HashMap<String, String> stringMap = new HashMap<>();
@@ -686,12 +690,12 @@ public class Iperf3Monitor {
             if (testRunLocation != null && lastTestRunLocation != null) {
                 // We can calculate distances only if both are non-null
                 float distance = testRunLocation.distanceTo(lastTestRunLocation);
-                Log.w(TAG, "Last test was started only " + distance + " meters away, which is shorter than THROTTLING_THRESHOLD_IN_METERS of " + THROTTLING_THRESHOLD_IN_METERS + " meters! Cancelling test run!");
+                CloudCityLogger.w(TAG, "Last test was started only " + distance + " meters away, which is shorter than THROTTLING_THRESHOLD_IN_METERS of " + THROTTLING_THRESHOLD_IN_METERS + " meters! Cancelling test run!");
             } else {
                 // This can't ever happen, but is here just for completeness sake.
                 // If any of these two locations are null, the lastTestWasStartedLessThanThrottlingDistanceAway()
                 // returns 'false' and we will not be here
-                Log.wtf(TAG, "Well, what do you know. The impossible has happened.");
+                CloudCityLogger.wtf(TAG, "Well, what do you know. The impossible has happened.");
             }
             return;
         }
@@ -701,7 +705,7 @@ public class Iperf3Monitor {
             long now = System.currentTimeMillis();
             long diffToLastTestInMillis = now - testStartTimestamp;
             long diffInSeconds = diffToLastTestInMillis / 1000L;
-            Log.w(TAG, "Last test was started only " + diffInSeconds + " seconds ago, which is shorter than THROTTLING_THRESHOLD_IN_SECONDS of " + THROTTLING_THRESHOLD_IN_SECONDS + " seconds ago! Cancelling test run!");
+            CloudCityLogger.w(TAG, "Last test was started only " + diffInSeconds + " seconds ago, which is shorter than THROTTLING_THRESHOLD_IN_SECONDS of " + THROTTLING_THRESHOLD_IN_SECONDS + " seconds ago! Cancelling test run!");
             return;
         }
         // Init the database
@@ -712,7 +716,7 @@ public class Iperf3Monitor {
         try {
             Files.createDirectories(Paths.get(path));
         } catch (IOException e) {
-            Log.e(TAG, "Could not create Dir files!");
+            CloudCityLogger.e(TAG, "Could not create Dir files!");
         }
 
         // Fill up the WorkManager's worker data
@@ -763,7 +767,7 @@ public class Iperf3Monitor {
         // Sanity check...
         if (iperf3TestRunning.get()) {
             // IF test is running, log error, and return
-            Log.e(TAG, "Iperf3 test was already running! Returning...");
+            CloudCityLogger.e(TAG, "Iperf3 test was already running! Returning...");
             return;
         }
 
@@ -796,12 +800,12 @@ public class Iperf3Monitor {
                         iperf3_result = -1;
                     }
                     iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                    Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+                    CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
                 });
                 getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
                     boolean iperf3_upload;
                     iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                    Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                    CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
                     iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
                 });
             });

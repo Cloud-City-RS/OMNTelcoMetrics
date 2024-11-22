@@ -9,7 +9,6 @@
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.work.Data;
@@ -23,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x.InfluxdbConnection;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.InfluxDB2x.InfluxdbConnections;
 
@@ -63,15 +63,15 @@ public class Iperf3UploadWorker extends Worker {
         try {
             br = new BufferedReader(new FileReader(iperf3LineProtocolFile));
         } catch (FileNotFoundException | NullPointerException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(), e);
             return Result.failure(output);
         }
         List<String> points = br.lines().collect(Collectors.toList());
         try {
-            Log.d(TAG, String.format("doWork: uploading %s", iperf3LineProtocolFile));
+            CloudCityLogger.d(TAG, String.format("doWork: uploading %s", iperf3LineProtocolFile));
             influx.writeRecords(points);
         } catch (IOException e) {
-            Log.d(TAG, String.format("doWork: upload of %s failed!", iperf3LineProtocolFile));
+            CloudCityLogger.e(TAG, String.format("doWork: upload of %s failed!", iperf3LineProtocolFile), e);
             return Result.failure(output);
         }
 

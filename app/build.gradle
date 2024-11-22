@@ -277,6 +277,11 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.11.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+
+    // Timber
+//    implementation 'com.jakewharton.timber:timber:5.0.1'
+    // We can't use 5.0.1 since it's incompatible with java projects, so we need to use 4.7.1 instead
+    implementation 'com.jakewharton.timber:timber:4.7.1'
 }
 
 configurations.implementation {

@@ -5,8 +5,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.telephony.CellInfo;
-import android.util.Log;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -16,14 +14,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.networking.CloudCityHelpers;
-import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.MeasurementsModel;
 import cloudcity.networking.models.MobileSignalNetworkDataModel;
 import cloudcity.networking.models.NetworkDataModel;
 import cloudcity.networking.models.NetworkDataModelRequest;
 import cloudcity.util.CellUtil;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.GSMInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.DataProvider;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.GlobalVars;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
@@ -39,7 +36,7 @@ public class LoggingServiceExtensions {
 
     private static int interval;
 
-    private static DataProvider dp;
+    private static volatile DataProvider dp;
 
     private static HandlerThread handlerThread;
 
@@ -50,20 +47,20 @@ public class LoggingServiceExtensions {
         @Override
         public void run() {
             try {
-                Log.d(TAG, "run: CC Update");
+                CloudCityLogger.d(TAG, "run: CC Update");
                 interval = Integer.parseInt(sp.getString("logging_interval", "1000"));
                 String address = CloudCityParamsRepository.getInstance().getServerUrl();
                 String token = CloudCityParamsRepository.getInstance().getServerToken();
 
                 NetworkDataModel data = getCloudCityData();
-                Log.d(TAG, "getCloudCityData() returned "+data);
+                CloudCityLogger.d(TAG, "getCloudCityData() returned "+data);
                 if (data == null) {
-                    Log.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
+                    CloudCityLogger.e(TAG, "run: Error in getting data from Cloud city, skipping sending");
                 } else {
                     NetworkDataModelRequest requestData = new NetworkDataModelRequest();
                     requestData.add(data);
 
-                    Log.d(TAG, "sending data at addr=" + address + ", token=" + token + ", interval=" + interval);
+                    CloudCityLogger.d(TAG, "sending data at addr=" + address + ", token=" + token + ", interval=" + interval);
 
                     boolean status = CloudCityHelpers.sendData(address, token, requestData);
 
@@ -75,7 +72,7 @@ public class LoggingServiceExtensions {
                     }
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Exception happened! exception "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened! exception "+e, e);
             }
 
             CloudCityHandler.postDelayed(this, interval);
@@ -90,7 +87,7 @@ public class LoggingServiceExtensions {
      * initialize a new remote Cloud City connection
      */
     public static void setupCloudCity2(GlobalVars globalVars, int updateInterval, @NonNull DataProvider dataProvider, SharedPreferences sharedPrefs) {
-        Log.d(TAG, "setupCloudCity");
+        CloudCityLogger.d(TAG, "setupCloudCity");
 
         gv = globalVars;
         interval = updateInterval;
@@ -115,7 +112,7 @@ public class LoggingServiceExtensions {
             // works for a while.
             dp.refreshAll();
         } else {
-            Log.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
+            CloudCityLogger.e(TAG, "DataProvider was null! Didn't refreshAll() internal data caches.");
         }
     }
 
@@ -123,17 +120,17 @@ public class LoggingServiceExtensions {
      * stop remote influx logging in clear up all internal instances of involved objects
      */
     public static void stopCloudCity() {
-        Log.d(TAG, "stopCloudCity");
+        CloudCityLogger.d(TAG, "stopCloudCity");
         // cleanup the handler is existing
         if (CloudCityHandler != null) {
             try {
                 CloudCityHandler.removeCallbacks(CloudCityUpdate);
                 boolean unset = isUpdating.compareAndSet(true, false);
                 if(!unset) {
-                    Log.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
+                    CloudCityLogger.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
                 }
             } catch (java.lang.NullPointerException e) {
-                Log.d(TAG, "trying to stop cloud city service while it was not running");
+                CloudCityLogger.d(TAG, "trying to stop cloud city service while it was not running");
             }
         }
 
@@ -142,7 +139,7 @@ public class LoggingServiceExtensions {
             try {
                 handlerThread.join();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Exception happened!! "+e, e);
+                CloudCityLogger.e(TAG, "Exception happened!! "+e, e);
             }
         }
 
@@ -151,7 +148,7 @@ public class LoggingServiceExtensions {
 
     private static NetworkDataModel getCloudCityData() {
         if (dp == null) {
-            Log.e(TAG, "DataProvider was null! Bailing out, returning null...");
+            CloudCityLogger.e(TAG, "DataProvider was null! Bailing out, returning null...");
             return null;
         }
         List<CellInformation> cellsInfo = dp.getCellInformation();
@@ -169,11 +166,7 @@ public class LoggingServiceExtensions {
 
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
-        MeasurementsModel modelForSending =
-                CellUtil.updateMeasurementModelByCell(
-                        CellUtil.getMeasurementsModel(category, currentCell),
-                        currentCell
-                );
+        MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellUtil.CellInfoPrecedence.SIGNAL_INFO);
 
         Location location = GPSMonitor.getLastLocation();
 
@@ -187,45 +180,10 @@ public class LoggingServiceExtensions {
         /* Convert to km/h */
         dataModel.setSpeed(location.getSpeed() * 3.6);
 
-        dataModel.setCellData(getCellInfoModel(category, currentCell));
+        dataModel.setCellData(
+                CellUtil.getCellInfoModel(currentCell)
+        );
 
         return dataModel;
-    }
-
-
-
-    private static @NonNull CellInfoModel getCellInfoModel(String category, CellInformation currentCell) {
-        CellInfoModel cellInfoModel = new CellInfoModel();
-
-        if (Objects.equals(category, "CDMA") || Objects.equals(category, "GSM")) {
-            /* No information in 2G and 3G set dummy data. */
-            cellInfoModel.setDummy(1);
-        } else {
-            /* Real data available for all other network types. */
-            if (currentCell instanceof GSMInformation) {
-                GSMInformation gsmCell = (GSMInformation) currentCell;
-                // Ok so bands is technically the ARFCN
-                String bandsString = gsmCell.getBands();
-                int arfcn = Integer.parseInt(bandsString);
-                cellInfoModel.setEarfcn(arfcn);
-                cellInfoModel.setPci(currentCell.getPci());
-            }
-        }
-
-        long id = currentCell.getCi();
-
-        if (Objects.equals(category, "NR")) {
-            if (id != CellInfo.UNAVAILABLE_LONG) {
-                cellInfoModel.setCellId(currentCell.getCi());
-            }
-        } else if (Objects.equals(category, "LTE")) {
-            if (id != CellInfo.UNAVAILABLE) {
-                cellInfoModel.setCellId((int)(currentCell.getCi() >> 8));
-                cellInfoModel.seteNodeBId((int) currentCell.getCi() & 0x000000FF);
-            }
-
-        }
-
-        return cellInfoModel;
     }
 }

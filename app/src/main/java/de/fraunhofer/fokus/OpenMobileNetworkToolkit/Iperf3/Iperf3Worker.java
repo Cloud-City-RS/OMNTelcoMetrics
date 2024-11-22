@@ -8,30 +8,23 @@
 
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3;
 
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
 
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Build;
-import android.util.Log;
 
-import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
-import androidx.room.util.StringUtil;
 import androidx.work.Data;
 import androidx.work.ForegroundInfo;
 import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
-import java.util.Locale;
 
 public class Iperf3Worker extends Worker {
     private static final String TAG = "iperf3Worker";
@@ -89,7 +82,7 @@ public class Iperf3Worker extends Worker {
 
     @Override
     public void onStopped() {
-        Log.d(TAG, "onStopped: called!");
+        CloudCityLogger.d(TAG, "onStopped: called!");
         iperf3Stop();
     }
 
@@ -106,7 +99,7 @@ public class Iperf3Worker extends Worker {
 
         int result =
             iperf3Wrapper(cmd, getApplicationContext().getApplicationInfo().nativeLibraryDir);
-        Log.d(TAG, "doWork: " + result);
+        CloudCityLogger.d(TAG, "doWork: " + result);
 
 
         Data.Builder output = new Data.Builder()

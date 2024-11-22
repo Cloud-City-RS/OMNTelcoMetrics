@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +30,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.FileOutputStream;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.Metric;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PacketLossLine;
@@ -140,7 +140,7 @@ public class PingFragment extends Fragment {
 
         input.setEnabled(!pingRunning);
         toggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            Log.d(TAG, "onButtonChecked: " + checkedId);
+            CloudCityLogger.d(TAG, "onButtonChecked: " + checkedId);
             if (!isChecked) return;
             switch (checkedId) {
                 case R.id.ping_start:

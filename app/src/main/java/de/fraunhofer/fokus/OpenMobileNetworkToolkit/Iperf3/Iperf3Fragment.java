@@ -18,7 +18,6 @@ import android.system.ErrnoException;
 import android.system.Os;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,9 +60,10 @@ import java.util.Random;
 import java.util.UUID;
 
 import cloudcity.CloudCityConstants;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SharedPreferencesGrouper;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 public class Iperf3Fragment extends Fragment {
     private static final String TAG = "iperf3InputFragment";
@@ -396,7 +396,7 @@ public class Iperf3Fragment extends Fragment {
         try {
             Os.setenv("TMPDIR", String.valueOf(getActivity().getCacheDir()), true);
         } catch (ErrnoException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(), e);
         }
         return v;
     }
@@ -470,7 +470,7 @@ public class Iperf3Fragment extends Fragment {
                 }
             }
         } catch (ExecutionException | InterruptedException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(), e);
 ;
         }*/
 
@@ -521,7 +521,7 @@ public class Iperf3Fragment extends Fragment {
                 iperf3_result = -1;
             }
             iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-            Log.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+            CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
             if (iperf3_result == -100) {
                 progressIndicator.setVisibility(LinearProgressIndicator.VISIBLE);
                 if (!isModeSpinnerClient()) {
@@ -540,7 +540,7 @@ public class Iperf3Fragment extends Fragment {
         iperf3WM.getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
             boolean iperf3_upload;
             iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-            Log.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+            CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
             iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
         });
 
@@ -655,7 +655,7 @@ public class Iperf3Fragment extends Fragment {
 
         String joined = String.join(" ", stb);
 
-        Log.d(TAG, "parseInput: joined command " + joined);
+        CloudCityLogger.d(TAG, "parseInput: joined command " + joined);
         input.iperf3Command = joined;
 
 

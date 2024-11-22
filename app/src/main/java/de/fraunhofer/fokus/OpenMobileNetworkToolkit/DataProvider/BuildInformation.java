@@ -1,11 +1,8 @@
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider;
 
-import android.content.Context;
-import android.util.Log;
-import android.widget.TableLayout;
-
 import org.json.JSONObject;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.BuildConfig;
 
 public class BuildInformation extends Information {
@@ -49,7 +46,7 @@ public class BuildInformation extends Information {
             json.put("ApplicationId", getApplicationId());
             json.put("Debug", isDebug());
         } catch (Exception e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.d(TAG,e.toString(), e);
         }
         return json;
     }

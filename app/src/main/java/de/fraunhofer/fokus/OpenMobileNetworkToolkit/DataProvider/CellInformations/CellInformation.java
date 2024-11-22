@@ -13,10 +13,10 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformatio
 
 import android.os.Build;
 import android.telephony.CellInfo;
-import android.util.Log;
 
 import com.influxdb.client.write.Point;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.Information;
 
 public class CellInformation extends Information {
@@ -195,7 +195,7 @@ public class CellInformation extends Information {
 
     public Point getPoint(Point point){
         if(point == null) {
-            Log.e(TAG, "getPoint: given point == null!");
+            CloudCityLogger.e(TAG, "getPoint: given point == null!");
             point = Point.measurement("CellInformation");
         }
         point.addField("CellType", cellType.toString());

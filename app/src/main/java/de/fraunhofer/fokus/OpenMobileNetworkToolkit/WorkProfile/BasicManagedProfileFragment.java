@@ -19,7 +19,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 
@@ -138,7 +138,7 @@ public class BasicManagedProfileFragment extends Fragment implements
             manager.addCrossProfileIntentFilter(BasicDeviceAdminReceiver.getComponentName(activity),
                 filter, FLAG_MANAGED_CAN_ACCESS_PARENT | FLAG_PARENT_CAN_ACCESS_MANAGED);
         } catch (IntentFilter.MalformedMimeTypeException e) {
-            Log.d(TAG,e.toString());
+            CloudCityLogger.e(TAG,e.toString(),e);
         }
     }
 
@@ -173,7 +173,7 @@ public class BasicManagedProfileFragment extends Fragment implements
                 ? "From the managed account" : "From the primary account");
         try {
             startActivity(intent);
-            Log.d(TAG, "A sample intent was sent.");
+            CloudCityLogger.d(TAG, "A sample intent was sent.");
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity, R.string.activity_not_found, Toast.LENGTH_SHORT).show();
         }
@@ -203,10 +203,10 @@ public class BasicManagedProfileFragment extends Fragment implements
                         (DevicePolicyManager) context.getSystemService(
                             Context.DEVICE_POLICY_SERVICE);
                     devicePolicyManager.setPreferentialNetworkServiceEnabled(true);
-                    Log.d(TAG, "setPreferentialNetworkServiceEnabled");
+                    CloudCityLogger.d(TAG, "setPreferentialNetworkServiceEnabled");
                     flag = true;
                 } catch (Exception exception) {
-                    Log.e(TAG, "setPreferentialNetworkServiceEnabled failed!");
+                    CloudCityLogger.e(TAG, "setPreferentialNetworkServiceEnabled failed!", exception);
                     flag = false;
                 }
             }

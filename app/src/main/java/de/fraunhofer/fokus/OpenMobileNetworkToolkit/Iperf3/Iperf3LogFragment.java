@@ -13,7 +13,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -29,13 +28,6 @@ import androidx.cardview.widget.CardView;
 import androidx.core.widget.TextViewCompat;
 import androidx.fragment.app.Fragment;
 
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Error;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Interval;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.SUM_TYPE;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.Sum;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.UDP.UDP_DL_SUM;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
-import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.Metric;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -43,6 +35,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
+import cloudcity.util.CloudCityLogger;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Error;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Interval;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.SUM_TYPE;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.Sum;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Sum.UDP.UDP_DL_SUM;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.Metric;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 public class Iperf3LogFragment extends Fragment {
@@ -85,7 +85,7 @@ public class Iperf3LogFragment extends Fragment {
         @Override
         public void run() {
             Iperf3RunResult iperf3RunResult = db.iperf3RunResultDao().getRunResult(uid);
-            Log.d(TAG, "run: " + iperf3RunResult.result);
+            CloudCityLogger.d(TAG, "run: " + iperf3RunResult.result);
             runIcon = Iperf3Utils.getDrawableResult(requireContext(), iperf3RunResult.result);
             runIconView.setImageDrawable(runIcon);
             uploadIcon = Iperf3Utils.getDrawableUpload(ct, iperf3RunResult.result, iperf3RunResult.uploaded);

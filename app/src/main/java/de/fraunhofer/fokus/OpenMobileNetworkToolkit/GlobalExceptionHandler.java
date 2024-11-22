@@ -10,7 +10,6 @@ package de.fraunhofer.fokus.OpenMobileNetworkToolkit;
 
 import android.icu.text.SimpleDateFormat;
 import android.os.Environment;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -24,6 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Locale;
+
+import cloudcity.util.CloudCityLogger;
+import io.sentry.Sentry;
 
 public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
     private static final String TAG = "GlobalExceptionHandler";
@@ -47,7 +49,7 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
         Date now = new Date();
         String filename = path + formatter.format(now) + ".txt";
-        Log.d(TAG, "logfile: " + filename);
+        CloudCityLogger.d(TAG, "logfile: " + filename);
         File logfile = new File(filename);
         try {
             logfile.createNewFile();
@@ -68,7 +70,10 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
             stream.close();
         } catch (IOException fileNotFoundException) {
             fileNotFoundException.printStackTrace();
+            CloudCityLogger.e(TAG, "Exception "+e+" happened!", e);
         }
+        Sentry.captureException(e);
+        CloudCityLogger.e(TAG, "Thread " + t + " encountered an uncaught exception! exception: " + e, e);
         uncaughtExceptionHandler.uncaughtException(t, e);
     }
 }

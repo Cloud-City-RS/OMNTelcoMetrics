@@ -1,10 +1,9 @@
 package cloudcity.networking;
 
-import android.util.Log;
-
 import java.util.Locale;
 import java.util.concurrent.locks.ReentrantLock;
 
+import cloudcity.util.CloudCityLogger;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -39,7 +38,7 @@ public class NetworkClient {
                         }
 
                         if (!baseUrl.equalsIgnoreCase(currentClientBaseUrl)) {
-                            Log.w(TAG, "URL has changed from previous Retrofit client's base URL, instantiating new client...");
+                            CloudCityLogger.w(TAG, "URL has changed from previous Retrofit client's base URL, instantiating new client...");
                         }
 
                         retrofit = new Retrofit.Builder()

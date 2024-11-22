@@ -6,12 +6,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.LINEType;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PacketLossLine;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PingInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.RTTLine;
 
 public class PingParser {
+    private static final String TAG = "PingParser";
+
     private static PingParser instance = null;
     private BufferedReader br;
     private final ArrayList<PingInformation> lines;
@@ -30,6 +33,7 @@ public class PingParser {
         return instance;
     }
     private LINEType getLineType(String line){
+//        CloudCityLogger.d(TAG, "--> getLineType()\tline: "+line);
         if (line.contains("bytes from")) {
             return LINEType.RTT;
         } else if (line.contains("Unreachable")) {
@@ -37,6 +41,7 @@ public class PingParser {
         } else if (line.contains("Request timeout")) {
             return LINEType.TIMEOUT;
         } else if (line.contains("packets transmitted")){
+//            CloudCityLogger.wtf(TAG, "PACKETLOSS");
             return LINEType.PACKET_LOSS;
         } else {
             return LINEType.UNKNOWN;
@@ -68,7 +73,7 @@ public class PingParser {
                 support.firePropertyChange("ping", null, pi);
             }
         } catch (IOException e){
-
+            CloudCityLogger.e(TAG, "Encountered exception " + e + " during parse() !", e);
         }
     }
 

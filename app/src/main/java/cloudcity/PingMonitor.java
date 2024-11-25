@@ -14,6 +14,8 @@ import androidx.work.WorkManager;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.PingMetricsPOJO;
@@ -59,6 +61,8 @@ public class PingMonitor {
 
     private final Set<OneTimeWorkRequest> pingWRs;
 
+    private final ConcurrentHashMap<UUID, Observer> observerMap;
+
     private final AtomicBoolean pingTestRunning = new AtomicBoolean(false);
 
     private volatile @Nullable PingMonitorCompletionListener completionListener;
@@ -93,6 +97,7 @@ public class PingMonitor {
     private PingMonitor() {
         // private constructor to prevent instantiation
         pingWRs = Collections.synchronizedSet(new HashSet<>());
+        observerMap = new ConcurrentHashMap<>();
     }
 
     /**
@@ -173,6 +178,17 @@ public class PingMonitor {
                 CloudCityLogger.e(TAG, "Exception " + e + " happened during shutdown() while joining the handlerThread !!! ", e);
             }
         }
+
+        // Remove all observers from WorkRequests which were 'forever' observed
+        for (UUID key : instance.observerMap.keySet()) {
+            Observer obs = instance.observerMap.get(key);
+            instance.getWorkManager().getWorkInfoByIdLiveData(key).removeObserver(obs);
+        }
+        // Clear the observer map and the WRset
+        instance.observerMap.clear();
+        instance.pingWRs.clear();
+        // and clear the instance
+        instance = null;
     }
 
     /**
@@ -287,6 +303,8 @@ public class PingMonitor {
             // We cannot observe on a background thread, so lets do the same hack as in Iperf3Monitor
             MainThreadExecutor mainThreadExecutor = MainThreadExecutor.getInstance();
             mainThreadExecutor.execute(() -> getWorkManager().getWorkInfoByIdLiveData(pingWR.getId()).observeForever(observer));
+            // Add this to the observerMap so we can easily clean it up
+            observerMap.put(pingWR.getId(), observer);
         }
     };
 

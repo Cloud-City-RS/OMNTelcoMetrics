@@ -25,8 +25,10 @@ public class PingMetricsPOJO {
     private final long startTimestamp;
     private final long endTimestamp;
 
+    private final boolean wasSuccess;
+
     /**
-     * The all arg constructor. Please prefer using the other {@link #PingMetricsPOJO(RTTMetrics, PackageLossMetrics, long, long)}
+     * The all arg constructor. Please prefer using the other {@link #PingMetricsPOJO(RTTMetrics, PackageLossMetrics, long, long, boolean)}
      * over this one, as this one might be error-prone
      *
      * @param RTTmin rtt min
@@ -41,10 +43,11 @@ public class PingMetricsPOJO {
      * @param PLlast last package loss sample
      * @param startTimestamp ping test start timestamp
      * @param endTimestamp ping test end timestamp
+     * @param success whether the ping test completed successfully or not
      */
     public PingMetricsPOJO(double RTTmin, double RTTmedian, double RTTmean, double RTTmax, double RTTlast,
                            double PLmin, double PLmedian, double PLmean, double PLmax, double PLlast,
-                           long startTimestamp, long endTimestamp) {
+                           long startTimestamp, long endTimestamp, boolean success) {
         this.RTTmin = RTTmin;
         this.RTTmedian = RTTmedian;
         this.RTTmean = RTTmean;
@@ -57,14 +60,18 @@ public class PingMetricsPOJO {
         this.PLlast = PLlast;
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
+        this.wasSuccess = success;
     }
 
     /**
      * The preferred and safer constructor to use
      * @param rtt the RTT metrics
      * @param packageLoss the package loss metrics
+     * @param startTimestamp test start timestamp
+     * @param endTimestamp test end timestamp
+     * @param success was test a success
      */
-    public PingMetricsPOJO(RTTMetrics rtt, PackageLossMetrics packageLoss, long startTimestamp, long endTimestamp) {
+    public PingMetricsPOJO(RTTMetrics rtt, PackageLossMetrics packageLoss, long startTimestamp, long endTimestamp, boolean success) {
         this(
                 rtt.RTTmin,
                 rtt.RTTmedian,
@@ -77,7 +84,8 @@ public class PingMetricsPOJO {
                 packageLoss.PLmax,
                 packageLoss.PLlast,
                 startTimestamp,
-                endTimestamp
+                endTimestamp,
+                success
         );
     }
 
@@ -91,6 +99,12 @@ public class PingMetricsPOJO {
     public TestDurationPair toTestDurationPair() {
         return new TestDurationPair(startTimestamp, endTimestamp);
     }
+
+    /**
+     * Returns whether the test was successful; this is determined by the terminal state of {@link de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingWorker}
+     * @return the value of {@link #wasSuccess} - whether test has finished successfully or not
+     */
+    public boolean wasSuccess() { return wasSuccess; }
 
     public static class MetricsPair {
         @NonNull

@@ -175,6 +175,10 @@ public class PingMonitor {
         }
     }
 
+    /**
+     * Start a Ping test towards
+     * @param completionListener
+     */
     public void startPingTest(PingMonitorCompletionListener completionListener) {
         CloudCityLogger.d(TAG, "--> startPingTest()\tlistener: "+completionListener+"\tshouldStop: " + shouldStop.get());
         shouldStop.set(false);
@@ -204,6 +208,7 @@ public class PingMonitor {
         testStartTimestamp = System.currentTimeMillis();
         startPingThread(completionListener);
 //        startParsingThread(pingParser);
+        CloudCityLogger.d(TAG, "<-- startPingTest()\tlistener: " + completionListener + "\tshouldStop: " + shouldStop.get() + "\tisRunning: " + pingTestRunning.get());
     }
 
     private void startPingThread(PingMonitorCompletionListener completionListener) {
@@ -254,21 +259,12 @@ public class PingMonitor {
                         case ENQUEUED:
                             return;
                         case CANCELLED:
-                            try {
-                                //TODO see if we need this stream at all
-                                FileOutputStream ping_stream = new FileOutputStream("logfile");
-                                ping_stream.close();
-                            } catch (IOException e) {
-                                CloudCityLogger.e(TAG,e.toString(), e);
-                            }
-                            handler.removeCallbacks(pingUpdate);
-                            return;
                         case SUCCEEDED:
                         case FAILED:
                             CloudCityLogger.d(TAG, "Work reached terminal state! state: "+state);
                             // both of these are terminal states, so we should fire a callback
                             testEndTimestamp = System.currentTimeMillis();
-                            PingMetricsPOJO metrics = calculateAndLogMetrics();
+                            PingMetricsPOJO metrics = calculateAndLogMetrics(state);
 
                             // We should make up some MetricsPOJO object and fire it at the callback listener
                             if (completionListener != null) {
@@ -298,7 +294,7 @@ public class PingMonitor {
         return WorkManager.getInstance(appContext);
     }
 
-    private PingMetricsPOJO calculateAndLogMetrics() {
+    private PingMetricsPOJO calculateAndLogMetrics(WorkInfo.State state) {
         double RTTmin = rttMetric.calcMin();
         double RTTmedian = rttMetric.calcMedian();
         double RTTmax = rttMetric.calcMax();
@@ -317,7 +313,8 @@ public class PingMonitor {
                 new PingMetricsPOJO.RTTMetrics(RTTmin, RTTmedian, RTTmax, RTTmean, RTTlast),
                 new PingMetricsPOJO.PackageLossMetrics(PLmin, PLmedian, PLmax, PLmean, PLlast),
                 testStartTimestamp,
-                testEndTimestamp
+                testEndTimestamp,
+                state == WorkInfo.State.SUCCEEDED
         );
     }
 

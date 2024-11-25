@@ -106,6 +106,8 @@ public class PingMetricsPOJO {
      */
     public boolean wasSuccess() { return wasSuccess; }
 
+    public boolean isDestinationReachable() { return RTTmedian > 0 && PLmedian == 0; }
+
     public static class MetricsPair {
         @NonNull
         final RTTMetrics rttMetrics;

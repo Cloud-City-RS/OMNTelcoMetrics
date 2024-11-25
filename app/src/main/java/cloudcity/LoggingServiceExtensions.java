@@ -129,7 +129,7 @@ public class LoggingServiceExtensions {
                 if(!unset) {
                     CloudCityLogger.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
                 }
-            } catch (java.lang.NullPointerException e) {
+            } catch (NullPointerException e) {
                 CloudCityLogger.d(TAG, "trying to stop cloud city service while it was not running");
             }
         }
@@ -173,8 +173,7 @@ public class LoggingServiceExtensions {
                 modelForSending
         );
 
-        // TODO fix potential NPE when trying to get this category - I've seen it happen
-        String category = currentCell.getCellType().toString();
+        String category = currentCell != null ? currentCell.getCellType().toString() : "UNKNOWN";
         dataModel.setCategory(category);
         dataModel.setAccuracy(location.getAccuracy());
         /* Convert to km/h */

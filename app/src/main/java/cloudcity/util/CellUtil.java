@@ -4,6 +4,7 @@ import android.telephony.CellInfo;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class CellUtil {
      * @param cellList list of cells to look through
      * @return the first registered cell in the list, or null if no registered cells were found
      */
-    public static CellInformation findRegisteredCell(@NonNull List<CellInformation> cellList) {
+    public static @Nullable CellInformation findRegisteredCell(@NonNull List<CellInformation> cellList) {
         CellInformation retVal = null;
 
         for (CellInformation ci: cellList) {

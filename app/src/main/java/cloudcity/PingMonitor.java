@@ -11,7 +11,9 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.PingMetricsPOJO;
@@ -55,7 +57,7 @@ public class PingMonitor {
 
     private volatile PingParser pingParser;
 
-    private final HashSet<OneTimeWorkRequest> pingWRs;
+    private final Set<OneTimeWorkRequest> pingWRs;
 
     private final AtomicBoolean pingTestRunning = new AtomicBoolean(false);
 
@@ -90,7 +92,7 @@ public class PingMonitor {
 
     private PingMonitor() {
         // private constructor to prevent instantiation
-        pingWRs = new HashSet<>();
+        pingWRs = Collections.synchronizedSet(new HashSet<>());
     }
 
     /**

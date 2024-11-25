@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CloudCityLogger;
+import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.Metric;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PacketLossLine;
@@ -37,6 +38,8 @@ public class PingMonitor {
     private final static long PING_DELAY_IN_MS = 200L;
 
     private final static String DEFAULT_PING_ADDRESS = "8.8.8.8";
+
+    private final static int DEFAULT_PING_PACKET_COUNT = 1;
 
     private Handler handler;
 
@@ -181,14 +184,13 @@ public class PingMonitor {
         CloudCityLogger.v(TAG, "Adding property change listener");
         pingParser.addPropertyChangeListener(evt -> {
             PingInformation pi = (PingInformation) evt.getNewValue();
-            CloudCityLogger.v(TAG, "propertyChange: "+pi);
+            CloudCityLogger.v(TAG, "propertyChange: "+pi+"\tline type: "+pi.getLineType());
             switch (pi.getLineType()) {
                 case RTT:
                     rttMetric.update(((RTTLine) pi).getRtt());
                     break;
                 case PACKET_LOSS:
                     packetLossMetric.update(((PacketLossLine) pi).getPacketLoss());
-                    //packetLossMetric.setVisibility(View.VISIBLE);
                     break;
             }
         });
@@ -219,6 +221,7 @@ public class PingMonitor {
         public void run() {
             Data data = new Data.Builder()
                     .putString("input", DEFAULT_PING_ADDRESS)
+                    .putString("count", String.valueOf(DEFAULT_PING_PACKET_COUNT))
                     .build();
             OneTimeWorkRequest pingWR =
                     new OneTimeWorkRequest.Builder(PingWorker.class)
@@ -232,6 +235,7 @@ public class PingMonitor {
                 public void onChanged(Object o) {
                     WorkInfo workInfo = (WorkInfo) o;
                     WorkInfo.State state = workInfo.getState();
+                    CloudCityLogger.d(TAG, "Ping WorkRequest state changed! new state: "+state);
                     switch (state){
                         case RUNNING:
                         case ENQUEUED:
@@ -246,11 +250,40 @@ public class PingMonitor {
                             }
                             handler.removeCallbacks(pingUpdate);
                             return;
+                        case SUCCEEDED:
+                        case FAILED:
+                            CloudCityLogger.d(TAG, "Work reached terminal state! state: "+state);
+                            // both of these are terminal states, so we should fire a callback
+                            calculateAndLogMetrics();
+
+                            /*
+                            double RTTmin = rttMetric.calcMin();
+                            double RTTmedian = rttMetric.calcMedian();
+                            double RTTmax = rttMetric.calcMax();
+                            double RTTmean = rttMetric.calcMean();
+                            double RTTlast = CloudCityUtil.getLastElementFromListOfDoubles(rttMetric.getMeanList());
+
+                            double PLmin = packetLossMetric.calcMin();
+                            double PLmedian = packetLossMetric.calcMedian();
+                            double PLmax = packetLossMetric.calcMax();
+                            double PLmean = packetLossMetric.calcMean();
+                            double PLlast = CloudCityUtil.getLastElementFromListOfDoubles(packetLossMetric.getMeanList());
+
+                            CloudCityLogger.d(TAG, "Test details\tRTT: "+rttMetric+", PacketLoss: "+packetLossMetric);
+                            CloudCityLogger.d(TAG, "RTT speeds: MIN=" + RTTmin + ", MED=" + RTTmedian + ", MAX=" + RTTmax + ", MEAN=" + RTTmean + ", LAST=" + RTTlast);
+                            CloudCityLogger.d(TAG, "PL speeds: MIN=" + PLmin + ", MED=" + PLmedian + ", MAX=" + PLmax + ", MEAN=" + PLmean + ", LAST=" + PLlast);
+                             */
+                            // We should make up some MetricsPOJO object and fire it at the callback listener
+
+
+                            handler.removeCallbacks(pingUpdate);
                     }
 
                     getWorkManager().getWorkInfoByIdLiveData(pingWR.getId()).removeObserver(this);
                     pingWRs.remove(pingWR);
-                    handler.postDelayed(pingUpdate, PING_DELAY_IN_MS);
+                    //TODO consider if we should keep pinging or not, ideally some AtomicInt that lets us control
+                    // how many times we actually want to ping
+//                    handler.postDelayed(pingUpdate, PING_DELAY_IN_MS);
                 }
             };
             // We cannot observe on a background thread, so lets do the same hack as in Iperf3Monitor
@@ -264,20 +297,19 @@ public class PingMonitor {
     }
 
     private void calculateAndLogMetrics() {
-//        double DLmin = normalize(defaultReverseThroughput.calcMin());
-//        double DLmedian = normalize(defaultReverseThroughput.calcMedian());
-//        double DLmax = normalize(defaultReverseThroughput.calcMax());
-//        double DLmean = normalize(defaultReverseThroughput.calcMean());
-//        double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
-//
-//        double ULmin = normalize(defaultThroughput.calcMin());
-//        double ULmedian = normalize(defaultThroughput.calcMedian());
-//        double ULmax = normalize(defaultThroughput.calcMax());
-//        double ULmean = normalize(defaultThroughput.calcMean());
-//        double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
-//
-//        CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
-//        CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
+        double RTTmin = rttMetric.calcMin();
+        double RTTmedian = rttMetric.calcMedian();
+        double RTTmax = rttMetric.calcMax();
+        double RTTmean = rttMetric.calcMean();
+        double RTTlast = CloudCityUtil.getLastElementFromListOfDoubles(rttMetric.getMeanList());
+
+        double PLmin = packetLossMetric.calcMin();
+        double PLmedian = packetLossMetric.calcMedian();
+        double PLmax = packetLossMetric.calcMax();
+        double PLmean = packetLossMetric.calcMean();
+        double PLlast = CloudCityUtil.getLastElementFromListOfDoubles(packetLossMetric.getMeanList());
+        CloudCityLogger.d(TAG, "RTT speeds: MIN=" + RTTmin + ", MED=" + RTTmedian + ", MAX=" + RTTmax + ", MEAN=" + RTTmean + ", LAST=" + RTTlast);
+        CloudCityLogger.d(TAG, "PL speeds: MIN=" + PLmin + ", MED=" + PLmedian + ", MAX=" + PLmax + ", MEAN=" + PLmean + ", LAST=" + PLlast);
     }
 
     /**

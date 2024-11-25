@@ -11,8 +11,6 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -194,7 +192,7 @@ public class PingMonitor {
         CloudCityLogger.v(TAG, "Adding property change listener");
         pingParser.addPropertyChangeListener(evt -> {
             PingInformation pi = (PingInformation) evt.getNewValue();
-            CloudCityLogger.v(TAG, "propertyChange: "+pi+"\tline type: "+pi.getLineType());
+//            CloudCityLogger.v(TAG, "propertyChange: "+pi+"\tline type: "+pi.getLineType());
             switch (pi.getLineType()) {
                 case RTT:
                     rttMetric.update(((RTTLine) pi).getRtt());

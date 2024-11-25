@@ -7,7 +7,7 @@ import android.util.Pair;
 import androidx.annotation.NonNull;
 
 import cloudcity.CloudCityParamsRepository;
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
 import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.Iperf3NetworkDataModel;
@@ -46,12 +46,12 @@ public class CloudCityUtil {
      * @return true if the data was sent successfully, false otherwise
      */
     public static boolean sendIperf3Data(
-            @NonNull MetricsPOJO metricsPOJO,
+            @NonNull Iperf3MetricsPOJO metricsPOJO,
             @NonNull Location location,
             @NonNull Pair<MeasurementsModel, CellInfoModel> cellInfoMeasurements) {
-        MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
-        MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
-        MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
+        Iperf3MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
+        Iperf3MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
+        Iperf3MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
 
         Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(
                 uploadMetrics,

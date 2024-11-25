@@ -6,7 +6,7 @@ import android.os.HandlerThread;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingParser;
@@ -174,6 +174,6 @@ public class PingMonitor {
          *
          * @param metrics the gathered metrics during the test
          */
-        void onPingTestCompleted(MetricsPOJO metrics);
+        void onPingTestCompleted(Iperf3MetricsPOJO metrics);
     }
 }

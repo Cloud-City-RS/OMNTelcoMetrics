@@ -32,7 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
@@ -333,9 +333,9 @@ public class Iperf3Monitor {
 
                                     testEndTimestamp = System.currentTimeMillis();
                                     // Instantiate the POJO stuff holder
-                                    MetricsPOJO values = new MetricsPOJO(
-                                            new MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
-                                            new MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
+                                    Iperf3MetricsPOJO values = new Iperf3MetricsPOJO(
+                                            new Iperf3MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
+                                            new Iperf3MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
                                             testStartTimestamp,
                                             testEndTimestamp
                                     );
@@ -434,7 +434,7 @@ public class Iperf3Monitor {
          *
          * @param metrics the gathered metrics during the test
          */
-        void onIperf3TestCompleted(MetricsPOJO metrics);
+        void onIperf3TestCompleted(Iperf3MetricsPOJO metrics);
     }
 
     /**

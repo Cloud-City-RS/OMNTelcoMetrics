@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
  *
  * Used for sending data to CC server.
  */
-public class MetricsPOJO {
+public class Iperf3MetricsPOJO {
 
     private final double DLmin;
     private final double DLmedian;
@@ -26,7 +26,7 @@ public class MetricsPOJO {
     private final long endTimestamp;
 
     /**
-     * The all arg constructor. Please prefer using the other {@link #MetricsPOJO(DownloadMetrics, UploadMetrics, long, long)}
+     * The all arg constructor. Please prefer using the other {@link #Iperf3MetricsPOJO(DownloadMetrics, UploadMetrics, long, long)}
      * over this one, as this one might be error-prone
      *
      * @param DLmin download min
@@ -42,9 +42,9 @@ public class MetricsPOJO {
      * @param startTimestamp iperf3 test start timestamp
      * @param endTimestamp iperf3 test end timestamp
      */
-    public MetricsPOJO(double DLmin, double DLmedian, double DLmean, double DLmax, double DLlast,
-                       double ULmin, double ULmedian, double ULmean, double ULmax, double ULlast,
-                       long startTimestamp, long endTimestamp) {
+    public Iperf3MetricsPOJO(double DLmin, double DLmedian, double DLmean, double DLmax, double DLlast,
+                             double ULmin, double ULmedian, double ULmean, double ULmax, double ULlast,
+                             long startTimestamp, long endTimestamp) {
         this.DLmin = DLmin;
         this.DLmedian = DLmedian;
         this.DLmean = DLmean;
@@ -64,7 +64,7 @@ public class MetricsPOJO {
      * @param download the download metrics
      * @param upload the upload metrics
      */
-    public MetricsPOJO(DownloadMetrics download, UploadMetrics upload, long startTimestamp, long endTimestamp) {
+    public Iperf3MetricsPOJO(DownloadMetrics download, UploadMetrics upload, long startTimestamp, long endTimestamp) {
         this(
                 download.DLmin,
                 download.DLmedian,

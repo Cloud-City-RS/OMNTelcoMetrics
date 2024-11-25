@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 
 import java.util.List;
 
+import cloudcity.CloudCityConstants;
 import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.MeasurementsModel;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CDMAInformation;
@@ -59,6 +60,15 @@ public class CellUtil {
         } else if (cellToRemap instanceof NRInformation) {
             retVal = 5;
         } else {
+            if (cellToRemap == null) {
+                if (CloudCityConstants.ALLOW_TESTING_WITHOUT_SIM) {
+                    CloudCityLogger.d(TAG, "We're allowed to test without SIM and we ran into a null cell! Returning 0");
+                    return 0;
+                } else {
+                    CloudCityLogger.e(TAG, "Ran into a null cell, and we're not allowed to test without SIM - something is going wrong here!");
+                    throw new IllegalStateException("Encountered a NULL cell in CellUtil::remapCellClassTypeIntoInteger!");
+                }
+            }
             CloudCityLogger.e(TAG, "Unsupported cell type: "+cellToRemap.getCellType());
             throw new IllegalStateException("Unsupported cell type encountered in CellUtil::remapCellClassTypeIntoInteger! cellType: "+cellToRemap.getCellType());
         }

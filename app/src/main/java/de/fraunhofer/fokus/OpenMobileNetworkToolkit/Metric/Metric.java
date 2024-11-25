@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.OptionalDouble;
 
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
@@ -135,20 +136,38 @@ public class Metric {
         }
 
         public double calcMean(){
-            return meanList.stream().mapToDouble(a -> a).sum()/meanList.size();
+            if (!meanList.isEmpty()) {
+                return meanList.stream().mapToDouble(a -> a).sum() / meanList.size();
+            } else {
+                return 0;
+            }
         }
 
         public double calcMedian(){
             this.getMeanList().sort(Double::compareTo);
-            return meanList.get(Math.round(meanList.size()/2));
+            if (!meanList.isEmpty()) {
+                return meanList.get(Math.round(meanList.size() / 2));
+            } else {
+                return 0;
+            }
         }
 
         public double calcMax(){
-            return meanList.stream().mapToDouble(a -> a).max().getAsDouble();
+            OptionalDouble potentialMax = meanList.stream().mapToDouble(a -> a).max();
+            if (potentialMax.isPresent()) {
+                return potentialMax.getAsDouble();
+            } else {
+                return 0;
+            }
         }
 
         public double calcMin(){
-            return meanList.stream().mapToDouble(a -> a).min().getAsDouble();
+            OptionalDouble potentialMin = meanList.stream().mapToDouble(a -> a).min();
+            if (potentialMin.isPresent()) {
+                return potentialMin.getAsDouble();
+            } else {
+                return 0;
+            }
         }
         public void update(Double value){
             this.meanList.add(value);

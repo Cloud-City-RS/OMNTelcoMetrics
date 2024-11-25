@@ -6,6 +6,8 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
+import java.util.List;
+
 import cloudcity.CloudCityParamsRepository;
 import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
@@ -93,5 +95,19 @@ public class CloudCityUtil {
         basis = Math.round(basis);
         double retVal = basis / multiplier;
         return retVal;
+    }
+
+    /**
+     * Gets last element from a list of doubles
+     *
+     * @param list the list of doubles from which to get the last element
+     * @return the last element, or 0 if the list is empty
+     */
+    public static double getLastElementFromListOfDoubles(@NonNull List<Double> list) {
+        if (list.size() == 0) {
+            return 0;
+        } else {
+            return list.get(list.size() - 1);
+        }
     }
 }

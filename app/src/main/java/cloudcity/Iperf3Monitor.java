@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CloudCityLogger;
+import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
@@ -316,13 +317,13 @@ public class Iperf3Monitor {
                                     double DLmedian = normalize(defaultReverseThroughput.calcMedian());
                                     double DLmax = normalize(defaultReverseThroughput.calcMax());
                                     double DLmean = normalize(defaultReverseThroughput.calcMean());
-                                    double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
+                                    double DLlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultReverseThroughput.getMeanList()));
 
                                     double ULmin = normalize(defaultThroughput.calcMin());
                                     double ULmedian = normalize(defaultThroughput.calcMedian());
                                     double ULmax = normalize(defaultThroughput.calcMax());
                                     double ULmean = normalize(defaultThroughput.calcMean());
-                                    double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
+                                    double ULlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultThroughput.getMeanList()));
 
                                     CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
                                     CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
@@ -413,13 +414,13 @@ public class Iperf3Monitor {
         double DLmedian = normalize(defaultReverseThroughput.calcMedian());
         double DLmax = normalize(defaultReverseThroughput.calcMax());
         double DLmean = normalize(defaultReverseThroughput.calcMean());
-        double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
+        double DLlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultReverseThroughput.getMeanList()));
 
         double ULmin = normalize(defaultThroughput.calcMin());
         double ULmedian = normalize(defaultThroughput.calcMedian());
         double ULmax = normalize(defaultThroughput.calcMax());
         double ULmean = normalize(defaultThroughput.calcMean());
-        double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
+        double ULlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultThroughput.getMeanList()));
 
         CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
         CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
@@ -490,20 +491,6 @@ public class Iperf3Monitor {
         }
 
         return retVal;
-    }
-
-    /**
-     * Gets last element of a list
-     *
-     * @param list the list of doubles from which to get the last element
-     * @return the last element, or 0 if the list is empty
-     */
-    private double getLast(@NonNull List<Double> list) {
-        if (list.size() == 0) {
-            return 0;
-        } else {
-            return list.get(list.size() - 1);
-        }
     }
 
     /**

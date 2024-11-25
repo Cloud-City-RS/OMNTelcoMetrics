@@ -157,9 +157,21 @@ public class PingWorker extends Worker {
         try {
 
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("/system/bin/ping ")
-                .append("-D ")
-                .append(getInputData().getString("input"));
+            String targetAddress = getInputData().getString("input");
+            // CC addition
+            String packetCount = getInputData().getString("count");
+
+            stringBuilder
+                    .append("/system/bin/ping ")    // the command
+                    .append("-D ");                 // print timestamps
+
+            if (packetCount != null) {              // add -c if we passed it as "count"
+                stringBuilder
+                        .append("-c ")
+                        .append(packetCount)
+                        .append(" "); //dont forget the space between the count and destination address
+            }
+            stringBuilder.append(targetAddress);    // add target address last
 
             pingCommand = stringBuilder.toString();
             parsePingCommand();

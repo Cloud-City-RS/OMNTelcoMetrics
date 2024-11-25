@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
 
+import androidx.annotation.Nullable;
 import androidx.lifecycle.Observer;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
@@ -13,10 +14,9 @@ import androidx.work.WorkManager;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import cloudcity.dataholders.Iperf3MetricsPOJO;
+import cloudcity.dataholders.PingMetricsPOJO;
 import cloudcity.util.CloudCityLogger;
 import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
@@ -39,7 +39,7 @@ public class PingMonitor {
 
     private final static String DEFAULT_PING_ADDRESS = "8.8.8.8";
 
-    private final static int DEFAULT_PING_PACKET_COUNT = 1;
+    private final static int DEFAULT_PING_PACKET_COUNT = 5;
 
     private Handler handler;
 
@@ -61,14 +61,20 @@ public class PingMonitor {
 
     private final AtomicBoolean pingTestRunning = new AtomicBoolean(false);
 
-    private volatile MainThreadExecutor mainThreadExecutor;
+    private volatile @Nullable PingMonitorCompletionListener completionListener;
+
+    /**
+     * This is kinda terrible but will most likely get the job done.
+     */
+    private volatile long testStartTimestamp;
+    private volatile long testEndTimestamp;
 
     /**
      * Runnable used for parsing ping tests by constantly calling {@link #pingParser}'s
      * {@link PingParser#parse()} method every {@link #PARSING_DELAY_IN_MS} until it reaches the end
      * or ordered to stop by toggling {@link #shouldStop} flag
      */
-    private final Runnable parsingRunnable = new Runnable() {
+    private final Runnable parsingRunnable = new Runnable() {   //TODO get rid of this, we're not even using it
         @Override
         public void run() {
             CloudCityLogger.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
@@ -110,7 +116,7 @@ public class PingMonitor {
             }
         }
 
-        instance.handlerThread = new HandlerThread("Iperf3MonitorThread");
+        instance.handlerThread = new HandlerThread("PingMonitorThread");
         instance.handlerThread.start();
         instance.handler = new Handler(instance.handlerThread.getLooper());
         instance.appContext = appContext;
@@ -195,13 +201,20 @@ public class PingMonitor {
             }
         });
 
-        startPingThread();
+        testStartTimestamp = System.currentTimeMillis();
+        startPingThread(completionListener);
 //        startParsingThread(pingParser);
     }
 
-    private void startPingThread() {
+    private void startPingThread(PingMonitorCompletionListener completionListener) {
         CloudCityLogger.d(TAG, "--> startPingThread()");
-        handler.post(pingUpdate);
+        if (pingTestRunning.compareAndSet(false, true)) {
+            this.completionListener = completionListener;
+            handler.post(pingUpdate);
+        } else {
+            boolean currentRunningValue = pingTestRunning.get();
+            CloudCityLogger.e(TAG, "wanted to try ping test but it's currentRunningValue was: "+currentRunningValue);
+        }
         CloudCityLogger.d(TAG, "<-- startPingThread()");
     }
 
@@ -254,29 +267,18 @@ public class PingMonitor {
                         case FAILED:
                             CloudCityLogger.d(TAG, "Work reached terminal state! state: "+state);
                             // both of these are terminal states, so we should fire a callback
-                            calculateAndLogMetrics();
+                            testEndTimestamp = System.currentTimeMillis();
+                            PingMetricsPOJO metrics = calculateAndLogMetrics();
 
-                            /*
-                            double RTTmin = rttMetric.calcMin();
-                            double RTTmedian = rttMetric.calcMedian();
-                            double RTTmax = rttMetric.calcMax();
-                            double RTTmean = rttMetric.calcMean();
-                            double RTTlast = CloudCityUtil.getLastElementFromListOfDoubles(rttMetric.getMeanList());
-
-                            double PLmin = packetLossMetric.calcMin();
-                            double PLmedian = packetLossMetric.calcMedian();
-                            double PLmax = packetLossMetric.calcMax();
-                            double PLmean = packetLossMetric.calcMean();
-                            double PLlast = CloudCityUtil.getLastElementFromListOfDoubles(packetLossMetric.getMeanList());
-
-                            CloudCityLogger.d(TAG, "Test details\tRTT: "+rttMetric+", PacketLoss: "+packetLossMetric);
-                            CloudCityLogger.d(TAG, "RTT speeds: MIN=" + RTTmin + ", MED=" + RTTmedian + ", MAX=" + RTTmax + ", MEAN=" + RTTmean + ", LAST=" + RTTlast);
-                            CloudCityLogger.d(TAG, "PL speeds: MIN=" + PLmin + ", MED=" + PLmedian + ", MAX=" + PLmax + ", MEAN=" + PLmean + ", LAST=" + PLlast);
-                             */
                             // We should make up some MetricsPOJO object and fire it at the callback listener
-
-
+                            if (completionListener != null) {
+                                completionListener.onPingTestCompleted(metrics);
+                            }
+                            // Get rid of the updating thread which should have finished it's purpose already
                             handler.removeCallbacks(pingUpdate);
+                            // and clear out the completionListener and the 'isRunning' flag
+                            completionListener = null;
+                            pingTestRunning.compareAndSet(true, false);
                     }
 
                     getWorkManager().getWorkInfoByIdLiveData(pingWR.getId()).removeObserver(this);
@@ -296,7 +298,7 @@ public class PingMonitor {
         return WorkManager.getInstance(appContext);
     }
 
-    private void calculateAndLogMetrics() {
+    private PingMetricsPOJO calculateAndLogMetrics() {
         double RTTmin = rttMetric.calcMin();
         double RTTmedian = rttMetric.calcMedian();
         double RTTmax = rttMetric.calcMax();
@@ -310,6 +312,13 @@ public class PingMonitor {
         double PLlast = CloudCityUtil.getLastElementFromListOfDoubles(packetLossMetric.getMeanList());
         CloudCityLogger.d(TAG, "RTT speeds: MIN=" + RTTmin + ", MED=" + RTTmedian + ", MAX=" + RTTmax + ", MEAN=" + RTTmean + ", LAST=" + RTTlast);
         CloudCityLogger.d(TAG, "PL speeds: MIN=" + PLmin + ", MED=" + PLmedian + ", MAX=" + PLmax + ", MEAN=" + PLmean + ", LAST=" + PLlast);
+
+        return new PingMetricsPOJO(
+                new PingMetricsPOJO.RTTMetrics(RTTmin, RTTmedian, RTTmax, RTTmean, RTTlast),
+                new PingMetricsPOJO.PackageLossMetrics(PLmin, PLmedian, PLmax, PLmean, PLlast),
+                testStartTimestamp,
+                testEndTimestamp
+        );
     }
 
     /**
@@ -321,6 +330,6 @@ public class PingMonitor {
          *
          * @param metrics the gathered metrics during the test
          */
-        void onPingTestCompleted(Iperf3MetricsPOJO metrics);
+        void onPingTestCompleted(PingMetricsPOJO metrics);
     }
 }

@@ -124,7 +124,7 @@ public class Iperf3MetricsPOJO {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         return sb
-                .append("MetricsPOJO{ ")
+                .append("Iperf3MetricsPOJO{ ")
                 .append("DOWNLOAD:[")
                 .append("min=").append(DLmin)
                 .append(", median=").append(DLmedian)

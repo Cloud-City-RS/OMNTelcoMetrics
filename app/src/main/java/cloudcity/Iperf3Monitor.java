@@ -766,18 +766,41 @@ public class Iperf3Monitor {
                 mainThreadExecutor = MainThreadExecutor.getInstance();
             }
 
-            // Set the startTimestamp
-            testStartTimestamp = System.currentTimeMillis();
-            lastTestRunLocation = testRunLocation;
+            PingMonitor.getInstance().startPingTest(metrics -> {
+                boolean wasSuccess = metrics.wasSuccess();
+                boolean destinationReachable = metrics.isDestinationReachable();
+                // FIXME sometimes this 'wasSuccess' is false when the 'destinationReachable' is true
+                // and this is because the PingWorker fails for some unknown reason while it manages
+                // to calculate everything correctly.
+                //
+                // While we could use an OR here, I strongly believe that a ping test would finish
+                // 'successfully' even if all packets are lost and the destination isn't reachable
+                // So lets enforce both, which *may* lead us to "drop" iperf3 test executions
+                // but a subsequent ping a few seconds later (when re-queried by GPSListener) should
+                // manage to get here just fine, since we save last start timestamp only immediatelly
+                // before starting the iperf3 test - that is, after a successful ping test.
+                if (wasSuccess && destinationReachable) {
+                    CloudCityLogger.d(TAG, "Ping test was succesful, starting iperf3 test");
 
-            // Enqueue tasks onto the WorkManager
-            if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
-                iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
-            } else if (iperf3Json) {
-                iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
-            } else {
-                iperf3WM.beginWith(iperf3WR).enqueue();
-            }
+                    // Start the iperf3 test
+
+                    // Set the startTimestamp
+                    testStartTimestamp = System.currentTimeMillis();
+                    lastTestRunLocation = testRunLocation;
+
+                    // Enqueue tasks onto the WorkManager
+                    if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
+                        iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
+                    } else if (iperf3Json) {
+                        iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
+                    } else {
+                        iperf3WM.beginWith(iperf3WR).enqueue();
+                    }
+                } else {
+                    CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!");
+                    //TODO fire an Sentry event to track this erroneous state
+                }
+            });
 
             mainThreadExecutor.execute(() -> {
                 getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {

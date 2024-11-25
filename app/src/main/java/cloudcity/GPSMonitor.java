@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import cloudcity.dataholders.PingMetricsPOJO;
 import cloudcity.dataholders.TimerWrapper;
 import cloudcity.util.CloudCityLogger;
 
@@ -188,7 +189,18 @@ public class GPSMonitor {
 
         valueMonitor = new ValueMonitor();
         valueMonitor.setCallback(() -> {
-            Iperf3Monitor.getInstance().startDefaultAutomatedTest(lastLocation);
+            PingMonitor.getInstance().startPingTest(metrics -> {
+                        boolean wasSuccess = metrics.wasSuccess();
+                        boolean destinationReachable = metrics.isDestinationReachable();
+                        if (wasSuccess && destinationReachable) {
+                            CloudCityLogger.d(TAG, "Ping test was succesful, starting iperf3 test");
+                            Iperf3Monitor.getInstance().startDefaultAutomatedTest(lastLocation);
+                        } else {
+                            CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!");
+                            //TODO fire an event to track this erroneous state
+                        }
+                    }
+            );
         });
         valueMonitor.startMonitoring();
 

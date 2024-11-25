@@ -35,8 +35,10 @@ public class CloudCityOMNTApplication extends Application {
                         GPSMonitor.getLastLocation(),
                         CellUtil.getRegisteredCellInformationUpdatedBySignalStrengthInformation(dataProvider)
                 );
-                CloudCityLogger.d(TAG, "sending metrics result: "+iperf3SendingResult);
+                CloudCityLogger.d(TAG, "sending iperf3 metrics result: "+iperf3SendingResult);
             }
         });
+
+        PingMonitor.initialize(getApplicationContext());
     }
 }

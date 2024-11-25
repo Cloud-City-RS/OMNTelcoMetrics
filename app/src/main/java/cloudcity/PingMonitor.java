@@ -12,11 +12,13 @@ import androidx.work.WorkManager;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CloudCityLogger;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.METRIC_TYPE;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Metric.Metric;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PacketLossLine;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PingInformation;
@@ -52,7 +54,7 @@ public class PingMonitor {
 
     private volatile PingParser pingParser;
 
-    private final ConcurrentSkipListSet<OneTimeWorkRequest> pingWRs;
+    private final HashSet<OneTimeWorkRequest> pingWRs;
 
     private final AtomicBoolean pingTestRunning = new AtomicBoolean(false);
 
@@ -81,7 +83,7 @@ public class PingMonitor {
 
     private PingMonitor() {
         // private constructor to prevent instantiation
-        pingWRs = new ConcurrentSkipListSet<>();
+        pingWRs = new HashSet<>();
     }
 
     /**
@@ -168,10 +170,18 @@ public class PingMonitor {
         CloudCityLogger.d(TAG, "--> startPingTest()\tlistener: "+completionListener+"\tshouldStop: " + shouldStop.get());
         shouldStop.set(false);
 
+        // Instantiate the metrics
+        rttMetric = new Metric(METRIC_TYPE.PING_RTT, appContext);
+        packetLossMetric = new Metric(METRIC_TYPE.PING_PACKET_LOSS, appContext);
+        // I'm not sure we actually need these, but... why not.
+        rttMetric.createMainLL("RTT [ms]");
+        packetLossMetric.createMainLL("Packet Loss [%]");
+
         pingParser = PingParser.getInstance(null);
         CloudCityLogger.v(TAG, "Adding property change listener");
         pingParser.addPropertyChangeListener(evt -> {
             PingInformation pi = (PingInformation) evt.getNewValue();
+            CloudCityLogger.v(TAG, "propertyChange: "+pi);
             switch (pi.getLineType()) {
                 case RTT:
                     rttMetric.update(((RTTLine) pi).getRtt());
@@ -184,7 +194,7 @@ public class PingMonitor {
         });
 
         startPingThread();
-        startParsingThread(pingParser);
+//        startParsingThread(pingParser);
     }
 
     private void startPingThread() {

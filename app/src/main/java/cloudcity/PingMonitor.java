@@ -35,10 +35,6 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingWorker;
 public class PingMonitor {
     private static final String TAG = "PingMonitor";
 
-    private final static long PARSING_DELAY_IN_MS = 10L; //0.01sec, was 1000L
-
-    private final static long PING_DELAY_IN_MS = 200L;
-
     private final static String DEFAULT_PING_ADDRESS = "8.8.8.8";
 
     private final static int DEFAULT_PING_PACKET_COUNT = 5;
@@ -54,8 +50,6 @@ public class PingMonitor {
     private Metric rttMetric;
 
     private Metric packetLossMetric;
-
-    private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
     private volatile PingParser pingParser;
 
@@ -73,26 +67,6 @@ public class PingMonitor {
     private volatile long testStartTimestamp;
     private volatile long testEndTimestamp;
 
-    /**
-     * Runnable used for parsing ping tests by constantly calling {@link #pingParser}'s
-     * {@link PingParser#parse()} method every {@link #PARSING_DELAY_IN_MS} until it reaches the end
-     * or ordered to stop by toggling {@link #shouldStop} flag
-     */
-    private final Runnable parsingRunnable = new Runnable() {   //TODO get rid of this, we're not even using it
-        @Override
-        public void run() {
-            CloudCityLogger.v(TAG, "startParsingThread()::parsingCycle!\tshouldStop: " + shouldStop.get());
-
-            // And finally, parse a bit of the file.
-            pingParser.parse();
-            if (shouldStop.get()) {
-                // well, do nothing but return
-                return;
-            } else {
-                handler.postDelayed(this, PARSING_DELAY_IN_MS);
-            }
-        }
-    };
 
     private PingMonitor() {
         // private constructor to prevent instantiation
@@ -158,7 +132,7 @@ public class PingMonitor {
      */
     public static synchronized void shutdown() {
         if (!isInitialized()) {
-            throw new IllegalStateException("Iperf3Monitor was not initialized. Cannot call shutdown() before calling initialize()");
+            throw new IllegalStateException("PingMonitor was not initialized. Cannot call shutdown() before calling initialize()");
         }
 
         if (instance.handler != null) {
@@ -192,12 +166,12 @@ public class PingMonitor {
     }
 
     /**
-     * Start a Ping test towards
-     * @param completionListener
+     * Start a Ping test towards the target domain, which defaults to {@link #DEFAULT_PING_ADDRESS}
+     *
+     * @param completionListener the listener to be notified when the test finishes
      */
     public void startPingTest(PingMonitorCompletionListener completionListener) {
-        CloudCityLogger.d(TAG, "--> startPingTest()\tlistener: "+completionListener+"\tshouldStop: " + shouldStop.get());
-        shouldStop.set(false);
+        CloudCityLogger.d(TAG, "--> startPingTest()\tlistener: " + completionListener);
 
         // Instantiate the metrics
         rttMetric = new Metric(METRIC_TYPE.PING_RTT, appContext);
@@ -223,8 +197,7 @@ public class PingMonitor {
 
         testStartTimestamp = System.currentTimeMillis();
         startPingThread(completionListener);
-//        startParsingThread(pingParser);
-        CloudCityLogger.d(TAG, "<-- startPingTest()\tlistener: " + completionListener + "\tshouldStop: " + shouldStop.get() + "\tisRunning: " + pingTestRunning.get());
+        CloudCityLogger.d(TAG, "<-- startPingTest()\tlistener: " + completionListener + "\tisRunning: " + pingTestRunning.get());
     }
 
     private void startPingThread(PingMonitorCompletionListener completionListener) {
@@ -237,17 +210,6 @@ public class PingMonitor {
             CloudCityLogger.e(TAG, "wanted to try ping test but it's currentRunningValue was: "+currentRunningValue);
         }
         CloudCityLogger.d(TAG, "<-- startPingThread()");
-    }
-
-    private void startParsingThread(PingParser newPingParser) {
-        CloudCityLogger.d(TAG, "--> startParsingThread()");
-        pingParser = newPingParser;
-        handler.post(parsingRunnable);
-        CloudCityLogger.d(TAG, "<-- startParsingThread()");
-    }
-
-    private void stopParsingThread() {
-        handler.removeCallbacks(parsingRunnable);
     }
 
     private final Runnable pingUpdate = new Runnable() {
@@ -295,9 +257,6 @@ public class PingMonitor {
 
                     getWorkManager().getWorkInfoByIdLiveData(pingWR.getId()).removeObserver(this);
                     pingWRs.remove(pingWR);
-                    //TODO consider if we should keep pinging or not, ideally some AtomicInt that lets us control
-                    // how many times we actually want to ping
-//                    handler.postDelayed(pingUpdate, PING_DELAY_IN_MS);
                 }
             };
             // We cannot observe on a background thread, so lets do the same hack as in Iperf3Monitor

@@ -35,7 +35,7 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingWorker;
 public class PingMonitor {
     private static final String TAG = "PingMonitor";
 
-    private static volatile String DEFAULT_PING_ADDRESS = CloudCityParamsRepository.getInstance().getServerUrl();//"8.8.8.8";   //TODO fix me properly with new environments
+    private static volatile String DEFAULT_PING_ADDRESS = CloudCityParamsRepository.getInstance().getServerUrl();
 
     private final static int DEFAULT_PING_PACKET_COUNT = 5;
 

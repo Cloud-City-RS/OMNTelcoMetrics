@@ -15,9 +15,8 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.BuildConfig;
 public class CloudCityParamsRepository {
     private static final String SHARED_PREFS_NAME = "cloud_city_prefs";
 
-    private static final String STAGING_SERVER_URL = "staging.app.cloudcities.co";
-    private static final String PRODUCTION_SERVER_URL = "app.cloudcities.co";
-    private static final String DEMO_SERVER_URL = "demo.app.cloudcities.co";
+    private static final String STAGING_SERVER_URL = "demo.staging.cloudcities.co";
+    private static final String PRODUCTION_SERVER_URL = "demo.cloudcities.co";
 
     private Context context;
     private static CloudCityParamsRepository instance;
@@ -159,9 +158,7 @@ public class CloudCityParamsRepository {
 
     private String getServerURLBasedOnBuildVariant() {
         String serverUrl = null;
-        if(BuildConfig.IS_DEMO) {
-            serverUrl = DEMO_SERVER_URL;
-        } else if (BuildConfig.IS_STAGING) {
+        if (BuildConfig.IS_STAGING) {
             serverUrl = STAGING_SERVER_URL;
         } else if (BuildConfig.IS_PRODUCTION) {
             serverUrl = PRODUCTION_SERVER_URL;
@@ -176,12 +173,10 @@ public class CloudCityParamsRepository {
         // All of these tokens are Shark's tokens
         //TODO get rid of these tokens later on when we have actual login
         String serverToken = null;
-        if(BuildConfig.IS_DEMO) {
-            serverToken = "4|VpmKNeLkoFtZbJFTIRVpVWdclzf7LiL9sp83JuVw91ed224b";
-        } else if (BuildConfig.IS_STAGING) {
-            serverToken = "252|GI2CTemW2EX3TmQaDmCzYg1xrs3VEDslnGrfCwp245a84b22";
+        if (BuildConfig.IS_STAGING) {
+            serverToken = "63|HGWxcOIvJW9tTg8xiklaTWdDNXKMvZAUWOPrgqFv326f0d87";
         } else if (BuildConfig.IS_PRODUCTION) {
-            serverToken = "41|lAp3yiiWJH3D3ftR54seY6oMO8EEjpees7Y3oJI63b71a1d3";
+            serverToken = "1|b6JkY9JwRcxvJJnk67rZLCYmXSLm4D9o6IxeqDcX7dfdda46";
         } else {
             throw new IllegalStateException("Which server environment are we trying to use? Something has went wrong here.");
         }

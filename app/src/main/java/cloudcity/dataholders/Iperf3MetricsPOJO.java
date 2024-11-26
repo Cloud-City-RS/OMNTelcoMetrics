@@ -72,10 +72,10 @@ public class Iperf3MetricsPOJO {
                 download.getDLmax(),
                 download.getDLlast(),
                 upload.getULmin(),
-                upload.getMedian(),
-                upload.getMean(),
-                upload.getMax(),
-                upload.getLast(),
+                upload.getULmedian(),
+                upload.getULmean(),
+                upload.getULmax(),
+                upload.getULlast(),
                 startTimestamp,
                 endTimestamp
         );

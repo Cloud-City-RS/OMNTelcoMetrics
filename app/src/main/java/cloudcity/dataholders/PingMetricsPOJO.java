@@ -73,16 +73,16 @@ public class PingMetricsPOJO {
      */
     public PingMetricsPOJO(RTTMetrics rtt, PackageLossMetrics packageLoss, long startTimestamp, long endTimestamp, boolean success) {
         this(
-                rtt.RTTmin,
-                rtt.RTTmedian,
-                rtt.RTTmean,
-                rtt.RTTmax,
-                rtt.RTTlast,
-                packageLoss.PLmin,
-                packageLoss.PLmedian,
-                packageLoss.PLmean,
-                packageLoss.PLmax,
-                packageLoss.PLlast,
+                rtt.getMin(),
+                rtt.getMedian(),
+                rtt.getMean(),
+                rtt.getMax(),
+                rtt.getLast(),
+                packageLoss.getMin(),
+                packageLoss.getMedian(),
+                packageLoss.getMean(),
+                packageLoss.getMax(),
+                packageLoss.getLast(),
                 startTimestamp,
                 endTimestamp,
                 success
@@ -157,75 +157,16 @@ public class PingMetricsPOJO {
                 .toString();
     }
 
-    public static class RTTMetrics {
-        private final double RTTmin;
-        private final double RTTmedian;
-        private final double RTTmean;
-        private final double RTTmax;
-        private final double RTTlast;
+    public static class RTTMetrics extends BaseMetrics{
 
         public RTTMetrics(double min, double median, double mean, double max, double last) {
-            this.RTTmin = min;
-            this.RTTmedian = median;
-            this.RTTmean = mean;
-            this.RTTmax = max;
-            this.RTTlast = last;
-        }
-
-        public double getRTTmin() {
-            return RTTmin;
-        }
-
-        public double getRTTmedian() {
-            return RTTmedian;
-        }
-
-        public double getRTTmean() {
-            return RTTmean;
-        }
-
-        public double getRTTmax() {
-            return RTTmax;
-        }
-
-        public double getRTTlast() {
-            return RTTlast;
+            super(min, median, mean, max, last);
         }
     }
 
-    public static class PackageLossMetrics {
-        private final double PLmin;
-        private final double PLmedian;
-        private final double PLmean;
-        private final double PLmax;
-        private final double PLlast;
-
+    public static class PackageLossMetrics extends BaseMetrics {
         public PackageLossMetrics(double min, double median, double mean, double max, double last) {
-            this.PLmin = min;
-            this.PLmedian = median;
-            this.PLmean = mean;
-            this.PLmax = max;
-            this.PLlast = last;
-        }
-
-        public double getPLmin() {
-            return PLmin;
-        }
-
-        public double getPLmedian() {
-            return PLmedian;
-        }
-
-        public double getPLmean() {
-            return PLmean;
-        }
-
-        public double getPLmax() {
-            return PLmax;
-        }
-
-        public double getPLlast() {
-            return PLlast;
+            super(min,median,mean,max,last);
         }
     }
 }

@@ -66,16 +66,16 @@ public class Iperf3MetricsPOJO {
      */
     public Iperf3MetricsPOJO(DownloadMetrics download, UploadMetrics upload, long startTimestamp, long endTimestamp) {
         this(
-                download.DLmin,
-                download.DLmedian,
-                download.DLmean,
-                download.DLmax,
-                download.DLlast,
-                upload.ULmin,
-                upload.ULmedian,
-                upload.ULmean,
-                upload.ULmax,
-                upload.ULlast,
+                download.getDLmin(),
+                download.getDLmedian(),
+                download.getDLmean(),
+                download.getDLmax(),
+                download.getDLlast(),
+                upload.getULmin(),
+                upload.getMedian(),
+                upload.getMean(),
+                upload.getMax(),
+                upload.getLast(),
                 startTimestamp,
                 endTimestamp
         );
@@ -141,75 +141,56 @@ public class Iperf3MetricsPOJO {
                 .toString();
     }
 
-    public static class DownloadMetrics {
-        private final double DLmin;
-        private final double DLmedian;
-        private final double DLmean;
-        private final double DLmax;
-        private final double DLlast;
-
+    public static class DownloadMetrics extends BaseMetrics {
         public DownloadMetrics(double DLmin, double DLmedian, double DLmean, double DLmax, double DLlast) {
-            this.DLmin = DLmin;
-            this.DLmedian = DLmedian;
-            this.DLmean = DLmean;
-            this.DLmax = DLmax;
-            this.DLlast = DLlast;
+            super(DLmin, DLmedian, DLmean, DLmax, DLlast);
         }
 
         public double getDLmin() {
-            return DLmin;
+            return getMin();
         }
 
         public double getDLmedian() {
-            return DLmedian;
+            return getMedian();
         }
 
         public double getDLmean() {
-            return DLmean;
+            return getMean();
         }
 
         public double getDLmax() {
-            return DLmax;
+            return getMax();
         }
 
         public double getDLlast() {
-            return DLlast;
+            return getLast();
         }
     }
 
-    public static class UploadMetrics {
-        private final double ULmin;
-        private final double ULmedian;
-        private final double ULmean;
-        private final double ULmax;
-        private final double ULlast;
+    public static class UploadMetrics extends BaseMetrics {
 
         public UploadMetrics(double ULmin, double ULmedian, double ULmean, double ULmax, double ULlast) {
-            this.ULmin = ULmin;
-            this.ULmedian = ULmedian;
-            this.ULmean = ULmean;
-            this.ULmax = ULmax;
-            this.ULlast = ULlast;
+            super(ULmin, ULmedian, ULmean, ULmax, ULlast);
         }
 
         public double getULmin() {
-            return ULmin;
+            return getMin();
         }
 
         public double getULmedian() {
-            return ULmedian;
+            return getMedian();
         }
 
         public double getULmean() {
-            return ULmean;
+            return getMean();
         }
 
         public double getULmax() {
-            return ULmax;
+            return getMax();
         }
 
         public double getULlast() {
-            return ULlast;
+            return getLast();
         }
     }
 }

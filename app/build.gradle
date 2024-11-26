@@ -84,19 +84,11 @@ android {
         // and we really don't want to default to the 'demo' flavor...
         a_staging {
             dimension "environment"
-            buildConfigField "Boolean", "IS_DEMO", "false"
             buildConfigField "Boolean", "IS_STAGING", "true"
             buildConfigField "Boolean", "IS_PRODUCTION", "false"
         }
-        b_demo {
+        b_production {
             dimension "environment"
-            buildConfigField "Boolean", "IS_DEMO", "true"
-            buildConfigField "Boolean", "IS_STAGING", "false"
-            buildConfigField "Boolean", "IS_PRODUCTION", "false"
-        }
-        c_production {
-            dimension "environment"
-            buildConfigField "Boolean", "IS_DEMO", "false"
             buildConfigField "Boolean", "IS_STAGING", "false"
             buildConfigField "Boolean", "IS_PRODUCTION", "true"
         }
@@ -133,10 +125,7 @@ android {
                 case "a_staging":
                     cleanFlavorName = "Staging"
                     break
-                case "b_demo":
-                    cleanFlavorName = "Demo"
-                    break
-                case "c_production":
+                case "b_production":
                     cleanFlavorName = "Production"
                     break
                 default:
@@ -171,7 +160,7 @@ spdxSbom {
     targets {
         // Keep the original release target
         register("release") {
-            configurations = ['a_stagingReleaseRuntimeClasspath', 'b_demoReleaseRuntimeClasspath', 'c_productionReleaseRuntimeClasspath']
+            configurations = ['a_stagingReleaseRuntimeClasspath', 'b_productionReleaseRuntimeClasspath']
             scm {
                 uri.set("https://github.com/omnt/OpenMobileNetworkToolkit")
                 revision.set("0.3")

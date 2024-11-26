@@ -15,9 +15,9 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.BuildConfig;
 public class CloudCityParamsRepository {
     private static final String SHARED_PREFS_NAME = "cloud_city_prefs";
 
-    private static final String STAGING_SERVER_URL = "staging.app.cloudcities.co";
-    private static final String PRODUCTION_SERVER_URL = "app.cloudcities.co";
-    private static final String DEMO_SERVER_URL = "demo.app.cloudcities.co";
+    private static final String STAGING_SERVER_URL = "demo.staging.cloudcities.co";
+    private static final String PRODUCTION_SERVER_URL = "demo.cloudcities.co";
+    private static final String DEMO_SERVER_URL = "demo.app.cloudcities.co";    //TODO remove
 
     private Context context;
     private static CloudCityParamsRepository instance;
@@ -177,11 +177,11 @@ public class CloudCityParamsRepository {
         //TODO get rid of these tokens later on when we have actual login
         String serverToken = null;
         if(BuildConfig.IS_DEMO) {
-            serverToken = "4|VpmKNeLkoFtZbJFTIRVpVWdclzf7LiL9sp83JuVw91ed224b";
+            serverToken = "4|VpmKNeLkoFtZbJFTIRVpVWdclzf7LiL9sp83JuVw91ed224b"; //TODO remove
         } else if (BuildConfig.IS_STAGING) {
-            serverToken = "252|GI2CTemW2EX3TmQaDmCzYg1xrs3VEDslnGrfCwp245a84b22";
+            serverToken = "63|HGWxcOIvJW9tTg8xiklaTWdDNXKMvZAUWOPrgqFv326f0d87";
         } else if (BuildConfig.IS_PRODUCTION) {
-            serverToken = "41|lAp3yiiWJH3D3ftR54seY6oMO8EEjpees7Y3oJI63b71a1d3";
+            serverToken = "1|Ldi82IV2EuIxuOaGWoNfZc3xLxEbViHcRGkYbNkH14d95ced";
         } else {
             throw new IllegalStateException("Which server environment are we trying to use? Something has went wrong here.");
         }

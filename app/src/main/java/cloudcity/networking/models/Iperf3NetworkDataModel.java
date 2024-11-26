@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.SerializedName;
 
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 
 public class Iperf3NetworkDataModel extends NetworkDataModel {
     @SerializedName("category")
@@ -19,8 +19,8 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
     private final CellInfoModel cellData;
 
     public Iperf3NetworkDataModel(
-            @NonNull MetricsPOJO.UploadMetrics upload,
-            @NonNull MetricsPOJO.DownloadMetrics download,
+            @NonNull Iperf3MetricsPOJO.UploadMetrics upload,
+            @NonNull Iperf3MetricsPOJO.DownloadMetrics download,
             @NonNull Location location,
             @NonNull MeasurementsModel measurementsModel,
             @NonNull CellInfoModel cellInfoModel
@@ -71,8 +71,8 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     private final Integer ssrsrq;
     private final Integer sssinr;
 
-    public Iperf3ValuesModel(@NonNull MetricsPOJO.UploadMetrics upload,
-                             @NonNull MetricsPOJO.DownloadMetrics download,
+    public Iperf3ValuesModel(@NonNull Iperf3MetricsPOJO.UploadMetrics upload,
+                             @NonNull Iperf3MetricsPOJO.DownloadMetrics download,
                              @NonNull MeasurementsModel cellMeasurements) {
         ULmin = upload.getULmin();
         ULmedian = upload.getULmedian();

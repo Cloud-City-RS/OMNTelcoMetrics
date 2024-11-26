@@ -36,6 +36,7 @@ import java.util.HashMap;
 
 import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.MainActivity;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PacketLossLine;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.PingInformation;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.RTTLine;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Preferences.SPType;
@@ -59,6 +60,7 @@ public class PingWorker extends Worker {
     private Notification notification;
     private final String timeRegex = "\\btime=([0-9]+\\.[0-9]+)\\s+ms\\b";
     private double rtt;
+    private double packetLoss;
     private NotificationManager notificationManager;
     private SharedPreferencesGrouper spg;
 
@@ -155,9 +157,21 @@ public class PingWorker extends Worker {
         try {
 
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("/system/bin/ping ")
-                .append("-D ")
-                .append(getInputData().getString("input"));
+            String targetAddress = getInputData().getString("input");
+            // CC addition
+            String packetCount = getInputData().getString("count");
+
+            stringBuilder
+                    .append("/system/bin/ping ")    // the command
+                    .append("-D ");                 // print timestamps
+
+            if (packetCount != null) {              // add -c if we passed it as "count"
+                stringBuilder
+                        .append("-c ")
+                        .append(packetCount)
+                        .append(" "); //dont forget the space between the count and destination address
+            }
+            stringBuilder.append(targetAddress);    // add target address last
 
             pingCommand = stringBuilder.toString();
             parsePingCommand();
@@ -176,9 +190,12 @@ public class PingWorker extends Worker {
                     PingInformation pi = (PingInformation) evt.getNewValue();
                     switch(pi.getLineType()){
                         case PACKET_LOSS:
+                            packetLoss = ((PacketLossLine)pi).getPacketLoss();
+//                            CloudCityLogger.d(TAG, "[PacketLoss]\tpacketLoss: "+packetLoss);
                             break;
                         case RTT:
                             rtt = ((RTTLine)pi).getRtt();
+//                            CloudCityLogger.d(TAG, "[RTT]\trtt: "+rtt);
                             break;
                     }
                     updateNotification.run();

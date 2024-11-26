@@ -2,7 +2,7 @@ package cloudcity;
 
 import android.app.Application;
 
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CellUtil;
 import cloudcity.util.CloudCityLogger;
 import cloudcity.util.CloudCityUtil;
@@ -27,7 +27,7 @@ public class CloudCityOMNTApplication extends Application {
 
         iperf3Monitor.startListeningForIperf3Updates(new Iperf3Monitor.Iperf3MonitorCompletionListener() {
             @Override
-            public void onIperf3TestCompleted(MetricsPOJO metrics) {
+            public void onIperf3TestCompleted(Iperf3MetricsPOJO metrics) {
                 CloudCityLogger.d(TAG, "One iperf3 cycle is completed! received metrics: " + metrics);
                 DataProvider dataProvider = GlobalVars.getInstance().get_dp();
                 boolean iperf3SendingResult = CloudCityUtil.sendIperf3Data(
@@ -35,8 +35,10 @@ public class CloudCityOMNTApplication extends Application {
                         GPSMonitor.getLastLocation(),
                         CellUtil.getRegisteredCellInformationUpdatedBySignalStrengthInformation(dataProvider)
                 );
-                CloudCityLogger.d(TAG, "sending metrics result: "+iperf3SendingResult);
+                CloudCityLogger.d(TAG, "sending iperf3 metrics result: "+iperf3SendingResult);
             }
         });
+
+        PingMonitor.initialize(getApplicationContext());
     }
 }

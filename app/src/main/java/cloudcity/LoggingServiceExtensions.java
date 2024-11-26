@@ -129,7 +129,7 @@ public class LoggingServiceExtensions {
                 if(!unset) {
                     CloudCityLogger.e(TAG, "There was a problem with updating 'isUpdating', expected 'true' but was 'false' instead");
                 }
-            } catch (java.lang.NullPointerException e) {
+            } catch (NullPointerException e) {
                 CloudCityLogger.d(TAG, "trying to stop cloud city service while it was not running");
             }
         }
@@ -162,8 +162,6 @@ public class LoggingServiceExtensions {
             currentSignal = signalInfo.get(0);
         }
 
-        String category = currentCell.getCellType().toString();
-
         // Lets initialize our MeasurementModel for sending from the registered cell model, then overwrite it's values
         // with what we found in the SignalInformation
         MeasurementsModel modelForSending = CellUtil.getMeasurementsModel(currentCell, currentSignal, CellUtil.CellInfoPrecedence.SIGNAL_INFO);
@@ -175,7 +173,8 @@ public class LoggingServiceExtensions {
                 modelForSending
         );
 
-        dataModel.setCategory(currentCell.getCellType().toString());
+        String category = currentCell != null ? currentCell.getCellType().toString() : "UNKNOWN";
+        dataModel.setCategory(category);
         dataModel.setAccuracy(location.getAccuracy());
         /* Convert to km/h */
         dataModel.setSpeed(location.getSpeed() * 3.6);

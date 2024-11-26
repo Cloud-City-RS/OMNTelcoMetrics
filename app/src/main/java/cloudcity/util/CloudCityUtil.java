@@ -6,8 +6,10 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
+import java.util.List;
+
 import cloudcity.CloudCityParamsRepository;
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
 import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.Iperf3NetworkDataModel;
@@ -46,12 +48,12 @@ public class CloudCityUtil {
      * @return true if the data was sent successfully, false otherwise
      */
     public static boolean sendIperf3Data(
-            @NonNull MetricsPOJO metricsPOJO,
+            @NonNull Iperf3MetricsPOJO metricsPOJO,
             @NonNull Location location,
             @NonNull Pair<MeasurementsModel, CellInfoModel> cellInfoMeasurements) {
-        MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
-        MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
-        MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
+        Iperf3MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
+        Iperf3MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
+        Iperf3MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
 
         Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(
                 uploadMetrics,
@@ -93,5 +95,19 @@ public class CloudCityUtil {
         basis = Math.round(basis);
         double retVal = basis / multiplier;
         return retVal;
+    }
+
+    /**
+     * Gets last element from a list of doubles
+     *
+     * @param list the list of doubles from which to get the last element
+     * @return the last element, or 0 if the list is empty
+     */
+    public static double getLastElementFromListOfDoubles(@NonNull List<Double> list) {
+        if (list.size() == 0) {
+            return 0;
+        } else {
+            return list.get(list.size() - 1);
+        }
     }
 }

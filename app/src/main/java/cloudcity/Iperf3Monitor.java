@@ -32,8 +32,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
-import cloudcity.dataholders.MetricsPOJO;
+import cloudcity.dataholders.Iperf3MetricsPOJO;
 import cloudcity.util.CloudCityLogger;
+import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
@@ -316,13 +317,13 @@ public class Iperf3Monitor {
                                     double DLmedian = normalize(defaultReverseThroughput.calcMedian());
                                     double DLmax = normalize(defaultReverseThroughput.calcMax());
                                     double DLmean = normalize(defaultReverseThroughput.calcMean());
-                                    double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
+                                    double DLlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultReverseThroughput.getMeanList()));
 
                                     double ULmin = normalize(defaultThroughput.calcMin());
                                     double ULmedian = normalize(defaultThroughput.calcMedian());
                                     double ULmax = normalize(defaultThroughput.calcMax());
                                     double ULmean = normalize(defaultThroughput.calcMean());
-                                    double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
+                                    double ULlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultThroughput.getMeanList()));
 
                                     CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
                                     CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
@@ -333,9 +334,9 @@ public class Iperf3Monitor {
 
                                     testEndTimestamp = System.currentTimeMillis();
                                     // Instantiate the POJO stuff holder
-                                    MetricsPOJO values = new MetricsPOJO(
-                                            new MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
-                                            new MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
+                                    Iperf3MetricsPOJO values = new Iperf3MetricsPOJO(
+                                            new Iperf3MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
+                                            new Iperf3MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
                                             testStartTimestamp,
                                             testEndTimestamp
                                     );
@@ -413,13 +414,13 @@ public class Iperf3Monitor {
         double DLmedian = normalize(defaultReverseThroughput.calcMedian());
         double DLmax = normalize(defaultReverseThroughput.calcMax());
         double DLmean = normalize(defaultReverseThroughput.calcMean());
-        double DLlast = normalize(getLast(defaultReverseThroughput.getMeanList()));
+        double DLlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultReverseThroughput.getMeanList()));
 
         double ULmin = normalize(defaultThroughput.calcMin());
         double ULmedian = normalize(defaultThroughput.calcMedian());
         double ULmax = normalize(defaultThroughput.calcMax());
         double ULmean = normalize(defaultThroughput.calcMean());
-        double ULlast = normalize(getLast(defaultThroughput.getMeanList()));
+        double ULlast = normalize(CloudCityUtil.getLastElementFromListOfDoubles(defaultThroughput.getMeanList()));
 
         CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
         CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
@@ -434,7 +435,7 @@ public class Iperf3Monitor {
          *
          * @param metrics the gathered metrics during the test
          */
-        void onIperf3TestCompleted(MetricsPOJO metrics);
+        void onIperf3TestCompleted(Iperf3MetricsPOJO metrics);
     }
 
     /**
@@ -490,20 +491,6 @@ public class Iperf3Monitor {
         }
 
         return retVal;
-    }
-
-    /**
-     * Gets last element of a list
-     *
-     * @param list the list of doubles from which to get the last element
-     * @return the last element, or 0 if the list is empty
-     */
-    private double getLast(@NonNull List<Double> list) {
-        if (list.size() == 0) {
-            return 0;
-        } else {
-            return list.get(list.size() - 1);
-        }
     }
 
     /**
@@ -772,48 +759,67 @@ public class Iperf3Monitor {
         }
 
         SharedPreferencesGrouper spg = SharedPreferencesGrouper.getInstance(applicationContext);
-        if (iperf3TestRunning.compareAndSet(false, true)) {
 
-            // Check if we have a main thread executor
-            if (mainThreadExecutor == null) {
-                synchronized (this) {
-                    if (mainThreadExecutor == null) {
-                        mainThreadExecutor = new MainThreadExecutor();
+
+        // Check if we have a main thread executor
+        if (mainThreadExecutor == null) {
+            mainThreadExecutor = MainThreadExecutor.getInstance();
+        }
+
+        PingMonitor.getInstance().startPingTest(metrics -> {
+            boolean wasSuccess = metrics.wasSuccess();
+            boolean destinationReachable = metrics.isDestinationReachable();
+            // FIXME sometimes this 'wasSuccess' is false when the 'destinationReachable' is true
+            // and this is because the PingWorker fails for some unknown reason while it manages
+            // to calculate everything correctly.
+            //
+            // While we could use an OR here, I strongly believe that a ping test would finish
+            // 'successfully' even if all packets are lost and the destination isn't reachable
+            // So lets enforce both, which *may* lead us to "drop" iperf3 test executions
+            // but a subsequent ping a few seconds later (when re-queried by GPSListener) should
+            // manage to get here just fine, since we save last start timestamp only immediatelly
+            // before starting the iperf3 test - that is, after a successful ping test.
+            if (wasSuccess && destinationReachable) {
+                CloudCityLogger.d(TAG, "Ping test was succesful, starting iperf3 test");
+
+                // Start the iperf3 test
+                if (iperf3TestRunning.compareAndSet(false, true)) {
+                    // Set the startTimestamp
+                    testStartTimestamp = System.currentTimeMillis();
+                    lastTestRunLocation = testRunLocation;
+
+                    // Enqueue tasks onto the WorkManager
+                    if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
+                        iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
+                    } else if (iperf3Json) {
+                        iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
+                    } else {
+                        iperf3WM.beginWith(iperf3WR).enqueue();
                     }
+                } else {
+                    CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!\twasSuccess: " + wasSuccess + ", destinationReachable: " + destinationReachable);
+                    //TODO fire an Sentry event to track this erroneous state
                 }
             }
+        });
 
-            // Set the startTimestamp
-            testStartTimestamp = System.currentTimeMillis();
-            lastTestRunLocation = testRunLocation;
-
-            // Enqueue tasks onto the WorkManager
-            if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {
-                iperf3WM.beginWith(iperf3WR).then(iperf3LP).then(iperf3UP).enqueue();
-            } else if (iperf3Json) {
-                iperf3WM.beginWith(iperf3WR).then(iperf3LP).enqueue();
-            } else {
-                iperf3WM.beginWith(iperf3WR).enqueue();
-            }
-
-            mainThreadExecutor.execute(() -> {
-                getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
-                    int iperf3_result;
-                    iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
-                    if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
-                        iperf3_result = -1;
-                    }
-                    iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                    CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
-                });
-                getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
-                    boolean iperf3_upload;
-                    iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                    CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
-                    iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
-                });
+        mainThreadExecutor.execute(() -> {
+            getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
+                int iperf3_result;
+                iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+                if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                    iperf3_result = -1;
+                }
+                iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+                CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
             });
-        }
+            getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
+                boolean iperf3_upload;
+                iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+                CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+            });
+        });
     }
 
     /**

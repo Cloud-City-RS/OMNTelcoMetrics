@@ -35,4 +35,6 @@
     <color name="radio_red">#ff8989</color>
     <color name="radio_green">#a9ff68</color>
 
+    <color name="cardview_lightgray_background">#FFA0A0A0</color>
+
 </resources>

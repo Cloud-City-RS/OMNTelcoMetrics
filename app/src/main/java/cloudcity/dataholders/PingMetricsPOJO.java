@@ -162,11 +162,51 @@ public class PingMetricsPOJO {
         public RTTMetrics(double min, double median, double mean, double max, double last) {
             super(min, median, mean, max, last);
         }
+
+        public double getRTTmin() {
+            return getMin();
+        }
+
+        public double getRTTmedian() {
+            return getMedian();
+        }
+
+        public double getRTTmean() {
+            return getMean();
+        }
+
+        public double getRTTmax() {
+            return getMax();
+        }
+
+        public double getRTTlast() {
+            return getLast();
+        }
     }
 
     public static class PackageLossMetrics extends BaseMetrics {
         public PackageLossMetrics(double min, double median, double mean, double max, double last) {
             super(min,median,mean,max,last);
+        }
+
+        public double getPLmin() {
+            return getMin();
+        }
+
+        public double getPLmedian() {
+            return getMedian();
+        }
+
+        public double getPLmean() {
+            return getMean();
+        }
+
+        public double getPLmax() {
+            return getMax();
+        }
+
+        public double getPLlast() {
+            return getLast();
         }
     }
 }

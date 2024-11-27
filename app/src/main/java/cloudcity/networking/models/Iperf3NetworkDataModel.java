@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import com.google.gson.annotations.SerializedName;
 
 import cloudcity.dataholders.Iperf3MetricsPOJO;
+import cloudcity.dataholders.PingMetricsPOJO;
 
 public class Iperf3NetworkDataModel extends NetworkDataModel {
     @SerializedName("category")
@@ -21,11 +22,17 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
     public Iperf3NetworkDataModel(
             @NonNull Iperf3MetricsPOJO.UploadMetrics upload,
             @NonNull Iperf3MetricsPOJO.DownloadMetrics download,
+            @NonNull PingMetricsPOJO.RTTMetrics rttMetrics,
+            @NonNull PingMetricsPOJO.PackageLossMetrics packageLossMetrics,
             @NonNull Location location,
             @NonNull MeasurementsModel measurementsModel,
             @NonNull CellInfoModel cellInfoModel
     ) {
-        super(location.getLatitude(), location.getLongitude(), new Iperf3ValuesModel(upload, download, measurementsModel));
+        super(
+                location.getLatitude(),
+                location.getLongitude(),
+                new Iperf3ValuesModel(upload, download, rttMetrics, packageLossMetrics, measurementsModel)
+        );
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
         this.cellData = cellInfoModel;
@@ -55,6 +62,29 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("download_last")
     private final double DLlast;
 
+    // ping details
+    @SerializedName("ping_RTT_min")
+    private final double RTTmin;
+    @SerializedName("ping_RTT_median")
+    private final double RTTmedian;
+    @SerializedName("ping_RTT_mean")
+    private final double RTTmean;
+    @SerializedName("ping_RTT_max")
+    private final double RTTmax;
+    @SerializedName("ping_RTT_last")
+    private final double RTTlast;
+
+    @SerializedName("ping_package_loss_min")
+    private final double PLmin;
+    @SerializedName("ping_package_loss_median")
+    private final double PLmedian;
+    @SerializedName("ping_package_loss_mean")
+    private final double PLmean;
+    @SerializedName("ping_package_loss_max")
+    private final double PLmax;
+    @SerializedName("ping_package_loss_last")
+    private final double PLlast;
+
     @SerializedName("cell_type")
     private final int cellType;
 
@@ -73,6 +103,8 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
 
     public Iperf3ValuesModel(@NonNull Iperf3MetricsPOJO.UploadMetrics upload,
                              @NonNull Iperf3MetricsPOJO.DownloadMetrics download,
+                             @NonNull PingMetricsPOJO.RTTMetrics rttMetrics,
+                             @NonNull PingMetricsPOJO.PackageLossMetrics packageLossMetrics,
                              @NonNull MeasurementsModel cellMeasurements) {
         ULmin = upload.getULmin();
         ULmedian = upload.getULmedian();
@@ -85,6 +117,18 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
         DLmean = download.getDLmean();
         DLmax = download.getDLmax();
         DLlast = download.getDLlast();
+
+        RTTmin = rttMetrics.getRTTmin();
+        RTTmedian = rttMetrics.getRTTmedian();
+        RTTmean = rttMetrics.getRTTmean();
+        RTTmax = rttMetrics.getRTTmax();
+        RTTlast = rttMetrics.getRTTlast();
+
+        PLmin = packageLossMetrics.getPLmin();
+        PLmedian = packageLossMetrics.getPLmedian();
+        PLmean = packageLossMetrics.getPLmean();
+        PLmax = packageLossMetrics.getPLmax();
+        PLlast = packageLossMetrics.getPLlast();
 
         rsrp = cellMeasurements.getRsrp();
         rsrq = cellMeasurements.getRsrq();

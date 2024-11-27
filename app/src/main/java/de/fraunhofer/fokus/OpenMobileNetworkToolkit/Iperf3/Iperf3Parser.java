@@ -35,11 +35,11 @@ public class Iperf3Parser {
     private Start start;
     private final Intervals intervals = new Intervals();
 
-    public static Iperf3Parser instantiate(@NonNull String pathToFile) {
+    public static Iperf3Parser instantiate(@NonNull String pathToFile) throws FileNotFoundException {
         return new Iperf3Parser(pathToFile);
     }
 
-    Iperf3Parser(String pathToFile) {
+    Iperf3Parser(String pathToFile) throws FileNotFoundException {
         this.pathToFile = pathToFile;
         this.file = new File(this.pathToFile);
         try {

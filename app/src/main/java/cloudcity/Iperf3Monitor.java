@@ -2,12 +2,14 @@ package cloudcity;
 
 import android.content.Context;
 import android.location.Location;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
@@ -19,6 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
@@ -83,6 +87,13 @@ public class Iperf3Monitor {
 
     private final static long PARSING_DELAY_IN_MS = 10L; //0.01sec, was 1000L
 
+    /**
+     * If things go south or somehow break, the ResetLatch {@link #resetLatch} will mark the iperf3 test
+     * as completed after this many seconds from a terminal state that was received in one place
+     * but not the other that is actually in charge of *doing* important things.
+     */
+    private static final int RESET_LATCH_DURATION_IN_SECONDS = 100;
+
     private Handler handler;
 
     private HandlerThread handlerThread;
@@ -114,6 +125,8 @@ public class Iperf3Monitor {
     private volatile @NonNull Location lastTestRunLocation;
 
     private volatile @NonNull PingMetricsPOJO lastPingTestMetrics;
+
+    private volatile @Nullable CountDownTimer resetLatch;
 
     /**
      * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
@@ -221,6 +234,12 @@ public class Iperf3Monitor {
         // Start listening for iPerf3 results...
         iperf3ResultsDatabase.iperf3RunResultDao().getLatestResult().observeForever(latestIperf3RunResult -> {
             shouldStop.set(false);
+            // Check the reset latch
+            if (resetLatch != null) {
+                resetLatch.cancel();
+                resetLatch = null;
+                CloudCityLogger.d(TAG, "ResetLatch cancel()-ed and nulled out!");
+            }
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
             // in the DB.
@@ -253,7 +272,13 @@ public class Iperf3Monitor {
 
                     CloudCityLogger.v(TAG, "File copying should be done, instantiating new parser with rawIperf3File: " + targetFilePath);
 
-                    Iperf3Parser iperf3Parser = Iperf3Parser.instantiate(targetFilePath);
+                    Iperf3Parser iperf3Parser = null;
+                    try {
+                        iperf3Parser = Iperf3Parser.instantiate(targetFilePath);
+                    } catch (FileNotFoundException e) {
+                        CloudCityLogger.e(TAG, "Exception " + e + " happened during iperf3 parser instantiation!", e);
+                        throw new RuntimeException(e);
+                    }
                     defaultThroughput = new Metric(METRIC_TYPE.THROUGHPUT, appContext);
                     defaultReverseThroughput = new Metric(METRIC_TYPE.THROUGHPUT, appContext);
                     defaultJITTER = new Metric(METRIC_TYPE.JITTER, appContext);
@@ -331,11 +356,6 @@ public class Iperf3Monitor {
                                     CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
                                     CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
 
-                                    // Stop the thread to avoid spinning it needlessly forever...
-                                    stopParsingThread();
-                                    shouldStop.compareAndSet(false, true);
-
-                                    testEndTimestamp = System.currentTimeMillis();
                                     PingMetricsPOJO.MetricsPair pingMetricsPair = lastPingTestMetrics.toMetricsPair();
                                     // Instantiate the POJO stuff holder
                                     Iperf3MetricsPOJO values = new Iperf3MetricsPOJO(
@@ -347,14 +367,7 @@ public class Iperf3Monitor {
                                             testEndTimestamp
                                     );
 
-                                    // Notify the completion listener
-                                    if (completionListener != null) {
-                                        completionListener.onIperf3TestCompleted(values);
-                                    }
-
-                                    // And set the new marker as 'no longer running'
-                                    iperf3TestRunning.compareAndSet(true, false);
-                                    lastPingTestMetrics = null;
+                                    finalizeTestExecution(completionListener, values);
 
                                     CloudCityLogger.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
                                 }
@@ -403,6 +416,21 @@ public class Iperf3Monitor {
                 }
             }
         });
+    }
+
+    private void finalizeTestExecution(Iperf3MonitorCompletionListener completionListener, Iperf3MetricsPOJO values) {
+        // Stop the thread to avoid spinning it needlessly forever...
+        stopParsingThread();
+        shouldStop.compareAndSet(false, true);
+
+        // Notify the completion listener
+        if (completionListener != null && values != null) {
+            completionListener.onIperf3TestCompleted(values);
+        }
+
+        // And set the new marker as 'no longer running'
+        iperf3TestRunning.compareAndSet(true, false);
+        lastPingTestMetrics = null;
     }
 
     private void startParsingThread(Iperf3Parser newIperf3Parser) {
@@ -806,7 +834,8 @@ public class Iperf3Monitor {
                     }
                 } else {
                     CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!\twasSuccess: " + wasSuccess + ", destinationReachable: " + destinationReachable);
-                    //TODO fire an Sentry event to track this erroneous state
+                    //TODO fire an Sentry event to track this erroneous state, because when things fuck up - we see the change here but not in the expected place
+                    //TODO come up with some fallback plan on how to 'unset' that the iperf3 test is still running because it most certainly isn't.
                 }
             }
         });
@@ -820,6 +849,35 @@ public class Iperf3Monitor {
                 }
                 iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
                 CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+                // This little thing here is when we hear that the test is over (and update the database DAO)
+                // but since we're actually doing everything important to the iperf3 test based on the database
+                // emissions, sometimes these emissions just... don't happen.
+                //
+                // While we 'hear' that the test has ended here, we just don't hear it in the other place
+                // and the Iperf3Monitor remains stuck as if it's still performing an iperf3 test
+                // while in reality nothing is actually working.
+                //
+                // This little dirty hack will just "force finish" the test if it's been in terminal state
+                // for RESET_LATCH_DURATION (100) seconds, and hopefully we'll be able to resume iperf3
+                // tests on the next GPSMonitor's call.
+                if (isTerminalState(iperf3_result)) {
+                    // Give it 100 seconds to unset that test is running. If it doesn't manage to do
+                    // that - because we will clear this latch in the next emission of anything - proceed
+                    // to finalize the test with no data so that the system (iperf3 monitor) resets
+                    // itself back into a working state
+                    CloudCityLogger.d(TAG, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds");
+                    resetLatch = new CountDownTimer(RESET_LATCH_DURATION_IN_SECONDS * 1000L, (RESET_LATCH_DURATION_IN_SECONDS / 10) * 1000L) {
+
+                        @Override
+                        public void onTick(long millisUntilFinished) { /* nothing here, we don't care about this*/}
+
+                        @Override
+                        public void onFinish() {
+                            CloudCityLogger.e(TAG, "ResetLatch finalizing test after 100 seconds of being broken, something went wrong or was broken!!!");
+                            finalizeTestExecution(null, null);
+                        }
+                    }.start();
+                }
             });
             getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
                 boolean iperf3_upload;
@@ -862,6 +920,18 @@ public class Iperf3Monitor {
         } else {
             return thisRunLocation.distanceTo(lastTestRunLocation) < THROTTLING_THRESHOLD_IN_METERS;
         }
+    }
+
+    /**
+     * Method that checks whether the iperf3 execution state is a terminal state.
+     * Due to various conditions, all non -100 results are terminal, where only 0 is a
+     * successful termination, 1 is failure, -1 is cancellation and who knows how many others there are
+     *
+     * @param state the state to evaluate
+     * @return whether the state was the terminal (last) emission or not
+     */
+    private boolean isTerminalState(int state) {
+        return state != -100;
     }
 
     private WorkManager getWorkManager() {

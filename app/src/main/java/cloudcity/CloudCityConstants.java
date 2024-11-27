@@ -21,7 +21,7 @@ public class CloudCityConstants {
     /**
      * iPerf3 server to use for iperf3 tests; used for Settings screen prefilling as well as CloudCity automated tests
      */
-    public static final String CLOUD_CITY_IPERF3_SERVER = "demo.app.cloudcities.co";
+    public static final String CLOUD_CITY_IPERF3_SERVER = "demo.staging.cloudcities.co";
     /**
      * iPerf3 server port range to use for iperf3 tests, this one is the smaller of the two ports in the range;
      * used for Settings screen prefilling as well as CloudCity automated tests

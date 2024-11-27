@@ -839,7 +839,7 @@ public class Iperf3Monitor {
         long now = System.currentTimeMillis();
         long diffToLastTestInMillis = now - testStartTimestamp;
         long diffInSeconds = diffToLastTestInMillis / 1000L;
-        return diffInSeconds <= THROTTLING_THRESHOLD_IN_SECONDS;
+        return diffInSeconds < THROTTLING_THRESHOLD_IN_SECONDS;
     }
 
     /**

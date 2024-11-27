@@ -180,9 +180,8 @@ public class PingMonitor {
         rttMetric.createMainLL("RTT [ms]");
         packetLossMetric.createMainLL("Packet Loss [%]");
 
-        pingParser = PingParser.getInstance(null);
         CloudCityLogger.v(TAG, "Adding property change listener");
-        pingParser.addPropertyChangeListener(evt -> {
+        PingParser.addExternalPropertyChangeListener(evt -> {
             PingInformation pi = (PingInformation) evt.getNewValue();
 //            CloudCityLogger.v(TAG, "propertyChange: "+pi+"\tline type: "+pi.getLineType());
             switch (pi.getLineType()) {

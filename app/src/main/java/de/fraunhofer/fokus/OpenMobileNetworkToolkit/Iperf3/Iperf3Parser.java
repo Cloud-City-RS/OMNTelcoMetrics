@@ -16,7 +16,6 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Error;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.Interval.Interval;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.JSON.start.Start;
 
-
 public class Iperf3Parser {
     private static final String TAG = Iperf3Parser.class.getSimpleName();
 
@@ -35,11 +34,11 @@ public class Iperf3Parser {
     private Start start;
     private final Intervals intervals = new Intervals();
 
-    public static Iperf3Parser instantiate(@NonNull String pathToFile) throws FileNotFoundException {
+    public static Iperf3Parser instantiate(@NonNull String pathToFile) throws Iperf3ParserNoFileToReadException {
         return new Iperf3Parser(pathToFile);
     }
 
-    Iperf3Parser(String pathToFile) throws FileNotFoundException {
+    Iperf3Parser(String pathToFile) throws Iperf3ParserNoFileToReadException {
         this.pathToFile = pathToFile;
         this.file = new File(this.pathToFile);
         try {
@@ -47,7 +46,7 @@ public class Iperf3Parser {
         } catch (FileNotFoundException ex) {
             System.out.println("File not found");
             CloudCityLogger.e(TAG, "File not found!!! Path to file: "+pathToFile, ex);
-            return;
+            throw new Iperf3ParserNoFileToReadException(ex);
         }
         this.support = new PropertyChangeSupport(this);
     }

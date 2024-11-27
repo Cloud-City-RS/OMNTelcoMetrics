@@ -21,7 +21,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,16 +31,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.Iperf3MetricsPOJO;
+import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.PingMetricsPOJO;
 import cloudcity.util.CloudCityLogger;
 import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Parser;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ParserNoFileToReadException;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3ResultsDataBase;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3RunResult;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3RunResultDao;
@@ -275,7 +274,7 @@ public class Iperf3Monitor {
                     Iperf3Parser iperf3Parser = null;
                     try {
                         iperf3Parser = Iperf3Parser.instantiate(targetFilePath);
-                    } catch (FileNotFoundException e) {
+                    } catch (Iperf3ParserNoFileToReadException e) {
                         CloudCityLogger.e(TAG, "Exception " + e + " happened during iperf3 parser instantiation!", e);
                         throw new RuntimeException(e);
                     }

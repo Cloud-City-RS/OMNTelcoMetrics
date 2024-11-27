@@ -11,9 +11,12 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.OptionalDouble;
 
+import cloudcity.util.CloudCityLogger;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.R;
 
 public class Metric {
+    private static final String TAG = "Metric";
+
         private LinearLayout mean;
         private LinearLayout median;
         private LinearLayout max;
@@ -26,6 +29,8 @@ public class Metric {
         private final METRIC_TYPE metricType;
         private final Context ct;
         private LinearLayout mainLL;
+
+        private String mainLLdirection;
 
         public Metric(METRIC_TYPE metricType, Context ct){
                 this.metricType = metricType;
@@ -106,6 +111,7 @@ public class Metric {
             return Double.toString(value);
         }
         public LinearLayout createMainLL(String direction) {
+            mainLLdirection = direction;
             mainLL = new LinearLayout(ct);
             LinearLayout.LayoutParams foo1 = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -172,6 +178,18 @@ public class Metric {
         public void update(Double value){
             this.meanList.add(value);
 
+            try {
+                updateViews(value);
+            } catch(NullPointerException npe) {
+                CloudCityLogger.e(TAG, "NullPointerException happened while trying to update views with direction " + mainLLdirection + " for value: " + value + "...\treinitializing views and retrying.", npe);
+                // In case the views are missing, we should just reinitialize them, and try updating again
+                createMainLL(mainLLdirection);
+            } finally {
+                updateViews(value);
+            }
+        }
+
+        private void updateViews(Double value) {
             ((TextView)mean.getChildAt(1)).setText(String.format(" %s", getFormatedString(calcMean())));
             ((TextView)median.getChildAt(1)).setText(String.format(" %s", getFormatedString(calcMedian())));
             ((TextView)max.getChildAt(1)).setText(String.format(" %s", getFormatedString(calcMax())));

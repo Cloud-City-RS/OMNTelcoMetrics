@@ -10,6 +10,7 @@ import java.util.List;
 
 import cloudcity.CloudCityParamsRepository;
 import cloudcity.dataholders.Iperf3MetricsPOJO;
+import cloudcity.dataholders.PingMetricsPOJO;
 import cloudcity.networking.CloudCityHelpers;
 import cloudcity.networking.models.CellInfoModel;
 import cloudcity.networking.models.Iperf3NetworkDataModel;
@@ -54,10 +55,16 @@ public class CloudCityUtil {
         Iperf3MetricsPOJO.MetricsPair metricsPair = metricsPOJO.toMetricsPair();
         Iperf3MetricsPOJO.UploadMetrics uploadMetrics = metricsPair.getUploadMetrics();
         Iperf3MetricsPOJO.DownloadMetrics downloadMetrics = metricsPair.getDownloadMetrics();
+        PingMetricsPOJO.MetricsPair pingMetricsPair = metricsPOJO.toPingMetricsPair();
+        PingMetricsPOJO.RTTMetrics rttMetrics = pingMetricsPair.getRTTMetrics();
+        PingMetricsPOJO.PackageLossMetrics packageLossMetrics = pingMetricsPair.getPackageLossMetrics();
+
 
         Iperf3NetworkDataModel iperf3Data = new Iperf3NetworkDataModel(
                 uploadMetrics,
                 downloadMetrics,
+                rttMetrics,
+                packageLossMetrics,
                 location,
                 cellInfoMeasurements.first,
                 cellInfoMeasurements.second

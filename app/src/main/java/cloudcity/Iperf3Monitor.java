@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
 import cloudcity.dataholders.Iperf3MetricsPOJO;
+import cloudcity.dataholders.PingMetricsPOJO;
 import cloudcity.util.CloudCityLogger;
 import cloudcity.util.CloudCityUtil;
 import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Iperf3.Iperf3Fragment;
@@ -111,6 +112,8 @@ public class Iperf3Monitor {
     private volatile long testEndTimestamp;
 
     private volatile @NonNull Location lastTestRunLocation;
+
+    private volatile @NonNull PingMetricsPOJO lastPingTestMetrics;
 
     /**
      * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
@@ -333,10 +336,13 @@ public class Iperf3Monitor {
                                     shouldStop.compareAndSet(false, true);
 
                                     testEndTimestamp = System.currentTimeMillis();
+                                    PingMetricsPOJO.MetricsPair pingMetricsPair = lastPingTestMetrics.toMetricsPair();
                                     // Instantiate the POJO stuff holder
                                     Iperf3MetricsPOJO values = new Iperf3MetricsPOJO(
                                             new Iperf3MetricsPOJO.DownloadMetrics(DLmin, DLmedian, DLmean, DLmax, DLlast),
                                             new Iperf3MetricsPOJO.UploadMetrics(ULmin, ULmedian, ULmean, ULmax, ULlast),
+                                            pingMetricsPair.getRTTMetrics(),
+                                            pingMetricsPair.getPackageLossMetrics(),
                                             testStartTimestamp,
                                             testEndTimestamp
                                     );
@@ -348,6 +354,7 @@ public class Iperf3Monitor {
 
                                     // And set the new marker as 'no longer running'
                                     iperf3TestRunning.compareAndSet(true, false);
+                                    lastPingTestMetrics = null;
 
                                     CloudCityLogger.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
                                 }
@@ -787,6 +794,7 @@ public class Iperf3Monitor {
                     // Set the startTimestamp
                     testStartTimestamp = System.currentTimeMillis();
                     lastTestRunLocation = testRunLocation;
+                    lastPingTestMetrics = metrics;
 
                     // Enqueue tasks onto the WorkManager
                     if (spg.getSharedPreference(SPType.logging_sp).getBoolean("enable_influx", false) && iperf3Json) {

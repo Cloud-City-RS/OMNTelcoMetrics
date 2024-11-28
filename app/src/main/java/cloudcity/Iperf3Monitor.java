@@ -365,6 +365,11 @@ public class Iperf3Monitor {
                                     CloudCityLogger.d(TAG, "download speeds: MIN=" + DLmin + ", MED=" + DLmedian + ", MAX=" + DLmax + ", MEAN=" + DLmean + ", LAST=" + DLlast);
                                     CloudCityLogger.d(TAG, "upload speeds: MIN=" + ULmin + ", MED=" + ULmedian + ", MAX=" + ULmax + ", MEAN=" + ULmean + ", LAST=" + ULlast);
 
+                                    // Stop the thread to avoid spinning it needlessly forever...
+                                    stopParsingThread();
+                                    shouldStop.compareAndSet(false, true);
+
+                                    testEndTimestamp = System.currentTimeMillis();
                                     PingMetricsPOJO.MetricsPair pingMetricsPair = lastPingTestMetrics.toMetricsPair();
                                     // Instantiate the POJO stuff holder
                                     Iperf3MetricsPOJO values = new Iperf3MetricsPOJO(
@@ -907,19 +912,22 @@ public class Iperf3Monitor {
                     // that - because we will clear this latch in the next emission of anything - proceed
                     // to finalize the test with no data so that the system (iperf3 monitor) resets
                     // itself back into a working state
-                    CloudCityLogger.d(TAG, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds");
-                    CloudCityLogger.d(TAG_RESET, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds");
-                    resetLatch = new CountDownTimer(RESET_LATCH_DURATION_IN_SECONDS * 1000L, (RESET_LATCH_DURATION_IN_SECONDS / 10) * 1000L) {
+                    CloudCityLogger.d(TAG, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds\tresetLatch = " + resetLatch);
+                    CloudCityLogger.d(TAG_RESET, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds\tresetLatch = " + resetLatch);
+                    // Avoid having more than one resetLatch
+                    if (resetLatch == null) {
+                        resetLatch = new CountDownTimer(RESET_LATCH_DURATION_IN_SECONDS * 1000L, (RESET_LATCH_DURATION_IN_SECONDS / 10) * 1000L) {
 
-                        @Override
-                        public void onTick(long millisUntilFinished) { /* nothing here, we don't care about this*/}
+                            @Override
+                            public void onTick(long millisUntilFinished) { /* nothing here, we don't care about this*/}
 
-                        @Override
-                        public void onFinish() {
-                            CloudCityLogger.e(TAG, "ResetLatch finalizing test after 100 seconds of being broken, something went wrong or was broken!!!");
-                            finalizeTestExecution(null, null);
-                        }
-                    }.start();
+                            @Override
+                            public void onFinish() {
+                                CloudCityLogger.e(TAG, "ResetLatch finalizing test after 100 seconds of being broken, something went wrong or was broken!!!");
+                                finalizeTestExecution(null, null);
+                            }
+                        }.start();
+                    }
                 }
             });
             getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {

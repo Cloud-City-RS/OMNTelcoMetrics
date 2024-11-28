@@ -18,7 +18,7 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.RTTLin
 public class PingParser {
     private static final String TAG = "PingParser";
 
-    private static PingParser instance = null;
+    private static volatile PingParser instance = null;
     private volatile BufferedReader br;
     private final ArrayList<PingInformation> lines;
 
@@ -116,7 +116,4 @@ public class PingParser {
     public void setBr(BufferedReader br){
         this.br = br;
     }
-
-
 }
-

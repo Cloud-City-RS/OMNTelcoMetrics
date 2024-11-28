@@ -238,13 +238,6 @@ public class Iperf3Monitor {
         // Start listening for iPerf3 results...
         iperf3ResultsDatabase.iperf3RunResultDao().getLatestResult().observeForever(latestIperf3RunResult -> {
             shouldStop.set(false);
-            // Check the reset latch
-            if (resetLatch != null) {
-                resetLatch.cancel();
-                resetLatch = null;
-                CloudCityLogger.d(TAG, "ResetLatch cancel()-ed and nulled out!");
-                CloudCityLogger.d(TAG_RESET, "ResetLatch cancel()-ed and nulled out!");
-            }
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
             // in the DB.
@@ -254,6 +247,15 @@ public class Iperf3Monitor {
                 CloudCityLogger.v(TAG, "Latest iPerf3 result is: " + latestIperf3RunResult.result);
                 lastEmissionFromDatabaseTimestampMillis = System.currentTimeMillis();
                 lastEmissionFromDatabaseWorkUID = latestIperf3RunResult.uid;
+
+                // Check the reset latch
+                if (resetLatch != null) {
+                    resetLatch.cancel();
+                    resetLatch = null;
+                    CloudCityLogger.d(TAG, "ResetLatch cancel()-ed and nulled out!");
+                    CloudCityLogger.d(TAG_RESET, "ResetLatch cancel()-ed and nulled out!");
+                }
+
                 // 0 is the magic number for success
                 if (latestIperf3RunResult.result == 0) {
                     CloudCityLogger.v(TAG, "Result was fine, commencing further...");
@@ -598,6 +600,7 @@ public class Iperf3Monitor {
                 }
                 // Nuke everything else iperf3-related from the WorkManager - would be great to just use cancelAllWork() but that will kill more than just iperf3
                 // JUST MAKE SURE THESE ARE THE SAME AS IN Iperf3Fragment for enqueue() methods calls in executeIperfCommand()!!!
+                // actually, we enqueue() them in the Monitor, so... try to keep the two identical, if possible
                 CloudCityLogger.v(TAG, "Cancelling ALL Workers with the three tags from WorkManager");
                 getWorkManager().cancelAllWorkByTag("iperf3Run");
                 getWorkManager().cancelAllWorkByTag("iperf3LineProtocol");
@@ -809,12 +812,15 @@ public class Iperf3Monitor {
                 new OneTimeWorkRequest
                         .Builder(Iperf3ToLineProtocolWorker.class)
                         .setInputData(iperf3Data.build())
+                        .addTag("iperf3LineProtocol")
+                        .addTag(iperf3WorkerID)
                         .build();
         OneTimeWorkRequest iperf3UP =
                 new OneTimeWorkRequest
                         .Builder(Iperf3UploadWorker.class)
                         .setInputData(iperf3Data.build())
                         .addTag("iperf3")
+                        .addTag(iperf3WorkerID)
                         .build();
 
         iperf3RunResultDao.insert(

@@ -83,6 +83,7 @@ public class Iperf3Monitor {
     private static volatile float THROTTLING_THRESHOLD_IN_METERS = 0;
 
     private static final String TAG = "Iperf3Monitor";
+    private static final String TAG_RESET = "Iperf3Monitor-ResetLatch";
 
     private final static long PARSING_DELAY_IN_MS = 10L; //0.01sec, was 1000L
 
@@ -126,6 +127,10 @@ public class Iperf3Monitor {
     private volatile @NonNull PingMetricsPOJO lastPingTestMetrics;
 
     private volatile @Nullable CountDownTimer resetLatch;
+
+    private volatile long lastEmissionFromDatabaseTimestampMillis;
+
+    private volatile String lastEmissionFromDatabaseWorkUID;
 
     /**
      * Runnable used for parsing Iperf3 tests by constantly calling {@link #iperf3Parser}'s
@@ -238,6 +243,7 @@ public class Iperf3Monitor {
                 resetLatch.cancel();
                 resetLatch = null;
                 CloudCityLogger.d(TAG, "ResetLatch cancel()-ed and nulled out!");
+                CloudCityLogger.d(TAG_RESET, "ResetLatch cancel()-ed and nulled out!");
             }
             // Actually, since these come from the DB, the latest Iperf3 result will be the *last executed Iperf3 test*
             // So if no Iperf3 tests were ran ever, the first result will naturally be 'null' because there's nothing
@@ -246,6 +252,8 @@ public class Iperf3Monitor {
             // The first emmision is always a null so...
             if (latestIperf3RunResult != null) {
                 CloudCityLogger.v(TAG, "Latest iPerf3 result is: " + latestIperf3RunResult.result);
+                lastEmissionFromDatabaseTimestampMillis = System.currentTimeMillis();
+                lastEmissionFromDatabaseWorkUID = latestIperf3RunResult.uid;
                 // 0 is the magic number for success
                 if (latestIperf3RunResult.result == 0) {
                     CloudCityLogger.v(TAG, "Result was fine, commencing further...");
@@ -418,6 +426,7 @@ public class Iperf3Monitor {
     }
 
     private void finalizeTestExecution(Iperf3MonitorCompletionListener completionListener, Iperf3MetricsPOJO values) {
+        CloudCityLogger.v(TAG, "--> finalizeTestExecution(completionListener=" + completionListener + ", values=" + values + ")");
         // Stop the thread to avoid spinning it needlessly forever...
         stopParsingThread();
         shouldStop.compareAndSet(false, true);
@@ -430,6 +439,7 @@ public class Iperf3Monitor {
         // And set the new marker as 'no longer running'
         iperf3TestRunning.compareAndSet(true, false);
         lastPingTestMetrics = null;
+        CloudCityLogger.v(TAG, "<-- finalizeTestExecution()");
     }
 
     private void startParsingThread(Iperf3Parser newIperf3Parser) {
@@ -568,7 +578,30 @@ public class Iperf3Monitor {
     public void startDefaultAutomatedTest(Location testRunLocation) {
         // Sanity check
         if (iperf3TestRunning.get()) {
-            CloudCityLogger.e(TAG, "Iperf3 test is still running! aborting...");
+            CloudCityLogger.e(TAG, "Iperf3 test is still running! aborting attempt and returning...");
+
+            //Try another failsafe here for just in case, because the current one isn't sure-proof
+            long currentTimeMillis = System.currentTimeMillis();
+            long diffInSeconds = (currentTimeMillis - lastEmissionFromDatabaseTimestampMillis) / 1000L;
+            if (diffInSeconds > RESET_LATCH_DURATION_IN_SECONDS) {
+                CloudCityLogger.e(TAG, "Last emission from database is more than RESET_LATCH_DURATION seconds ago and test is still running! Aborting test!");
+                finalizeTestExecution(null, null);
+
+                // If that still didn't fix it, lets add a yet another one after more time has passed, perhaps WorkManager crapped out
+                if (diffInSeconds > 2 * RESET_LATCH_DURATION_IN_SECONDS) {
+                    CloudCityLogger.e(TAG, "Last emission from database is more than twice the RESET_LATCH_DURATION seconds ago and test is still running! Aborting on WorkManager!");
+                    getWorkManager().cancelAllWorkByTag(lastEmissionFromDatabaseWorkUID);
+                }
+
+                // And if it's still fucked up - altho I verified that it wont be - nuke all of it from WM
+                if (diffInSeconds > 5 * RESET_LATCH_DURATION_IN_SECONDS) {
+                    CloudCityLogger.e(TAG, "Last emission from database is more than five times the RESET_LATCH_DURATION seconds ago and test is still running! Aborting everything iperf3 related on WorkManager!");
+                    //JUST MAKE SURE THESE ARE THE SAME AS IN Iperf3Fragment for enqueue() methods calls in executeIperfCommand()!!!
+                    getWorkManager().cancelAllWorkByTag("iperf3Run");
+                    getWorkManager().cancelAllWorkByTag("iperf3LineProtocol");
+                    getWorkManager().cancelAllWorkByTag("iperf3");
+                }
+            }
             return;
         }
 
@@ -865,6 +898,7 @@ public class Iperf3Monitor {
                     // to finalize the test with no data so that the system (iperf3 monitor) resets
                     // itself back into a working state
                     CloudCityLogger.d(TAG, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds");
+                    CloudCityLogger.d(TAG_RESET, "Initializing ResetLatch to unblock the Iperf3Monitor in " + RESET_LATCH_DURATION_IN_SECONDS + " seconds");
                     resetLatch = new CountDownTimer(RESET_LATCH_DURATION_IN_SECONDS * 1000L, (RESET_LATCH_DURATION_IN_SECONDS / 10) * 1000L) {
 
                         @Override

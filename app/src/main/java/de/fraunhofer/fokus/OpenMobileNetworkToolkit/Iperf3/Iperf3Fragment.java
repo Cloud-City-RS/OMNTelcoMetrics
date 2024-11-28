@@ -489,6 +489,7 @@ public class Iperf3Fragment extends Fragment {
             new OneTimeWorkRequest
                 .Builder(Iperf3ToLineProtocolWorker.class)
                 .setInputData(iperf3Data.build())
+                .addTag("iperf3LineProtocol")
                 .build();
         OneTimeWorkRequest iperf3UP =
             new OneTimeWorkRequest

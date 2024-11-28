@@ -580,27 +580,23 @@ public class Iperf3Monitor {
         if (iperf3TestRunning.get()) {
             CloudCityLogger.e(TAG, "Iperf3 test is still running! aborting attempt and returning...");
 
-            //Try another failsafe here for just in case, because the current one isn't sure-proof
+            // Try another failsafe here for just in case, because the current one isn't sure-proof
             long currentTimeMillis = System.currentTimeMillis();
             long diffInSeconds = (currentTimeMillis - lastEmissionFromDatabaseTimestampMillis) / 1000L;
-            if (diffInSeconds > RESET_LATCH_DURATION_IN_SECONDS) {
-                CloudCityLogger.e(TAG, "Last emission from database is more than RESET_LATCH_DURATION seconds ago and test is still running! Aborting test!");
+            if (diffInSeconds > 2 * RESET_LATCH_DURATION_IN_SECONDS) {
+                CloudCityLogger.e(TAG, "Last emission from database is more than twice the RESET_LATCH_DURATION seconds ago and test is still running! Aborting test and everything on WorkManager!");
+                // Nuke the last running test
+                CloudCityLogger.v(TAG, "Cancelling last work UID "+lastEmissionFromDatabaseWorkUID+" from WorkManager");
+                getWorkManager().cancelAllWorkByTag(lastEmissionFromDatabaseWorkUID);
+                // Nuke everything else iperf3-related from the WorkManager
+                // JUST MAKE SURE THESE ARE THE SAME AS IN Iperf3Fragment for enqueue() methods calls in executeIperfCommand()!!!
+                CloudCityLogger.v(TAG, "Cancelling ALL Workers with the three tags from WorkManager");
+                getWorkManager().cancelAllWorkByTag("iperf3Run");
+                getWorkManager().cancelAllWorkByTag("iperf3LineProtocol");
+                getWorkManager().cancelAllWorkByTag("iperf3");
+                // And finally, 'finish' the test (altho these WM cancellations will likely do so as well, so perhaps this messes things up)
+                CloudCityLogger.v(TAG, "Calling finalizeTestExecution() to unset the lock flag");
                 finalizeTestExecution(null, null);
-
-                // If that still didn't fix it, lets add a yet another one after more time has passed, perhaps WorkManager crapped out
-                if (diffInSeconds > 2 * RESET_LATCH_DURATION_IN_SECONDS) {
-                    CloudCityLogger.e(TAG, "Last emission from database is more than twice the RESET_LATCH_DURATION seconds ago and test is still running! Aborting on WorkManager!");
-                    getWorkManager().cancelAllWorkByTag(lastEmissionFromDatabaseWorkUID);
-                }
-
-                // And if it's still fucked up - altho I verified that it wont be - nuke all of it from WM
-                if (diffInSeconds > 5 * RESET_LATCH_DURATION_IN_SECONDS) {
-                    CloudCityLogger.e(TAG, "Last emission from database is more than five times the RESET_LATCH_DURATION seconds ago and test is still running! Aborting everything iperf3 related on WorkManager!");
-                    //JUST MAKE SURE THESE ARE THE SAME AS IN Iperf3Fragment for enqueue() methods calls in executeIperfCommand()!!!
-                    getWorkManager().cancelAllWorkByTag("iperf3Run");
-                    getWorkManager().cancelAllWorkByTag("iperf3LineProtocol");
-                    getWorkManager().cancelAllWorkByTag("iperf3");
-                }
             }
             return;
         }

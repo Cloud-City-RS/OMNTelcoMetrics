@@ -588,7 +588,15 @@ public class Iperf3Monitor {
                 // Nuke the last running test
                 CloudCityLogger.v(TAG, "Cancelling last work UID "+lastEmissionFromDatabaseWorkUID+" from WorkManager");
                 getWorkManager().cancelAllWorkByTag(lastEmissionFromDatabaseWorkUID);
-                // Nuke everything else iperf3-related from the WorkManager
+                // Cancel all of the UIDs actually
+                List<String> workerUIDs = iperf3ResultsDatabase.iperf3RunResultDao().getIDs();
+                CloudCityLogger.v(TAG, "Cancelling list of UIDs: "+workerUIDs+" from WorkManager");
+                for(String workerUID : workerUIDs) {
+                    // While we *could* use cancelAllWorkByUUID(), we won't because we are adding their UUIDs
+                    // as Worker tags via addTag() when enqueue()-ing them onto the WorkManager
+                    getWorkManager().cancelAllWorkByTag(workerUID);
+                }
+                // Nuke everything else iperf3-related from the WorkManager - would be great to just use cancelAllWork() but that will kill more than just iperf3
                 // JUST MAKE SURE THESE ARE THE SAME AS IN Iperf3Fragment for enqueue() methods calls in executeIperfCommand()!!!
                 CloudCityLogger.v(TAG, "Cancelling ALL Workers with the three tags from WorkManager");
                 getWorkManager().cancelAllWorkByTag("iperf3Run");

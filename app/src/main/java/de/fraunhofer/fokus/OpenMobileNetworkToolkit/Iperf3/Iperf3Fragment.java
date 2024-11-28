@@ -490,12 +490,14 @@ public class Iperf3Fragment extends Fragment {
                 .Builder(Iperf3ToLineProtocolWorker.class)
                 .setInputData(iperf3Data.build())
                 .addTag("iperf3LineProtocol")
+                .addTag(iperf3WorkerID)
                 .build();
         OneTimeWorkRequest iperf3UP =
             new OneTimeWorkRequest
                 .Builder(Iperf3UploadWorker.class)
                 .setInputData(iperf3Data.build())
                 .addTag("iperf3")
+                .addTag(iperf3WorkerID)
                 .build();
 
         iperf3RunResultDao.insert(

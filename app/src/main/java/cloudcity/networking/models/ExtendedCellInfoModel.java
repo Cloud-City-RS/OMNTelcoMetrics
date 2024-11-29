@@ -3,6 +3,7 @@ package cloudcity.networking.models;
 import android.telephony.CellInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -11,12 +12,16 @@ import com.google.gson.annotations.SerializedName;
  */
 public class ExtendedCellInfoModel {
 
+    // CellInfoModel values
+
     private Integer earfcn;
     private Integer pci;
     private Long cellId;
     private Integer eNodeBId;
     @SerializedName("dummy_cell_info")
     private Integer dummyCell;
+
+    // MeasurementModel values
 
     // LTE
     private Integer rsrp;
@@ -62,10 +67,15 @@ public class ExtendedCellInfoModel {
         setEarfcn(cellInfoModel.getEarfcn());
         setPci(cellInfoModel.getPci());
         setCellId(cellInfoModel.getCellId());
+        seteNodeBId(cellInfoModel.geteNodeBId());
         setDummyCell(cellInfoModel.getDummy());
     }
 
-    public int getEarfcn() {
+    /**
+     * Returns the 'bands' (EARFCN)
+     * @return the earfcn or null if it wasn't present (no SIM or not on any cell)
+     */
+    public @Nullable Integer getEarfcn() {
         return earfcn;
     }
 

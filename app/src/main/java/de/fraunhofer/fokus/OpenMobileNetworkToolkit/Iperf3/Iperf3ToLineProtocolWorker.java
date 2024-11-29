@@ -145,7 +145,13 @@ public class Iperf3ToLineProtocolWorker extends Worker {
         setup();
         Data output = new Data.Builder().putBoolean("iperf3_upload", false).build();
 
-        Iperf3Parser iperf3Parser = new Iperf3Parser(rawIperf3file);
+        Iperf3Parser iperf3Parser = null;
+        try {
+            iperf3Parser = new Iperf3Parser(rawIperf3file);
+        } catch (Iperf3ParserNoFileToReadException e) {
+            // Instead of rethrowing, just finish in failure and that's that.
+            return Result.failure();
+        }
         iperf3Parser.parse();
 
 

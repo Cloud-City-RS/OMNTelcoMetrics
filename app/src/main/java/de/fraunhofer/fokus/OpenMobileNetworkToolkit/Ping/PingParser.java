@@ -1,9 +1,12 @@
 package de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping;
 
+import androidx.annotation.Nullable;
+
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 import cloudcity.util.CloudCityLogger;
@@ -15,23 +18,38 @@ import de.fraunhofer.fokus.OpenMobileNetworkToolkit.Ping.PingInformations.RTTLin
 public class PingParser {
     private static final String TAG = "PingParser";
 
-    private static PingParser instance = null;
-    private BufferedReader br;
+    private static volatile PingParser instance = null;
+    private volatile BufferedReader br;
     private final ArrayList<PingInformation> lines;
 
     private final PropertyChangeSupport support;
     private PropertyChangeListener listener;
+
+    private static @Nullable WeakReference<PropertyChangeListener> externalPropertyChangeListener;
     private PingParser(BufferedReader br) {
         this.br = br;
         this.lines = new ArrayList<>();
         support = new PropertyChangeSupport(this);
+        if (externalPropertyChangeListener != null && externalPropertyChangeListener.get() != null) {
+            addPropertyChangeListener(externalPropertyChangeListener.get());
+        }
     }
 
-    public static PingParser getInstance(BufferedReader br){
-        if (instance == null) instance = new PingParser(br);
-        if(br != null); instance.setBr(br);
+    public static synchronized PingParser getInstance(BufferedReader br){
+        if (instance == null) {
+            synchronized (PingParser.class) {
+                if (instance == null) {
+                    instance = new PingParser(br);
+                    CloudCityLogger.v(TAG, "Instantiated PingParser with BufferedReader "+br);
+                }
+            }
+        }
+        if (br != null) {
+            instance.setBr(br);
+        }
         return instance;
     }
+
     private LINEType getLineType(String line){
 //        CloudCityLogger.d(TAG, "--> getLineType()\tline: "+line);
         if (line.contains("bytes from")) {
@@ -47,7 +65,7 @@ public class PingParser {
             return LINEType.UNKNOWN;
         }
     }
-    public void parse(){
+    public synchronized void parse(){
         String line;
         try {
             while((line = this.br.readLine()) != null){
@@ -80,6 +98,11 @@ public class PingParser {
     public void addPropertyChangeListener(PropertyChangeListener listener){
         support.addPropertyChangeListener(listener);
     }
+
+    public static synchronized void addExternalPropertyChangeListener(@Nullable PropertyChangeListener listener){
+        externalPropertyChangeListener = new WeakReference<>(listener);
+    }
+
     public void setListener(PropertyChangeListener listener){
         this.listener = listener;
     }
@@ -93,7 +116,4 @@ public class PingParser {
     public void setBr(BufferedReader br){
         this.br = br;
     }
-
-
 }
-

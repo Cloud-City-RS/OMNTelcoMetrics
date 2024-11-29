@@ -103,7 +103,12 @@ public class Iperf3LogFragment extends Fragment {
             }
             String line;
 
-            Iperf3Parser iperf3Parser = new Iperf3Parser(iperf3RunResult.input.iperf3rawIperf3file);
+            Iperf3Parser iperf3Parser = null;
+            try {
+                iperf3Parser = new Iperf3Parser(iperf3RunResult.input.iperf3rawIperf3file);
+            } catch (Iperf3ParserNoFileToReadException e) {
+                throw new RuntimeException(e);
+            }
             iperf3Parser.addPropertyChangeListener(new PropertyChangeListener() {
 
                 private void parseSum(Sum sum, Metric throughput){

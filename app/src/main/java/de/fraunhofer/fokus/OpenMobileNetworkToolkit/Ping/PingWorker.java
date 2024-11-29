@@ -30,6 +30,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -177,10 +178,12 @@ public class PingWorker extends Worker {
             parsePingCommand();
             pingProcess = runtime.exec(stringBuilder.toString());
 
+            InputStream pingProcessInputStream = pingProcess.getInputStream();
+            if (pingProcessInputStream == null) {
+                CloudCityLogger.w(TAG, "Ping process input stream was NULL!");
+            }
             BufferedReader outputReader =
-                new BufferedReader(new InputStreamReader(pingProcess.getInputStream()));
-
-
+                new BufferedReader(new InputStreamReader(pingProcessInputStream));
 
             PingParser pingParser = PingParser.getInstance(outputReader);
 

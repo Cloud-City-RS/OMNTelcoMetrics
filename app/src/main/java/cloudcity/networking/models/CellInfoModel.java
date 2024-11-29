@@ -3,6 +3,8 @@ package cloudcity.networking.models;
 import com.google.gson.annotations.SerializedName;
 import android.telephony.CellInfo;
 
+import androidx.annotation.Nullable;
+
 public class CellInfoModel {
 
     private Integer earfcn;
@@ -12,7 +14,11 @@ public class CellInfoModel {
     @SerializedName("dummy_cell_info")
     private Integer dummy;
 
-    public int getEarfcn() {
+    /**
+     * Returns the 'bands' (EARFCN)
+     * @return the earfcn or null if it wasn't present (no SIM or not on any cell)
+     */
+    public @Nullable Integer getEarfcn() {
         return earfcn;
     }
 

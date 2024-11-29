@@ -17,7 +17,7 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
     @SerializedName("speed")
     private double speed;
     @SerializedName("cell_info")
-    private final CellInfoModel cellData;
+    private final ExtendedCellInfoModel cellData;
 
     public Iperf3NetworkDataModel(
             @NonNull Iperf3MetricsPOJO.UploadMetrics upload,
@@ -31,11 +31,14 @@ public class Iperf3NetworkDataModel extends NetworkDataModel {
         super(
                 location.getLatitude(),
                 location.getLongitude(),
-                new Iperf3ValuesModel(upload, download, rttMetrics, packageLossMetrics, measurementsModel)
+                new Iperf3ValuesModel(upload, download, rttMetrics, packageLossMetrics)
         );
         this.accuracy = location.getAccuracy();
         this.speed = location.getSpeed();
-        this.cellData = cellInfoModel;
+        // Create the ExtendedCellInfo by merging the cellInfoModel with measurementsModel
+        // we do this because we don't want actual signal measurements in the iperf3 values
+        // but could use them in the cell_info
+        this.cellData = new ExtendedCellInfoModel(measurementsModel, cellInfoModel);
     }
 }
 
@@ -85,27 +88,10 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
     @SerializedName("ping_package_loss_last")
     private final double PLlast;
 
-    @SerializedName("cell_type")
-    private final int cellType;
-
-    // LTE
-    private final Integer rsrp;
-    private final Integer rsrq;
-    private final Integer rssnr;
-
-    // 5G
-    private final Integer csirsrp;
-    private final Integer csirsrq;
-    private final Integer csisinr;
-    private final Integer ssrsrp;
-    private final Integer ssrsrq;
-    private final Integer sssinr;
-
     public Iperf3ValuesModel(@NonNull Iperf3MetricsPOJO.UploadMetrics upload,
                              @NonNull Iperf3MetricsPOJO.DownloadMetrics download,
                              @NonNull PingMetricsPOJO.RTTMetrics rttMetrics,
-                             @NonNull PingMetricsPOJO.PackageLossMetrics packageLossMetrics,
-                             @NonNull MeasurementsModel cellMeasurements) {
+                             @NonNull PingMetricsPOJO.PackageLossMetrics packageLossMetrics) {
         ULmin = upload.getULmin();
         ULmedian = upload.getULmedian();
         ULmean = upload.getULmean();
@@ -129,18 +115,5 @@ class Iperf3ValuesModel extends NetworkDataModel.NetworkDataModelValues {
         PLmean = packageLossMetrics.getPLmean();
         PLmax = packageLossMetrics.getPLmax();
         PLlast = packageLossMetrics.getPLlast();
-
-        rsrp = cellMeasurements.getRsrp();
-        rsrq = cellMeasurements.getRsrq();
-        rssnr = cellMeasurements.getRssnr();
-
-        csirsrp = cellMeasurements.getCsirsrp();
-        csirsrq = cellMeasurements.getCsirsrq();
-        csisinr = cellMeasurements.getCsisinr();
-        ssrsrp = cellMeasurements.getSsrsrp();
-        ssrsrq = cellMeasurements.getSsrsrq();
-        sssinr = cellMeasurements.getSssinr();
-
-        cellType = cellMeasurements.getCellType();
     }
 }

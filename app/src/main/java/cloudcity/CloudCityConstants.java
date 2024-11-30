@@ -1,5 +1,8 @@
 package cloudcity;
 
+import cloudcity.util.CellUtil;
+import de.fraunhofer.fokus.OpenMobileNetworkToolkit.DataProvider.CellInformations.CellInformation;
+
 /**
  * The "string holder" class for anything CloudCity related
  */
@@ -59,4 +62,10 @@ public class CloudCityConstants {
     public static final String CLOUD_CITY_IPERF3_TEST_TIME_THROTTLING_THRESHOLD = "cloud_city_iperf3_throttling_interval";
     // Iperf3 distance-based throttling shared pref key
     public static final String CLOUD_CITY_IPERF3_TEST_DISTANCE_THROTTLING_THRESHOLD = "cloud_city_iperf3_throttling_distance";
+
+    /**
+     * Whether {@link CellUtil#remapCellClassTypeIntoInteger(CellInformation)} should allow null cells to be
+     * remapped into 0 or not
+     */
+    public static final boolean ALLOW_TESTING_WITHOUT_SIM = false;
 }

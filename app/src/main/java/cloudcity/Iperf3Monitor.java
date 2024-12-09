@@ -804,29 +804,30 @@ public class Iperf3Monitor {
                     } else {
                         iperf3WM.beginWith(iperf3WR).enqueue();
                     }
+
+                    // Plant 'fake' "test is running" data in the database
+                    mainThreadExecutor.execute(() -> {
+                        getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
+                            int iperf3_result;
+                            iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+                            if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                                iperf3_result = -1;
+                            }
+                            iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+                            CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+                        });
+                        getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
+                            boolean iperf3_upload;
+                            iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+                            CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                            iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+                        });
+                    });
                 } else {
                     CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!\twasSuccess: " + wasSuccess + ", destinationReachable: " + destinationReachable);
                     //TODO fire an Sentry event to track this erroneous state
                 }
             }
-        });
-
-        mainThreadExecutor.execute(() -> {
-            getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
-                int iperf3_result;
-                iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
-                if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
-                    iperf3_result = -1;
-                }
-                iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
-            });
-            getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
-                boolean iperf3_upload;
-                iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
-                iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
-            });
         });
     }
 

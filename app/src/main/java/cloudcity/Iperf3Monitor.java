@@ -8,6 +8,7 @@ import android.os.HandlerThread;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.Observer;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
@@ -27,8 +28,10 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloudcity.dataholders.Iperf3RunnerData;
@@ -100,6 +103,8 @@ public class Iperf3Monitor {
     private volatile Iperf3Parser iperf3Parser;
 
     private final AtomicBoolean iperf3TestRunning = new AtomicBoolean(false);
+
+    private final Map<UUID, Observer<WorkInfo>> workInfoObservers = new ConcurrentHashMap<>();
 
     private volatile MainThreadExecutor mainThreadExecutor;
 
@@ -214,6 +219,21 @@ public class Iperf3Monitor {
             } catch (InterruptedException e) {
                 CloudCityLogger.e(TAG, "Exception " + e + " happened during shutdown() while joining the handlerThread !!! ", e);
             }
+        }
+
+        // And if instance is still alive
+        if (instance != null) {
+            // Clean up work info observers
+            for (Map.Entry<UUID, Observer<WorkInfo>> entry : instance.workInfoObservers.entrySet()) {
+                instance
+                        .getWorkManager()
+                        .getWorkInfoByIdLiveData(entry.getKey())
+                        .removeObserver(entry.getValue());
+            }
+            instance.workInfoObservers.clear();
+
+            // And kill the instance
+            instance = null;
         }
     }
 
@@ -807,21 +827,47 @@ public class Iperf3Monitor {
 
                     // Plant 'fake' "test is running" data in the database
                     mainThreadExecutor.execute(() -> {
-                        getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
-                            int iperf3_result;
-                            iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
-                            if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
-                                iperf3_result = -1;
+                        UUID workerId = iperf3WR.getId();
+                        UUID uploadId = iperf3UP.getId();
+
+                        Observer<WorkInfo> workObserver = new Observer<WorkInfo>() {
+                            @Override
+                            public void onChanged(WorkInfo workInfo) {
+                                int iperf3_result;
+                                iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+                                if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                                    iperf3_result = -1;
+                                }
+                                iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+                                CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+
+                                // Remove observer after terminal state
+                                if (workInfo.getState().isFinished()) {
+                                    getWorkManager().getWorkInfoByIdLiveData(workerId).removeObserver(this);
+                                    workInfoObservers.remove(workerId);
+                                }
                             }
-                            iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                            CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
-                        });
-                        getWorkManager().getWorkInfoByIdLiveData(iperf3UP.getId()).observeForever(workInfo -> {
-                            boolean iperf3_upload;
-                            iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                            CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
-                            iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
-                        });
+                        };
+                        workInfoObservers.put(workerId, workObserver);
+                        getWorkManager().getWorkInfoByIdLiveData(workerId).observeForever(workObserver);
+
+                        Observer<WorkInfo> uploadObserver = new Observer<WorkInfo>() {
+                            @Override
+                            public void onChanged(WorkInfo workInfo) {
+                                boolean iperf3_upload;
+                                iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+                                CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                                iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+
+                                // Remove observer after terminal state
+                                if (workInfo.getState().isFinished()) {
+                                    getWorkManager().getWorkInfoByIdLiveData(uploadId).removeObserver(this);
+                                    workInfoObservers.remove(uploadId);
+                                }
+                            }
+                        };
+                        workInfoObservers.put(uploadId, uploadObserver);
+                        getWorkManager().getWorkInfoByIdLiveData(uploadId).observeForever(uploadObserver);
                     });
                 } else {
                     CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!\twasSuccess: " + wasSuccess + ", destinationReachable: " + destinationReachable);

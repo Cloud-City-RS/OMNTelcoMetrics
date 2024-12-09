@@ -22,6 +22,7 @@ public class CloudCityOMNTApplication extends Application {
 
         Timber.plant(new Timber.DebugTree());
 
+        Iperf3StatusRepository.initialize();
         Iperf3Monitor.initialize(getApplicationContext());
         iperf3Monitor = Iperf3Monitor.getInstance();
 

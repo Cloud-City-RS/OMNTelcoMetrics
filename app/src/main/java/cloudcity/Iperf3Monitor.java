@@ -354,9 +354,10 @@ public class Iperf3Monitor {
 
                                     // And set the new marker as 'no longer running'
                                     iperf3TestRunning.compareAndSet(true, false);
+                                    Iperf3StatusRepository.getInstance().stopRunning();
                                     lastPingTestMetrics = null;
 
-                                    CloudCityLogger.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get());
+                                    CloudCityLogger.v(TAG, "END\tcleaned up everything! shouldStop: " + shouldStop.get() + ", iperf3TestRunning: " + iperf3TestRunning.get() + ", Iperf3StatusRepository: " + Iperf3StatusRepository.getInstance().getRunningStatus());
                                 }
                                 break;
 
@@ -399,6 +400,7 @@ public class Iperf3Monitor {
                     if (latestIperf3RunResult.result != -100) {
                         CloudCityLogger.d(TAG, "latestIperf3RunResult.result was actually terminal, finishing iperf3 test run");
                         iperf3TestRunning.compareAndSet(true, false);
+                        Iperf3StatusRepository.getInstance().stopRunning();
                     }
                 }
             }
@@ -539,6 +541,13 @@ public class Iperf3Monitor {
      * @param testRunLocation
      */
     public void startDefaultAutomatedTest(Location testRunLocation) {
+        CloudCityLogger.d(TAG, "--> startDefaultAutomatedTest()\tlocation = "+testRunLocation);
+
+        if (Iperf3StatusRepository.getInstance().getRunningStatus()) {
+            CloudCityLogger.e(TAG, "Iperf3StatusRepository says the test is still running! aborting...");
+            return;
+        }
+
         // Sanity check
         if (iperf3TestRunning.get()) {
             CloudCityLogger.e(TAG, "Iperf3 test is still running! aborting...");
@@ -666,6 +675,7 @@ public class Iperf3Monitor {
         );
 
         startIperf3Test(appContext, testData, testRunLocation);
+        CloudCityLogger.d(TAG, "<-- startDefaultAutomatedTest()");
     }
 
     /**
@@ -759,6 +769,12 @@ public class Iperf3Monitor {
         boolean iperf3Json = Boolean.TRUE.equals(data.getBooleanDataMap().get("iperf3Json"));
 
         // Sanity check...
+        if (Iperf3StatusRepository.getInstance().getRunningStatus()) {
+            // IF test is running, log error, and return
+            CloudCityLogger.e(TAG, "Iperf3StatusRepository says test was still running! Returning...");
+            return;
+        }
+
         if (iperf3TestRunning.get()) {
             // IF test is running, log error, and return
             CloudCityLogger.e(TAG, "Iperf3 test was already running! Returning...");
@@ -773,6 +789,7 @@ public class Iperf3Monitor {
             mainThreadExecutor = MainThreadExecutor.getInstance();
         }
 
+        Iperf3StatusRepository.getInstance().startRunning();
         PingMonitor.getInstance().startPingTest(metrics -> {
             boolean wasSuccess = metrics.wasSuccess();
             boolean destinationReachable = metrics.isDestinationReachable();
@@ -788,7 +805,6 @@ public class Iperf3Monitor {
             // before starting the iperf3 test - that is, after a successful ping test.
             if (wasSuccess && destinationReachable) {
                 CloudCityLogger.d(TAG, "Ping test was succesful, starting iperf3 test");
-
                 // Start the iperf3 test
                 if (iperf3TestRunning.compareAndSet(false, true)) {
                     // Set the startTimestamp
@@ -807,10 +823,14 @@ public class Iperf3Monitor {
                 } else {
                     CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!\twasSuccess: " + wasSuccess + ", destinationReachable: " + destinationReachable);
                     //TODO fire an Sentry event to track this erroneous state
+                    // Also stopRunning because we never started
+                    Iperf3StatusRepository.getInstance().stopRunning();
                 }
             }
         });
 
+        //TODO this shit is what's been throwing me off the whole time, it writes a "test in progress" in the database
+        // which gets emitted once, and then never updates since the iperf3 test never really even starts on PROD
         mainThreadExecutor.execute(() -> {
             getWorkManager().getWorkInfoByIdLiveData(iperf3WR.getId()).observeForever(workInfo -> {
                 int iperf3_result;

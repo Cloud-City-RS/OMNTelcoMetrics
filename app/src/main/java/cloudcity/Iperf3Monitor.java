@@ -825,55 +825,64 @@ public class Iperf3Monitor {
                         iperf3WM.beginWith(iperf3WR).enqueue();
                     }
 
-                    // Plant 'fake' "test is running" data in the database
-                    mainThreadExecutor.execute(() -> {
-                        UUID workerId = iperf3WR.getId();
-                        UUID uploadId = iperf3UP.getId();
-
-                        Observer<WorkInfo> workObserver = new Observer<WorkInfo>() {
-                            @Override
-                            public void onChanged(WorkInfo workInfo) {
-                                int iperf3_result;
-                                iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
-                                if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
-                                    iperf3_result = -1;
-                                }
-                                iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
-                                CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
-
-                                // Remove observer after terminal state
-                                if (workInfo.getState().isFinished()) {
-                                    getWorkManager().getWorkInfoByIdLiveData(workerId).removeObserver(this);
-                                    workInfoObservers.remove(workerId);
-                                }
-                            }
-                        };
-                        workInfoObservers.put(workerId, workObserver);
-                        getWorkManager().getWorkInfoByIdLiveData(workerId).observeForever(workObserver);
-
-                        Observer<WorkInfo> uploadObserver = new Observer<WorkInfo>() {
-                            @Override
-                            public void onChanged(WorkInfo workInfo) {
-                                boolean iperf3_upload;
-                                iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
-                                CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
-                                iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
-
-                                // Remove observer after terminal state
-                                if (workInfo.getState().isFinished()) {
-                                    getWorkManager().getWorkInfoByIdLiveData(uploadId).removeObserver(this);
-                                    workInfoObservers.remove(uploadId);
-                                }
-                            }
-                        };
-                        workInfoObservers.put(uploadId, uploadObserver);
-                        getWorkManager().getWorkInfoByIdLiveData(uploadId).observeForever(uploadObserver);
-                    });
+                    plantFakeTestIsRunnningDataInDBAndStartObservingThem(iperf3WR, iperf3UP, iperf3WorkerID, iperf3RunResultDao);
                 } else {
                     CloudCityLogger.w(TAG, "Ping test was unsuccesful or destination was not reachable, skipping iperf3 test!\twasSuccess: " + wasSuccess + ", destinationReachable: " + destinationReachable);
                     //TODO fire an Sentry event to track this erroneous state
                 }
             }
+        });
+    }
+
+    private void plantFakeTestIsRunnningDataInDBAndStartObservingThem(
+            OneTimeWorkRequest iperf3WR,
+            OneTimeWorkRequest iperf3UP,
+            String iperf3WorkerID,
+            Iperf3RunResultDao iperf3RunResultDao
+    ) {
+        // Plant 'fake' "test is running" data in the database
+        mainThreadExecutor.execute(() -> {
+            UUID workerId = iperf3WR.getId();
+            UUID uploadId = iperf3UP.getId();
+
+            Observer<WorkInfo> workObserver = new Observer<WorkInfo>() {
+                @Override
+                public void onChanged(WorkInfo workInfo) {
+                    int iperf3_result;
+                    iperf3_result = workInfo.getOutputData().getInt("iperf3_result", -100);
+                    if (workInfo.getState().equals(WorkInfo.State.CANCELLED)) {
+                        iperf3_result = -1;
+                    }
+                    iperf3RunResultDao.updateResult(iperf3WorkerID, iperf3_result);
+                    CloudCityLogger.d(TAG, "onChanged: iperf3_result: " + iperf3_result);
+
+                    // Remove observer after terminal state
+                    if (workInfo.getState().isFinished()) {
+                        getWorkManager().getWorkInfoByIdLiveData(workerId).removeObserver(this);
+                        workInfoObservers.remove(workerId);
+                    }
+                }
+            };
+            workInfoObservers.put(workerId, workObserver);
+            getWorkManager().getWorkInfoByIdLiveData(workerId).observeForever(workObserver);
+
+            Observer<WorkInfo> uploadObserver = new Observer<WorkInfo>() {
+                @Override
+                public void onChanged(WorkInfo workInfo) {
+                    boolean iperf3_upload;
+                    iperf3_upload = workInfo.getOutputData().getBoolean("iperf3_upload", false);
+                    CloudCityLogger.d(TAG, "onChanged: iperf3_upload: " + iperf3_upload);
+                    iperf3RunResultDao.updateUpload(iperf3WorkerID, iperf3_upload);
+
+                    // Remove observer after terminal state
+                    if (workInfo.getState().isFinished()) {
+                        getWorkManager().getWorkInfoByIdLiveData(uploadId).removeObserver(this);
+                        workInfoObservers.remove(uploadId);
+                    }
+                }
+            };
+            workInfoObservers.put(uploadId, uploadObserver);
+            getWorkManager().getWorkInfoByIdLiveData(uploadId).observeForever(uploadObserver);
         });
     }
 
